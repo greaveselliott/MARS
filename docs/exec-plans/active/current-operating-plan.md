@@ -2,18 +2,18 @@
 
 **Status:** Active
 **Priority:** P0
-**Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
+**Depends On:** T-064 through T-067 complete; T-066/F-018-S002 entry gate passed
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
-**Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-068 planning handoff pending creation through `ticket_create`
+**Related Tickets:** T-063 through T-068
+**Current Ticket:** T-068 planning/rehearsal contract freeze
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
 **Hypothesis:** Retiring the private `v0.93.0` experiment and using a pinned GoReleaser archive pipeline will reduce bespoke release code while retaining fail-closed consumer verification.
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
-**Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S003 remains pending creation and delivery of T-068's bounded private two-build and clean macOS/Linux rehearsal; fresh packaged bootstrap remains deliberately unavailable until a non-circular trusted bootstrap exists and is a later cutover blocker.
+**Scenario Schedule:** T-064 retirement passed; T-065 GoReleaser producer passed; T-067 minimum-Go compatibility passed; T-066 installer/updater migration passed; T-068 private rehearsal current; later owner-approved `v0.69.0` cutover
+**Current Failing Scenario:** F-018-S003 remains pending T-068's bounded private two-build, native macOS/Linux snapshot, offline consumer-fixture, and state-invariant rehearsal; fresh packaged bootstrap remains deliberately unavailable until a non-circular trusted bootstrap exists and is a later cutover blocker.
 **Walking Skeleton Slice:** As of 2026-07-22, F-018-S002 is complete: A1 and A2 authenticate signed checksums and archives, B1 acquires a bounded verified candidate, B2 durably replaces or provably restores the fixed binary, B3 wires the fail-closed updater before PATH repair, C retires checksum-only shell bootstrap, D retires weaker parallel consumers, and E proves the isolated-prefix source plus preverified update/rollback lifecycle. T-068 now owns private cross-environment rehearsal.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
@@ -25,7 +25,7 @@
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** The unavailable fresh packaged bootstrap, T-068 private rehearsal, and the independent F-017 audit, runtime, contribution, cutover, and canary gates remain incomplete.
-- **Next Primary Action:** Create T-068 through `ticket_create`, freeze its bounded F-018-S003 private-rehearsal contract, and run no publication, signing, tagging, or visibility action.
+- **Next Primary Action:** Freeze T-068 checkpoints A/B/C with COO/CTO/Security, then run only checkpoint A's minimal read-only Ubuntu two-root/native-Linux workflow and contract-test seam without publication, signing, tagging, or visibility authority.
 
 ## Locked Decisions
 
@@ -55,7 +55,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
 | T-066 / F-018-S002 | Passed 2026-07-22 through `7fe152c`: fail-closed signed archive consumers, retired legacy paths, isolated-prefix source, fresh-target, and preverified update/rollback evidence passed. | T-065 and T-067 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw aliases are absent; exact validation and persona gates passed without a real MARS signature or release. |
 | T-067 | Passed 2026-07-22: raised the MARS source minimum to exact Go 1.25.12 without imposing an external Go requirement on packaged operation or generated targets. | Owner approved 2026-07-22. | Exact Go 1.25.12 and release Go 1.26.5 gates, real Go 1.25.11 rejection, patch-aware source doctor tests, four cross-builds, installed/fresh-target smoke, and QA/Security review passed without Sigstore or publication changes. |
-| T-068 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete after T-067. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
+| T-068 / F-018-S003 | Current: rehearse privately and prepare `0.69.0` without writing release state. | T-066 complete after T-067. | Two-root producer proof, local native macOS unsigned-snapshot/source fixture, exact-SHA read-only Ubuntu native fixture, offline preverified consumer rollback, publication-authority absence, release-note dry-run, state invariants, and cleanup pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
 
 ## T-064 Exact Retirement Transaction
