@@ -192,8 +192,10 @@ jobs:
             binary="$2"
             home="$rehearsal_root/$label-target-home"
             tmp="$rehearsal_root/$label-target-tmp"
-            target="$rehearsal_root/$label-target"
-            mkdir -m 700 "$home" "$tmp"
+            fixture_root="$rehearsal_root/$label-target-root"
+            target="$fixture_root/target"
+            mkdir -m 700 "$home" "$tmp" "$fixture_root"
+            test ! -e "$target"
             git init --quiet --initial-branch=main "$target"
             git -C "$target" config user.name 'MARS T-068 Fixture'
             git -C "$target" config user.email 't068@example.invalid'
@@ -206,8 +208,8 @@ jobs:
           }
           exercise_target source "$source_bin/mars"
           exercise_target archive "$archive_dir/mars"
-          test "$(git -C "$rehearsal_root/source-target" rev-parse 'HEAD^{tree}')" = \
-               "$(git -C "$rehearsal_root/archive-target" rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$rehearsal_root/source-target-root/target" rev-parse 'HEAD^{tree}')" = \
+               "$(git -C "$rehearsal_root/archive-target-root/target" rev-parse 'HEAD^{tree}')"
 
           update_home="$rehearsal_root/update-home"
           update_home_before="$rehearsal_root/update-home-before"
