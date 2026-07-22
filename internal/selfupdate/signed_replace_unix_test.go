@@ -28,6 +28,8 @@ import (
 
 const testSignedReplaceCommit = "0123456789abcdef0123456789abcdef01234567"
 
+const testSignedRollbackCommit = "89abcdef0123456789abcdef0123456789abcdef"
+
 func TestReplaceVerifiedMARSReleaseCommitsDurably(t *testing.T) {
 	for _, test := range []struct {
 		name     string
@@ -81,6 +83,54 @@ func TestReplaceVerifiedMARSReleaseCommitsDurably(t *testing.T) {
 			assertSignedReplaceNlink(t, filepath.Join(installDir, DefaultBinary), 1)
 		})
 	}
+}
+
+func TestReplaceVerifiedMARSReleasePreverifiedUpdateAndRollbackLifecycle(t *testing.T) {
+	installDir := signedReplaceTestDir(t)
+	binaryPath := filepath.Join(installDir, DefaultBinary)
+	prior := []byte("preverified-v0.69.0-candidate")
+	require.NoError(t, os.WriteFile(binaryPath, prior, 0o755))
+
+	newer := signedReplaceTestDownloadFor(t, "v0.69.1", testSignedReplaceCommit, 691, []byte("preverified-v0.69.1-candidate"))
+	_, err := replaceVerifiedMARSReleaseExpectedWithDependencies(
+		context.Background(), installDir, newer,
+		signedPriorExpectation{required: true, digest: sha256.Sum256(prior)},
+		signedReplaceTestDependenciesFor(newer.tag, testSignedRollbackCommit),
+	)
+	require.ErrorIs(t, err, ErrSignedReplaceAdmission)
+	require.Equal(t, prior, mustReadSignedReplaceFile(t, binaryPath))
+	require.NoFileExists(t, filepath.Join(installDir, signedReplaceLockName))
+	require.NoDirExists(t, filepath.Join(installDir, signedReplaceTransactionName))
+
+	updated, err := replaceVerifiedMARSReleaseExpectedWithDependencies(
+		context.Background(), installDir, newer,
+		signedPriorExpectation{required: true, digest: sha256.Sum256(prior)},
+		signedReplaceTestDependenciesFor(newer.tag, newer.fullCommit),
+	)
+	require.NoError(t, err)
+	require.Equal(t, newer.releaseID, updated.releaseID)
+	require.Equal(t, newer.tag, updated.tag)
+	require.Equal(t, newer.fullCommit, updated.fullCommit)
+	require.Equal(t, newer.candidate, mustReadSignedReplaceFile(t, binaryPath))
+	require.NotEqual(t, sha256.Sum256(prior), sha256.Sum256(newer.candidate))
+	require.NoDirExists(t, filepath.Join(installDir, signedReplaceTransactionName))
+
+	rollback := signedReplaceTestDownloadFor(t, "v0.69.0", testSignedRollbackCommit, 690, prior)
+	rolledBack, err := replaceVerifiedMARSReleaseExpectedWithDependencies(
+		context.Background(), installDir, rollback,
+		signedPriorExpectation{required: true, digest: sha256.Sum256(newer.candidate)},
+		signedReplaceTestDependenciesFor(rollback.tag, rollback.fullCommit),
+	)
+	require.NoError(t, err)
+	require.Equal(t, rollback.releaseID, rolledBack.releaseID)
+	require.Equal(t, rollback.tag, rolledBack.tag)
+	require.Equal(t, rollback.fullCommit, rolledBack.fullCommit)
+	require.Equal(t, prior, mustReadSignedReplaceFile(t, binaryPath))
+	assertSignedReplacePathMode(t, installDir, os.ModeDir|0o700)
+	assertSignedReplacePathMode(t, binaryPath, 0o755)
+	assertSignedReplaceNlink(t, binaryPath, 1)
+	assertSignedReplacePathMode(t, filepath.Join(installDir, signedReplaceLockName), 0o600)
+	require.NoDirExists(t, filepath.Join(installDir, signedReplaceTransactionName))
 }
 
 func TestReplaceVerifiedMARSReleaseRejectsConcurrentUpdateBeforeMutation(t *testing.T) {
@@ -390,8 +440,12 @@ func TestReplaceVerifiedMARSReleaseRejectsUnknownCompensationRestore(t *testing.
 }
 
 func signedReplaceTestDependencies() signedReplaceDependencies {
+	return signedReplaceTestDependenciesFor("v0.69.0", testSignedReplaceCommit)
+}
+
+func signedReplaceTestDependenciesFor(tag, commit string) signedReplaceDependencies {
 	return signedReplaceDependencies{readBuildInfo: func(io.ReaderAt) (*buildinfo.BuildInfo, error) {
-		_, archSetting, archValue, ok := marsReleaseArchiveIdentity("v0.69.0", testSignedReplaceCommit, runtime.GOOS, runtime.GOARCH)
+		_, archSetting, archValue, ok := marsReleaseArchiveIdentity(tag, commit, runtime.GOOS, runtime.GOARCH)
 		if !ok {
 			return nil, errors.New("unsupported test platform")
 		}
@@ -403,7 +457,7 @@ func signedReplaceTestDependencies() signedReplaceDependencies {
 				{Key: "GOOS", Value: runtime.GOOS}, {Key: "GOARCH", Value: runtime.GOARCH},
 				{Key: archSetting, Value: archValue}, {Key: "CGO_ENABLED", Value: "0"},
 				{Key: "-trimpath", Value: "true"}, {Key: "vcs", Value: "git"},
-				{Key: "vcs.revision", Value: testSignedReplaceCommit}, {Key: "vcs.modified", Value: "false"},
+				{Key: "vcs.revision", Value: commit}, {Key: "vcs.modified", Value: "false"},
 				{Key: "vcs.time", Value: "2026-07-22T00:00:00Z"},
 			},
 		}, nil
@@ -411,10 +465,14 @@ func signedReplaceTestDependencies() signedReplaceDependencies {
 }
 
 func signedReplaceTestDownload(t *testing.T, binary []byte) verifiedMARSReleaseDownload {
+	return signedReplaceTestDownloadFor(t, "v0.69.0", testSignedReplaceCommit, 690, binary)
+}
+
+func signedReplaceTestDownloadFor(t *testing.T, tag, commit string, releaseID int64, binary []byte) verifiedMARSReleaseDownload {
 	t.Helper()
-	archiveName, _, _, ok := marsReleaseArchiveIdentity("v0.69.0", testSignedReplaceCommit, runtime.GOOS, runtime.GOARCH)
+	archiveName, _, _, ok := marsReleaseArchiveIdentity(tag, commit, runtime.GOOS, runtime.GOARCH)
 	require.True(t, ok)
-	return verifiedMARSReleaseDownload{releaseID: 690, tag: "v0.69.0", fullCommit: testSignedReplaceCommit, archiveName: archiveName, candidate: append([]byte(nil), binary...)}
+	return verifiedMARSReleaseDownload{releaseID: releaseID, tag: tag, fullCommit: commit, archiveName: archiveName, candidate: append([]byte(nil), binary...)}
 }
 
 func signedReplaceTestDir(t *testing.T) string {
