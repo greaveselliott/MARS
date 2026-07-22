@@ -14,7 +14,7 @@ permissions:
 jobs:
   snapshot:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Check out source without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -28,45 +28,219 @@ jobs:
           go-version: 1.26.5
           cache: false
 
+      - name: Preflight the read-only snapshot contract
+        run: |
+          set -euo pipefail
+          rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"
+          test ! -e "$rehearsal_root"
+          mkdir -m 700 "$rehearsal_root"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(go env GOVERSION)" = go1.26.5
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test -z "$(git tag --points-at HEAD)"
+          test -z "$(git config --local --get-regexp '^http\..*\.extraheader$|^credential\.' || true)"
+          origin_url="$(git remote get-url origin)"
+          case "$origin_url" in *://*@*) exit 1;; esac
+          unset origin_url
+          test -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
+          test -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}"
+          test -z "${SSH_AUTH_SOCK:-}"
+          test -z "${COSIGN_PASSWORD:-}"
+          test -z "${COSIGN_PRIVATE_KEY:-}"
+          go_bin="$(command -v go)"
+          go_dir="${go_bin%/*}"
+          mkdir -m 700 "$rehearsal_root/preflight-home" "$rehearsal_root/preflight-tmp"
+          /usr/bin/env -i \
+            HOME="$rehearsal_root/preflight-home" TMPDIR="$rehearsal_root/preflight-tmp" \
+            PATH="$go_dir:/usr/bin:/bin" GOTOOLCHAIN=local GOENV=off \
+            GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/preflight-cache" \
+            GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= \
+            "$go_bin" test ./internal/release \
+            -run '^(TestGoReleaserConfigContract|TestSyftConfigDisablesNetworkCapableBehavior|TestSnapshotWorkflowContract)$' -count=1
+
       - name: Build pinned release tools from verified modules
-        env:
-          GOBIN: ${{ runner.temp }}
-          GONOSUMDB: ""
-          GOPRIVATE: ""
-          GOPROXY: https://proxy.golang.org
-          GOSUMDB: sum.golang.org
-          GOTOOLCHAIN: local
         run: |
           set -euo pipefail
-          go install github.com/goreleaser/goreleaser/v2@v2.17.0
-          go install github.com/anchore/syft/cmd/syft@v1.49.0
-          "$RUNNER_TEMP/goreleaser" --version
-          "$RUNNER_TEMP/syft" version
-          go version -m "$RUNNER_TEMP/goreleaser" | grep -F $'\tmod\tgithub.com/goreleaser/goreleaser/v2\tv2.17.0\t'
-          go version -m "$RUNNER_TEMP/goreleaser" | grep -F ': go1.26.5'
-          go version -m "$RUNNER_TEMP/syft" | grep -F $'\tmod\tgithub.com/anchore/syft\tv1.49.0\t'
-          go version -m "$RUNNER_TEMP/syft" | grep -F ': go1.26.5'
+          rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"
+          test -d "$rehearsal_root"
+          go_bin="$(command -v go)"
+          go_dir="${go_bin%/*}"
+          tool_bin="$rehearsal_root/tool-bin"
+          mkdir -m 700 "$tool_bin" "$rehearsal_root/tool-home" "$rehearsal_root/tool-tmp"
+          tool_env=(/usr/bin/env -i
+            HOME="$rehearsal_root/tool-home" TMPDIR="$rehearsal_root/tool-tmp"
+            PATH="$go_dir:/usr/bin:/bin" GOBIN="$tool_bin" GOTOOLCHAIN=local GOENV=off
+            GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/tool-cache"
+            GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB=)
+          "${tool_env[@]}" "$go_bin" mod download
+          "${tool_env[@]}" "$go_bin" install github.com/goreleaser/goreleaser/v2@v2.17.0
+          "${tool_env[@]}" "$go_bin" install github.com/anchore/syft/cmd/syft@v1.49.0
+          inspect_env=(/usr/bin/env -i HOME="$rehearsal_root/tool-home" TMPDIR="$rehearsal_root/tool-tmp"
+            PATH="$tool_bin:$go_dir:/usr/bin:/bin")
+          "${inspect_env[@]}" "$tool_bin/goreleaser" --version
+          "${inspect_env[@]}" "$tool_bin/syft" version
+          "${inspect_env[@]}" "$go_bin" version -m "$tool_bin/goreleaser" | grep -F $'\tmod\tgithub.com/goreleaser/goreleaser/v2\tv2.17.0\t'
+          "${inspect_env[@]}" "$go_bin" version -m "$tool_bin/goreleaser" | grep -F ': go1.26.5'
+          "${inspect_env[@]}" "$go_bin" version -m "$tool_bin/syft" | grep -F $'\tmod\tgithub.com/anchore/syft\tv1.49.0\t'
+          "${inspect_env[@]}" "$go_bin" version -m "$tool_bin/syft" | grep -F ': go1.26.5'
+          /usr/bin/env -i \
+            HOME="$rehearsal_root/tool-home" TMPDIR="$rehearsal_root/tool-tmp" \
+            PATH="$tool_bin:$go_dir:/usr/bin:/bin" GOTOOLCHAIN=local GOENV=off \
+            GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/tool-cache" \
+            GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= \
+            "$tool_bin/goreleaser" check
 
-      - name: Check GoReleaser configuration
+      - name: Build verify and exercise two private snapshots
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/goreleaser" check
+          rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"
+          cleanup() {
+            status=$?
+            rm -rf -- "$rehearsal_root" || status=1
+            if [ -e "$rehearsal_root" ]; then status=1; fi
+            exit "$status"
+          }
+          trap cleanup EXIT
+          test -d "$rehearsal_root"
+          snapshot_commit="$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$snapshot_commit"
+          snapshot_version="0.69.0-dev.${snapshot_commit:0:7}"
+          snapshot_commit_time="$(git show -s --format=%cI "$snapshot_commit")"
+          go_bin="$(command -v go)"
+          go_dir="${go_bin%/*}"
+          git_bin="$(command -v git)"
+          make_bin="$(command -v make)"
+          tool_bin="$rehearsal_root/tool-bin"
+          rehearsal_path="$tool_bin:$go_dir:/usr/bin:/bin"
 
-      - name: Build non-publishing snapshot
-        run: |
-          set -euo pipefail
-          PATH="$RUNNER_TEMP:$PATH" "$RUNNER_TEMP/goreleaser" release --snapshot --clean --skip=ko,sign,announce,publish
+          for lane in a b; do
+            root="$rehearsal_root/source-$lane"
+            cache="$rehearsal_root/gocache-$lane"
+            home="$rehearsal_root/home-$lane"
+            tmp="$rehearsal_root/tmp-$lane"
+            test ! -e "$root"
+            mkdir -m 700 "$home" "$tmp"
+            git clone --quiet --no-local --no-hardlinks "$GITHUB_WORKSPACE" "$root"
+            git -C "$root" checkout --quiet --detach "$snapshot_commit"
+            git -C "$root" remote remove origin
+            test "$(git -C "$root" rev-parse HEAD)" = "$snapshot_commit"
+            test -z "$(git -C "$root" remote)"
+            test -z "$(git -C "$root" status --porcelain=v1 --untracked-files=all)"
+            (
+              cd "$root"
+              /usr/bin/env -i HOME="$home" TMPDIR="$tmp" PATH="$rehearsal_path" \
+                GOTOOLCHAIN=local GOENV=off GOMODCACHE="$rehearsal_root/go-mod-cache" \
+                GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= GOCACHE="$cache" \
+                "$tool_bin/goreleaser" release --snapshot --clean --skip=ko,sign,announce,publish
+            )
+            test -z "$(git -C "$root" status --porcelain=v1 --untracked-files=all)"
+            test -z "$(git -C "$root" tag --points-at HEAD)"
+          done
 
-      - name: Verify snapshot artifact contract
+          root_a="$rehearsal_root/source-a"
+          root_b="$rehearsal_root/source-b"
+          test "$root_a" != "$root_b"
+          mkdir -m 700 "$rehearsal_root/verify-home" "$rehearsal_root/verify-tmp"
+          (
+            cd "$root_a"
+            /usr/bin/env -i \
+              HOME="$rehearsal_root/verify-home" TMPDIR="$rehearsal_root/verify-tmp" \
+              PATH="$rehearsal_path" GOTOOLCHAIN=local GOENV=off \
+              GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/verify-cache" \
+              GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= \
+              MARS_GORELEASER_VERIFY=1 MARS_GORELEASER_DIST="$root_a/dist" \
+              MARS_GORELEASER_COMPARE_DIST="$root_b/dist" MARS_GORELEASER_VERSION="$snapshot_version" \
+              MARS_GORELEASER_COMMIT="$snapshot_commit" MARS_GORELEASER_COMMIT_TIME="$snapshot_commit_time" \
+              MARS_GORELEASER_GO_VERSION=go1.26.5 \
+              "$go_bin" test ./internal/release -run '^TestVerifyGoReleaserSnapshotDistFromEnvironment$' -count=1
+          )
+
+          source_home="$rehearsal_root/source-home"
+          source_bin="$rehearsal_root/source-bin"
+          mkdir -m 700 "$source_home" "$source_bin" "$rehearsal_root/source-tmp"
+          /usr/bin/env -i HOME="$source_home" TMPDIR="$rehearsal_root/source-tmp" \
+            PATH="$rehearsal_path" GOBIN="$source_bin" SHELL=/bin/bash \
+            GOTOOLCHAIN=local GOENV=off GOMODCACHE="$rehearsal_root/go-mod-cache" \
+            GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= \
+            GOCACHE="$rehearsal_root/source-install-cache" \
+            "$make_bin" -C "$root_a" GO="$go_bin" install
+          /usr/bin/env -i HOME="$source_home" PATH="$rehearsal_path" \
+            "$go_bin" version -m "$source_bin/mars" | grep -F $'\tbuild\tvcs.revision='"$snapshot_commit"
+          /usr/bin/env -i HOME="$source_home" PATH="$rehearsal_path" \
+            "$go_bin" version -m "$source_bin/mars" | grep -F $'\tbuild\tvcs.modified=false'
+
+          runtime_bin="$rehearsal_root/runtime-bin"
+          mkdir -m 700 "$runtime_bin"
+          ln -s "$git_bin" "$runtime_bin/git"
+          if /usr/bin/env -i PATH="$runtime_bin" /bin/sh -c 'command -v go' >/dev/null 2>&1; then exit 1; fi
+
+          case "$(uname -m)" in
+            x86_64) native_arch=amd64 ;;
+            aarch64) native_arch=arm64 ;;
+            *) exit 1 ;;
+          esac
+          archive_dir="$rehearsal_root/archive-bin"
+          mkdir -m 700 "$archive_dir"
+          native_archive="$root_a/dist/mars_${snapshot_version}_linux_${native_arch}.tar.gz"
+          tar --extract --gzip --file="$native_archive" --directory="$archive_dir" --no-same-owner mars
+          test -x "$archive_dir/mars"
+
+          exercise_target() {
+            label="$1"
+            binary="$2"
+            home="$rehearsal_root/$label-home"
+            tmp="$rehearsal_root/$label-tmp"
+            target="$rehearsal_root/$label-target"
+            mkdir -m 700 "$home" "$tmp"
+            git init --quiet --initial-branch=main "$target"
+            git -C "$target" config user.name 'MARS T-068 Fixture'
+            git -C "$target" config user.email 't068@example.invalid'
+            /usr/bin/env -i HOME="$home" SHELL=/bin/bash PATH="$runtime_bin" TMPDIR="$tmp" \
+              "$binary" init --repo "$target" --model-routing defer --yes --plain
+            /usr/bin/env -i HOME="$home" SHELL=/bin/bash PATH="$runtime_bin" TMPDIR="$tmp" \
+              "$binary" docsync audit --repo "$target"
+            test "$(git -C "$target" rev-list --count HEAD)" -eq 1
+            test -z "$(git -C "$target" status --porcelain=v1 --untracked-files=all)"
+          }
+          exercise_target source "$source_bin/mars"
+          exercise_target archive "$archive_dir/mars"
+          test "$(git -C "$rehearsal_root/source-target" rev-parse 'HEAD^{tree}')" = \
+               "$(git -C "$rehearsal_root/archive-target" rev-parse 'HEAD^{tree}')"
+
+          update_home="$rehearsal_root/update-home"
+          update_home_before="$rehearsal_root/update-home-before"
+          update_tmp="$rehearsal_root/update-tmp"
+          update_dir="$rehearsal_root/update-install"
+          mkdir -m 700 "$update_home" "$update_tmp"
+          printf 't068-profile-sentinel\n' > "$update_home/.profile"
+          cp -a "$update_home" "$update_home_before"
+          before="$(sha256sum "$archive_dir/mars" | cut -d' ' -f1)"
+          output="$(/usr/bin/env -i HOME="$update_home" SHELL=/bin/bash \
+            PATH="$runtime_bin" TMPDIR="$update_tmp" \
+            "$archive_dir/mars" update tool --dry-run --version v0.69.0 \
+            --install-dir "$update_dir" --json)"
+          printf '%s' "$output" | grep -F '"release_tag": "v0.69.0"' >/dev/null
+          if printf '%s' "$output" | grep -Eiq 'https?://|download_url|checksums_url'; then exit 1; fi
+          diff -qr "$update_home_before" "$update_home"
+          test ! -e "$update_dir"
+          test "$before" = "$(sha256sum "$archive_dir/mars" | cut -d' ' -f1)"
+
+          consumer='^(TestVerifySigstoreChecksumsEvidenceRealOfflineFixture|TestFetchVerifiedMARSReleaseAcceptsBoundedAnnotatedTagAndExplicitOlderVersion|TestReplaceVerifiedMARSReleasePreverifiedUpdateAndRollbackLifecycle|TestInstallScriptFailsClosedToSourceInstall|TestInstallScriptContainsNoUnsignedBinaryBootstrap)$'
+          mkdir -m 700 "$rehearsal_root/consumer-home" "$rehearsal_root/consumer-tmp"
+          (
+            cd "$root_a"
+            /usr/bin/env -i \
+              HOME="$rehearsal_root/consumer-home" TMPDIR="$rehearsal_root/consumer-tmp" \
+              PATH="$rehearsal_path" GOTOOLCHAIN=local GOENV=off \
+              GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/consumer-cache" \
+              GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= \
+              "$go_bin" test ./internal/selfupdate -run "$consumer" -count=1
+          )
+
+      - name: Confirm rehearsal cleanup
+        if: ${{ always() }}
         run: |
           set -euo pipefail
-          snapshot_commit="$(git rev-parse HEAD)"
-          snapshot_version="0.69.0-dev.$(git rev-parse --short HEAD)"
-          snapshot_commit_time="$(git show -s --format=%cI HEAD)"
-          MARS_GORELEASER_VERIFY=1 \
-          MARS_GORELEASER_DIST="$PWD/dist" \
-          MARS_GORELEASER_VERSION="$snapshot_version" \
-          MARS_GORELEASER_COMMIT="$snapshot_commit" \
-          MARS_GORELEASER_COMMIT_TIME="$snapshot_commit_time" \
-          MARS_GORELEASER_GO_VERSION="$(go env GOVERSION)" \
-          go test ./internal/release -run '^TestVerifyGoReleaserSnapshotDistFromEnvironment$' -count=1
+          rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"
+          if [ -e "$rehearsal_root" ]; then rm -rf -- "$rehearsal_root"; fi
+          test ! -e "$rehearsal_root"

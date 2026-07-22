@@ -149,6 +149,7 @@ type workflowStrategy struct {
 type workflowStep struct {
 	Name string            `yaml:"name"`
 	Uses string            `yaml:"uses"`
+	If   string            `yaml:"if"`
 	With map[string]any    `yaml:"with"`
 	Env  map[string]string `yaml:"env"`
 	Run  string            `yaml:"run"`
@@ -259,7 +260,7 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	require.Equal(t, []string{"snapshot"}, sortedKeys(workflow.Jobs))
 	job := workflow.Jobs["snapshot"]
 	require.Equal(t, "ubuntu-24.04", job.RunsOn)
-	require.Equal(t, 30, job.TimeoutMinutes)
+	require.Equal(t, 45, job.TimeoutMinutes)
 	require.Len(t, job.Steps, 6)
 
 	require.Equal(t, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", job.Steps[0].Uses)
@@ -267,42 +268,122 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	require.Equal(t, "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e", job.Steps[1].Uses)
 	require.Equal(t, map[string]any{"go-version": "1.26.5", "cache": false}, job.Steps[1].With)
 
-	toolStep := job.Steps[2]
-	require.Empty(t, toolStep.Uses)
-	require.Equal(t, map[string]string{
-		"GOBIN": "${{ runner.temp }}", "GONOSUMDB": "", "GOPRIVATE": "",
-		"GOPROXY": "https://proxy.golang.org", "GOSUMDB": "sum.golang.org", "GOTOOLCHAIN": "local",
-	}, toolStep.Env)
+	preflightStep := job.Steps[2]
+	require.Empty(t, preflightStep.Uses)
+	require.Empty(t, preflightStep.Env)
 	for _, command := range []string{
-		"go install github.com/goreleaser/goreleaser/v2@v2.17.0",
-		"go install github.com/anchore/syft/cmd/syft@v1.49.0",
-		`"$RUNNER_TEMP/goreleaser" --version`,
-		`"$RUNNER_TEMP/syft" version`,
-		`go version -m "$RUNNER_TEMP/goreleaser" | grep -F $'\tmod\tgithub.com/goreleaser/goreleaser/v2\tv2.17.0\t'`,
-		`go version -m "$RUNNER_TEMP/goreleaser" | grep -F ': go1.26.5'`,
-		`go version -m "$RUNNER_TEMP/syft" | grep -F $'\tmod\tgithub.com/anchore/syft\tv1.49.0\t'`,
-		`go version -m "$RUNNER_TEMP/syft" | grep -F ': go1.26.5'`,
+		`rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"`,
+		`test ! -e "$rehearsal_root"`,
+		`mkdir -m 700 "$rehearsal_root"`,
+		`test "$(git rev-parse HEAD)" = "$GITHUB_SHA"`,
+		`test "$(go env GOVERSION)" = go1.26.5`,
+		`test -z "$(git status --porcelain=v1 --untracked-files=all)"`,
+		`test -z "$(git tag --points-at HEAD)"`,
+		`git config --local --get-regexp '^http\..*\.extraheader$|^credential\.'`,
+		`case "$origin_url" in *://*@*) exit 1;; esac`,
+		`test -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"`,
+		`test -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}"`,
+		`test -z "${SSH_AUTH_SOCK:-}"`,
+		`test -z "${COSIGN_PASSWORD:-}"`,
+		`test -z "${COSIGN_PRIVATE_KEY:-}"`,
+		`/usr/bin/env -i`,
+		`HOME="$rehearsal_root/preflight-home" TMPDIR="$rehearsal_root/preflight-tmp"`,
+		`GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/preflight-cache"`,
+		`GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB=`,
+		`"$go_bin" test ./internal/release`,
+		`-run '^(TestGoReleaserConfigContract|TestSyftConfigDisablesNetworkCapableBehavior|TestSnapshotWorkflowContract)$' -count=1`,
+	} {
+		require.Contains(t, preflightStep.Run, command)
+	}
+
+	toolStep := job.Steps[3]
+	require.Empty(t, toolStep.Uses)
+	require.Empty(t, toolStep.Env)
+	for _, command := range []string{
+		`rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"`,
+		`tool_bin="$rehearsal_root/tool-bin"`,
+		`tool_env=(/usr/bin/env -i`,
+		`GOMODCACHE="$rehearsal_root/go-mod-cache" GOCACHE="$rehearsal_root/tool-cache"`,
+		`GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB=)`,
+		`"${tool_env[@]}" "$go_bin" mod download`,
+		`"${tool_env[@]}" "$go_bin" install github.com/goreleaser/goreleaser/v2@v2.17.0`,
+		`"${tool_env[@]}" "$go_bin" install github.com/anchore/syft/cmd/syft@v1.49.0`,
+		`"${inspect_env[@]}" "$tool_bin/goreleaser" --version`,
+		`"${inspect_env[@]}" "$tool_bin/syft" version`,
+		`"${inspect_env[@]}" "$go_bin" version -m "$tool_bin/goreleaser" | grep -F $'\tmod\tgithub.com/goreleaser/goreleaser/v2\tv2.17.0\t'`,
+		`"${inspect_env[@]}" "$go_bin" version -m "$tool_bin/goreleaser" | grep -F ': go1.26.5'`,
+		`"${inspect_env[@]}" "$go_bin" version -m "$tool_bin/syft" | grep -F $'\tmod\tgithub.com/anchore/syft\tv1.49.0\t'`,
+		`"${inspect_env[@]}" "$go_bin" version -m "$tool_bin/syft" | grep -F ': go1.26.5'`,
+		`GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB=`,
+		`"$tool_bin/goreleaser" check`,
 	} {
 		require.Contains(t, toolStep.Run, command)
 	}
-	require.Equal(t, "set -euo pipefail\n\"$RUNNER_TEMP/goreleaser\" check", strings.TrimSpace(job.Steps[3].Run))
-	require.Equal(t, "set -euo pipefail\nPATH=\"$RUNNER_TEMP:$PATH\" \"$RUNNER_TEMP/goreleaser\" release --snapshot --clean --skip=ko,sign,announce,publish", strings.TrimSpace(job.Steps[4].Run))
-	verifyStep := job.Steps[5]
-	require.Empty(t, verifyStep.Uses)
+
+	rehearsalStep := job.Steps[4]
+	require.Empty(t, rehearsalStep.Uses)
+	require.Empty(t, rehearsalStep.Env)
 	for _, command := range []string{
-		`snapshot_commit="$(git rev-parse HEAD)"`,
-		`snapshot_version="0.69.0-dev.$(git rev-parse --short HEAD)"`,
-		`snapshot_commit_time="$(git show -s --format=%cI HEAD)"`,
+		`rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"`,
+		`trap cleanup EXIT`,
+		`rm -rf -- "$rehearsal_root" || status=1`,
+		`if [ -e "$rehearsal_root" ]; then status=1; fi`,
+		`snapshot_commit="$GITHUB_SHA"`,
+		`test "$(git rev-parse HEAD)" = "$snapshot_commit"`,
+		`snapshot_version="0.69.0-dev.${snapshot_commit:0:7}"`,
+		`for lane in a b; do`,
+		`git clone --quiet --no-local --no-hardlinks "$GITHUB_WORKSPACE" "$root"`,
+		`git -C "$root" checkout --quiet --detach "$snapshot_commit"`,
+		`git -C "$root" remote remove origin`,
+		`test -z "$(git -C "$root" remote)"`,
+		`/usr/bin/env -i HOME="$home" TMPDIR="$tmp" PATH="$rehearsal_path"`,
+		`GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= GOCACHE="$cache"`,
+		`"$tool_bin/goreleaser" release --snapshot --clean --skip=ko,sign,announce,publish`,
+		`test -z "$(git -C "$root" tag --points-at HEAD)"`,
+		`root_a="$rehearsal_root/source-a"`,
+		`root_b="$rehearsal_root/source-b"`,
+		`test "$root_a" != "$root_b"`,
 		`MARS_GORELEASER_VERIFY=1`,
-		`MARS_GORELEASER_DIST="$PWD/dist"`,
+		`MARS_GORELEASER_DIST="$root_a/dist"`,
+		`MARS_GORELEASER_COMPARE_DIST="$root_b/dist"`,
 		`MARS_GORELEASER_VERSION="$snapshot_version"`,
 		`MARS_GORELEASER_COMMIT="$snapshot_commit"`,
 		`MARS_GORELEASER_COMMIT_TIME="$snapshot_commit_time"`,
-		`MARS_GORELEASER_GO_VERSION="$(go env GOVERSION)"`,
-		`go test ./internal/release -run '^TestVerifyGoReleaserSnapshotDistFromEnvironment$' -count=1`,
+		`MARS_GORELEASER_GO_VERSION=go1.26.5`,
+		`"$go_bin" test ./internal/release -run '^TestVerifyGoReleaserSnapshotDistFromEnvironment$' -count=1`,
+		`"$make_bin" -C "$root_a" GO="$go_bin" install`,
+		`"$go_bin" version -m "$source_bin/mars" | grep -F $'\tbuild\tvcs.revision='"$snapshot_commit"`,
+		`"$go_bin" version -m "$source_bin/mars" | grep -F $'\tbuild\tvcs.modified=false'`,
+		`if /usr/bin/env -i PATH="$runtime_bin" /bin/sh -c 'command -v go' >/dev/null 2>&1; then exit 1; fi`,
+		`tar --extract --gzip --file="$native_archive" --directory="$archive_dir" --no-same-owner mars`,
+		`exercise_target source "$source_bin/mars"`,
+		`exercise_target archive "$archive_dir/mars"`,
+		`rev-parse 'HEAD^{tree}'`,
+		`update_home="$rehearsal_root/update-home"`,
+		`cp -a "$update_home" "$update_home_before"`,
+		`update tool --dry-run --version v0.69.0`,
+		`diff -qr "$update_home_before" "$update_home"`,
+		`test ! -e "$update_dir"`,
+		`consumer='^(TestVerifySigstoreChecksumsEvidenceRealOfflineFixture|TestFetchVerifiedMARSReleaseAcceptsBoundedAnnotatedTagAndExplicitOlderVersion|TestReplaceVerifiedMARSReleasePreverifiedUpdateAndRollbackLifecycle|TestInstallScriptFailsClosedToSourceInstall|TestInstallScriptContainsNoUnsignedBinaryBootstrap)$'`,
+		`"$go_bin" test ./internal/selfupdate -run "$consumer" -count=1`,
 	} {
-		require.Contains(t, verifyStep.Run, command)
+		require.Contains(t, rehearsalStep.Run, command)
 	}
+	require.Less(t,
+		strings.Index(rehearsalStep.Run, "TestVerifyGoReleaserSnapshotDistFromEnvironment"),
+		strings.Index(rehearsalStep.Run, "tar --extract"),
+	)
+	require.Equal(t, 1, strings.Count(rehearsalStep.Run, `"$tool_bin/goreleaser" release`))
+	require.Equal(t, 1, strings.Count(rehearsalStep.Run, "for lane in a b; do"))
+	require.GreaterOrEqual(t, strings.Count(rehearsalStep.Run, "/usr/bin/env -i"), 7)
+	require.NotContains(t, rehearsalStep.Run, "go test -race")
+
+	cleanupStep := job.Steps[5]
+	require.Equal(t, "${{ always() }}", cleanupStep.If)
+	require.Empty(t, cleanupStep.Uses)
+	require.Contains(t, cleanupStep.Run, `rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"`)
+	require.Contains(t, cleanupStep.Run, `if [ -e "$rehearsal_root" ]; then rm -rf -- "$rehearsal_root"; fi`)
+	require.Contains(t, cleanupStep.Run, `test ! -e "$rehearsal_root"`)
 
 	fullSHA := regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$`)
 	for _, step := range job.Steps {
@@ -312,11 +393,16 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	}
 	text := string(raw)
 	for _, forbidden := range []string{
-		"pull_request_target", "secrets.", "GITHUB_TOKEN", "GH_TOKEN", "id-token:",
-		"contents: write", "actions/cache", "upload-artifact", "goreleaser-action",
-		"download-syft", "continue-on-error", "curl ", "wget ",
+		"pull_request_target", "secrets.", "${{ secrets", "github.token", "GITHUB_TOKEN", "GH_TOKEN", "id-token:",
+		"contents: write", "actions: write", "packages: write", "actions/cache", "upload-artifact", "goreleaser-action",
+		"download-syft", "continue-on-error", "curl ", "wget ", "git push", "gh release", "cosign ", "attest",
 	} {
 		require.NotContains(t, text, forbidden)
+	}
+	for _, line := range strings.Split(text, "\n") {
+		if strings.Contains(line, `"$tool_bin/goreleaser" release`) {
+			require.Contains(t, line, "release --snapshot --clean --skip=ko,sign,announce,publish")
+		}
 	}
 }
 
