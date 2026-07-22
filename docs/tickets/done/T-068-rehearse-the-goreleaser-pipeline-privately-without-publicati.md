@@ -7,13 +7,13 @@ work_type: feature
 bdd_scenarios: ["F-018-S003"]
 end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s003-private-rehearsal-without-publication", "docs/exec-plans/active/current-operating-plan.md"]
-verified_by: "TBD"
+verified_by: "QA, Security, Dogfood, Release Manager, and foundation-maintainer as Orchestrator"
 owner: "engineer"
-last_attempt: "2026-07-22: T-069 exact-head source-compatibility run 29898672813 passed; checkpoint C resumed"
+last_attempt: "2026-07-22: exact-head run 29899168382 and final private-state reconciliation passed; checkpoint C closed"
 blocker: "none"
 blocked_by: []
-trace_id: "github-actions:29898672813"
-next_action: "Reconcile final immutable repository state and collect QA, Security, Dogfood, Release Manager, and Orchestrator sign-offs without publication."
+trace_id: "github-actions:29899168382"
+next_action: "Complete; retain publication denial and continue the independent F-017 gates through a separately created ticket."
 dedupe_key: "release:goreleaser-private-rehearsal"
 metadata:
   classification: "foundation-owned"
@@ -66,11 +66,15 @@ Each checkpoint is independently green, committed, and pushed before the next. N
 - The final functional run reached and emitted `checkpoint_b=pass`, then its aggregate shell exited `1` because a best-effort recursive `chmod` warned on read-only module-cache entries during cleanup. An independent postcondition proved the exact rehearsal root absent and the host repository clean. Engineer, QA, and Security classify this as a cleanup-status false negative rather than a product or residue failure and require no producer rerun; this record does not claim that the aggregate wrapper exited zero.
 - Checkpoint B is accepted only as private source and unsigned-snapshot fixture evidence. Checkpoint C, fresh packaged bootstrap, final sign-offs, F-018-S003, and all public-cutover gates remain pending; no version, tag, Release, signature, upload, visibility, or support claim changed.
 
-## Checkpoint C Partial Evidence — 2026-07-22
+## Checkpoint C Evidence — 2026-07-22
 
 - Exact Go `1.26.5` ran `mars release notes --repo . --bump auto --dry-run` and selected `0.68.49 -> 0.69.0` (minor) without writing the repository. HEAD and `origin/main` remained `742b133e64493d6350779fb74ef0409283a2a5cc`, the tree remained `b8def771989cb8f1a081f26847dc80a38ef6b110`, and `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` retained their pre-run hashes.
-- The exact 22 manifest-listed T-068 temporary roots were owner-owned, non-symlinked, free of open descriptors and special nodes, and then removed. Their manifest digest was `bd4600f84310cc2a4e1bdfdc4aeff668054d911b920b5f66370f3943d3fb5e25`; allocated removal was 4,322,880 KiB (4.123 GiB), and post-cleanup discovery found no T-068 residue. Shared caches, unrelated temporary data, both protected stashes, and the unrelated Codex worktree were preserved.
-- Checkpoint C then failed closed on exact-head source-compatibility run `29896978096`: both supported Linux lanes failed while the below-minimum lane passed. T-069 owns that bounded portability correction. State freeze, final persona sign-offs, F-018-S003 closure, and every publication action remain pending.
+- The exact 22 manifest-listed T-068 temporary roots were owner-owned, non-symlinked, free of open descriptors and special nodes, and then removed. Their manifest digest was `bd4600f84310cc2a4e1bdfdc4aeff668054d911b920b5f66370f3943d3fb5e25`; allocated removal was 4,322,880 KiB (4.123 GiB), and manifest-scoped verification found all 22 absent. Shared caches, unrelated temporary data, both protected stashes, and the unrelated Codex worktree were preserved.
+- Checkpoint C then failed closed on exact-head source-compatibility run `29896978096`: both supported Linux lanes failed while the below-minimum lane passed. T-069 corrected only those portability failures; run `29898672813` passed Go `1.25.12`, Go `1.26.5`, and the expected Go `1.25.11` rejection at `03008f74477ba1b5fa8ea85c3af55e448ea037ac`.
+- At final evidence head `2ef9d277f60baca2123ecea7c460ffdb49d018eb`, exact-head run `29899168382` passed the same three jobs and retained zero Actions artifacts. Exact Go `1.26.5` again selected `0.68.49 -> 0.69.0` (minor, 48 commits) in dry-run mode; HEAD/origin remained exact, tree `7f63e4c901a117a7adc08e85e031c8ed392904cd` and the three release-state file hashes were unchanged.
+- Final state reconciliation found one private branch `main`, 301 retained tags, no `v0.69.0` tag or Release, disabled Pages, `VERSION=0.68.49`, source fallback `0.69.0-dev`, both protected stashes intact, and the unrelated Codex worktree untouched. The REST collection enumerates 56 Releases; direct lookup and the GraphQL/`gh` inventory additionally expose intentionally retained, non-draft, non-prerelease, zero-asset `v0.65.7` Release ID `344415010`, so 57 retained Release objects are addressable. This endpoint discrepancy is not an unknown object or deletion target.
+- Final Security discovery found two additional T-068 reviewer roots totaling 426,200 KiB—one omitted pre-existing root and one later dry-run cache—plus ten ticket-specific T-069 Go caches. All 12 owner-created roots were removed by exact path; final bounded discovery found no T-068/T-069 rehearsal residue while shared caches and unrelated data remained untouched.
+- QA, Security, Dogfood, Release Manager, and Orchestrator are GO for T-068/F-018-S003 only. Fresh packaged bootstrap, notices, recorded producer vulnerabilities, the independent history/privacy/IP audit, runtime/filesystem/execution gates, signed anonymous publication, contribution governance, visibility approval, logged-out cutover smoke, recovery, and the 48-hour canary remain blocked. No version, tag, Release, signature, upload, visibility, announcement, or supported-release authority was exercised.
 
 ## Acceptance criteria
 
@@ -79,4 +83,4 @@ Each checkpoint is independently green, committed, and pushed before the next. N
 - [x] The snapshot workflow succeeds with `contents: read`, non-persisted checkout authority, exact skip flags, and no later build/test credentials, signing/OIDC, upload, draft, tag, or Release authority.
 - [x] Release-note dry-run selects exactly 0.69.0 and leaves the repository byte-identical.
 - [x] Temporary roots, ticket-specific caches, generated artifacts, and credentials are reconciled or removed without touching shared caches or unrelated user work.
-- [ ] QA, Security, Dogfood, Release Manager, and Orchestrator sign off; F-018-S003 is marked passed only with exact evidence and Primary Status remains primary_blocked.
+- [x] QA, Security, Dogfood, Release Manager, and Orchestrator sign off; F-018-S003 is marked passed only with exact evidence and Primary Status remains primary_blocked.

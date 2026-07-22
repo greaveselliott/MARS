@@ -5,17 +5,17 @@
 **Depends On:** T-064 through T-067 complete; T-066/F-018-S002 entry gate passed
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-069
-**Current Ticket:** T-068 checkpoint C state reconciliation and final sign-offs
+**Current Ticket:** None; T-068/F-018-S003 passed and F-018-S004 remains gated by F-017
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
 **Hypothesis:** Retiring the private `v0.93.0` experiment and using a pinned GoReleaser archive pipeline will reduce bespoke release code while retaining fail-closed consumer verification.
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
-**Scenario Schedule:** T-064 retirement passed; T-065 GoReleaser producer passed; T-067 minimum-Go compatibility passed; T-066 installer/updater migration passed; T-069 source-compatibility portability passed; T-068 checkpoint C resumed; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S003 has accepted checkpoints A and B at `aa4a16b`; checkpoint C selected `0.69.0` without writes, removed exact T-068 storage, and exact-head source-compatibility run `29898672813` passed all three lanes at `03008f7`. Final immutable-state reconciliation and persona sign-offs remain. Fresh packaged bootstrap remains deliberately unavailable until a non-circular trusted bootstrap exists.
-**Walking Skeleton Slice:** As of 2026-07-22, F-018-S002 is complete: A1 and A2 authenticate signed checksums and archives, B1 acquires a bounded verified candidate, B2 durably replaces or provably restores the fixed binary, B3 wires the fail-closed updater before PATH repair, C retires checksum-only shell bootstrap, D retires weaker parallel consumers, and E proves the isolated-prefix source plus preverified update/rollback lifecycle. T-068 now owns private cross-environment rehearsal.
-**Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
+**Scenario Schedule:** T-064 retirement passed; T-065 GoReleaser producer passed; T-067 minimum-Go compatibility passed; T-066 installer/updater migration passed; T-069 source-compatibility portability passed; T-068 private rehearsal passed; F-018-S004 waits for the owner-approved F-017 cutover
+**Current Failing Scenario:** F-018-S001 through F-018-S003 passed privately. F-018-S004 is deliberately not entered: fresh packaged bootstrap, notices, producer findings, and the independent F-017 audit, runtime, contribution, cutover, and canary gates remain incomplete.
+**Walking Skeleton Slice:** As of 2026-07-22, F-018-S001 through F-018-S003 are complete: the pinned producer, fail-closed signed consumer, source/install transition, and private cross-platform rehearsal passed without publication authority. F-018-S004 remains deferred to F-017.
+**Learning Or MVP Outcome:** Publication-disabled archive production plus fail-closed signed archive consumption, recovery, and private rehearsal are proven before any real MARS signing, publication, or visibility change.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
 
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-068 checkpoint C final state/sign-offs, fresh packaged bootstrap, and the independent F-017 audit, runtime, contribution, cutover, and canary gates remain incomplete.
-- **Next Primary Action:** Reconcile T-068's final immutable private state and collect the required persona sign-offs without publication.
+- **Current Primary Blocker:** Fresh packaged bootstrap, complete notices, recorded producer findings, and the independent F-017 audit, runtime, contribution, cutover, and canary gates remain incomplete.
+- **Next Primary Action:** Return to F-017 through a bounded `ticket_create` handoff for the owner-operated standard-tool audit and disposition; do not enter F-018-S004 or publish.
 
 ## Locked Decisions
 
@@ -55,7 +55,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
 | T-066 / F-018-S002 | Passed 2026-07-22 through `7fe152c`: fail-closed signed archive consumers, retired legacy paths, isolated-prefix source, fresh-target, and preverified update/rollback evidence passed. | T-065 and T-067 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw aliases are absent; exact validation and persona gates passed without a real MARS signature or release. |
 | T-067 | Passed 2026-07-22: raised the MARS source minimum to exact Go 1.25.12 without imposing an external Go requirement on packaged operation or generated targets. | Owner approved 2026-07-22. | Exact Go 1.25.12 and release Go 1.26.5 gates, real Go 1.25.11 rejection, patch-aware source doctor tests, four cross-builds, installed/fresh-target smoke, and QA/Security review passed without Sigstore or publication changes. |
-| T-068 / F-018-S003 | Checkpoints A and B passed at `aa4a16b`; checkpoint C passed its dry-run, exact local cleanup, and T-069 source-compatibility dependency, then resumed final state reconciliation/sign-offs. | T-066 complete after T-067; T-069 passed. | Two-root producer proof, local native macOS unsigned-snapshot/source fixture, exact-SHA read-only Ubuntu native fixture, offline preverified consumer rollback, publication-authority absence, release-note dry-run, state invariants, and cleanup pass. |
+| T-068 / F-018-S003 | Passed 2026-07-22: checkpoints A/B proved the private cross-platform pipeline and checkpoint C passed no-write release selection, exact cleanup, immutable-state reconciliation, and all persona sign-offs. | T-066 complete after T-067; T-069 passed. | Two-root producer proof, local native macOS unsigned-snapshot/source fixture, exact-SHA read-only Ubuntu native fixture, offline preverified consumer rollback, publication-authority absence, release-note dry-run, state invariants, and cleanup pass. |
 | T-069 | Passed 2026-07-22 at `03008f7`: restored deterministic supported-source Linux CI without weakening runtime or filesystem policy. | Exact-head run `29896978096` failed identically in Go 1.25.12 and 1.26.5. | Exact-head run `29898672813` passed Go 1.25.12, Go 1.26.5, and Go 1.25.11 rejection. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
 
@@ -75,7 +75,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 
 - Replacement commit `cf62513ea9a2e83e60e3bd74085191a2e977d74f` was built from `6d326ffa82e236570509b3783711b87911e5500d`, passed `make check`, DocSync, release-note dry-run, and four CGO-disabled target builds, then replaced remote `main` with the exact `bf3034863691443962ec251e62c8dec1ee5138fb` branch lease.
 - GitHub remained private with sole branch `main`; Pages configuration changed from public/HTTP 200 to API 404 and logged-out HTTP 404 before the branch rewrite and remained unavailable afterward.
-- Release ID `354800199` had exactly nine uploaded assets before deletion, returned HTTP 204 on deletion, and both numeric-ID and tag lookups returned 404 afterward. The exact `v0.93.0` tag lease at `bf3034863691443962ec251e62c8dec1ee5138fb` was then deleted; final counts are 301 tags and 56 Releases.
+- Release ID `354800199` had exactly nine uploaded assets before deletion, returned HTTP 204 on deletion, and both numeric-ID and tag lookups returned 404 afterward. The exact `v0.93.0` tag lease at `bf3034863691443962ec251e62c8dec1ee5138fb` was then deleted. Final inventory is 301 tags; the REST collection enumerates 56 Releases while direct/GraphQL lookup additionally exposes intentionally retained zero-asset `v0.65.7` Release ID `344415010`, yielding 57 addressable retained Release objects.
 - Retired Pages artifact `8360983372`, run `29460583182`, and deployment `5465865045` were deleted and independently returned 404. Deployment status `15767000543` recorded `inactive` before deletion.
 - Re-anchored stash `1592dd2628c7a7bb62f17be36e43712e0e27c0d0` preserves the T-060 tracked diff hash `a22bb0d367a0dc975a2dbdc101205438997a0f090a2375f037394b19cdab4434` and two untracked file hashes. Re-anchored stash `6ebc8f38320753b00787658c6a41c30bc54e30d4` preserves cognition diff hash `b596088de5d6b9cca5a8c39bf0f915ce3f5b70d24a2e3c712066de0ec4c9ff38`; both use `cf62513` as parent with their original messages and classifications.
 - The unrelated dashboard worktree remains at `404c047e3cdfc39af29c3d630b558ad5f82b8709` with unchanged status fingerprint `96fd2019657d2c7a9e3b50c9f20e526df160c1e95cff1a6161543b5005f381a9`.
@@ -190,6 +190,13 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - Accepted identities are archive SHA-256 `b9f73f666d66ed7100a6c126b677541f5fea33ac8e7ffa36edcfe2b42a9ad460`, native binary SHA-256 `8530158a8f9df3799627efee3df51dafb3e71c578737cef13f24f572ada34bf9`, source binary SHA-256 `ba227b4d4eb98d6e190ab43fb57b1a42f3b8380db065d5a8762bc6714ce054e7`, and target tree `e3f3e0ee21b751bfa7a183717be48a76a9134a4b`.
 - The functional run emitted `checkpoint_b=pass`; its aggregate shell then exited `1` solely because best-effort cleanup `chmod` warned on read-only module-cache entries. Independent verification proved the exact root absent and host worktree clean. Engineer, QA, and Security accepted the combined functional and postcondition evidence without claiming that the wrapper exited zero or rerunning the producer.
 - Checkpoint C, F-018-S003, fresh packaged bootstrap, notices, recorded producer findings, signing, publication, and every independent F-017 gate remain blocked. No version, tag, Release, signature, upload, visibility, or support claim changed.
+
+## T-068 Checkpoint C Evidence — 2026-07-22
+
+- At exact evidence head `2ef9d277f60baca2123ecea7c460ffdb49d018eb`, source-compatibility run `29899168382` passed Go `1.25.12`, Go `1.26.5`, and the expected Go `1.25.11` rejection with zero Actions artifacts. Release-note dry-run selected exactly `0.69.0` without changing HEAD, tree, `VERSION`, `CHANGELOG.md`, or source fallback.
+- Final reconciliation retained private visibility, one remote `main`, 301 tags, no `v0.69.0` tag or Release, disabled Pages, both protected stashes, and the unrelated Codex worktree. The REST/GraphQL Release enumeration discrepancy is classified above; the additional addressable object is retained zero-asset `v0.65.7`, not an unexpected release.
+- The original 22 manifest-listed rehearsal roots were removed. Final Security discovery then found two additional T-068 reviewer roots—one omitted pre-existing root and one later dry-run cache—plus ten T-069 ticket caches; all were removed by exact path, and final bounded discovery found no rehearsal residue. QA, Security, Dogfood, Release Manager, and Orchestrator are GO for T-068/F-018-S003 only.
+- F-018-S003 and T-068 are complete. The repository remains private and `primary_blocked`; fresh packaged bootstrap, notices, producer findings, every independent F-017 gate, F-018-S004, signing, publication, visibility, announcement, and support claims remain blocked.
 
 ## Validation Gates
 
