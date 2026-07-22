@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s003-private-rehearsal-without-publication", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: COO, CTO-weekly, and Security froze checkpoints A/B/C; the four-surface planning handoff is pushed at 90c4217"
+last_attempt: "2026-07-22: checkpoint A passed at aa4a16b in GitHub Actions run 29894376197 after three fail-closed fixture corrections"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Implement only checkpoint A in release-snapshot.yml and its existing contract test, push the bounded seam, then dispatch that exact SHA with no publication or upload authority."
+trace_id: "github-actions:29894376197"
+next_action: "Run checkpoint B only against immutable aa4a16b on the owner Darwin/arm64 host, then commit its evidence before checkpoint C."
 dedupe_key: "release:goreleaser-private-rehearsal"
 metadata:
   classification: "foundation-owned"
@@ -50,11 +50,19 @@ C. Require release-note dry-run to select exactly `0.69.0`, reconcile refs/Relea
 
 Each checkpoint is independently green, committed, and pushed before the next. No new VM, container, trust system, signer, generalized verifier, or publication framework belongs in this ticket.
 
+## Checkpoint A Evidence — 2026-07-22
+
+- Commit `aa4a16bb5d26bcb766851dec375149b906fa6ce8` is pushed and exact-head GitHub Actions [run 29894376197](https://github.com/greaveselliott/MARS/actions/runs/29894376197) passed on Ubuntu 24.04. Job `88841325303` ran from `2026-07-22T05:38:59Z` through `2026-07-22T05:55:48Z`; preflight, pinned-tool construction, the combined two-root rehearsal, cleanup, and post-job steps all passed.
+- Exact Go `1.26.5`, GoReleaser `v2.17.0`, and Syft `v1.49.0` produced two clean snapshot roots. The committed verifier accepted the archive/checksum/SBOM reproducibility contract; supported source installation and direct execution of the contract-verified unsigned native Linux snapshot each initialized a clean equivalent target and passed DocSync; the authority-free update dry-run and five focused offline consumer/install/update/rollback tests passed.
+- Earlier runs were rejected diagnostic evidence only: `29891275429`/`7904b43` failed closed on missing clone identity plus read-only-cache cleanup; `29892244613`/`6437f81` failed closed on target HOME/TMP fixture collision; and `29893274768`/`b8be85f` failed closed because different fixture leaf names produced repository-bound metadata differences. Commits `6437f81`, `b8be85f`, and `aa4a16b` corrected those harness defects without accepting a partial run. Each rejected run uploaded zero Actions artifacts.
+- The accepted run uploaded zero Actions artifacts. Reconciliation found `origin/main` exactly at `aa4a16b`, repository visibility `PRIVATE`, and no `v0.69.0` tag or Release. `VERSION` remains `0.68.49` and the source fallback remains `0.69.0-dev`.
+- This accepts checkpoint A only. Native Darwin/arm64 checkpoint B, release-note/state/cleanup checkpoint C, final persona sign-offs, F-018-S003, and every public-cutover gate remain pending.
+
 ## Acceptance criteria
 
-- [ ] Two independent clean builds pass the exact producer contract and archive reproducibility standard.
+- [x] Two independent clean builds pass the exact producer contract and archive reproducibility standard.
 - [ ] Isolated supported source setup and separate unsigned native snapshot execution pass on macOS; the exact-SHA ephemeral Ubuntu run passes the same source/native-target split plus focused offline consumer/update/rollback fixtures. These are distinct from packaged bootstrap and a real signed update.
-- [ ] The snapshot workflow succeeds with `contents: read`, non-persisted checkout authority, exact skip flags, and no later build/test credentials, signing/OIDC, upload, draft, tag, or Release authority.
+- [x] The snapshot workflow succeeds with `contents: read`, non-persisted checkout authority, exact skip flags, and no later build/test credentials, signing/OIDC, upload, draft, tag, or Release authority.
 - [ ] Release-note dry-run selects exactly 0.69.0 and leaves the repository byte-identical.
 - [ ] Temporary roots, ticket-specific caches, generated artifacts, and credentials are reconciled or removed without touching shared caches or unrelated user work.
 - [ ] QA, Security, Dogfood, Release Manager, and Orchestrator sign off; F-018-S003 is marked passed only with exact evidence and Primary Status remains primary_blocked.
