@@ -9,7 +9,7 @@
 
 MARS remains private until publication authority and every technical cutover gate are durable. The operator states ownership of the first-party project and name and has authorized the private rewrite and GoReleaser transition; that authorization does not itself complete privacy, IP, runtime, release, contribution, or cutover validation.
 
-The selected history strategy is a clean private reconstruction from `v0.68.49`. The private v0.93 exact-nine experiment is being retired through T-064 and replaced with a source-only GoReleaser archive/checksum/SBOM/signature pipeline. Private audit-era refs and releases are retired before publication, without claiming that hosting-provider storage, external clones, or caches are physically recalled.
+The selected history strategy is a clean private reconstruction from `v0.68.49`. The private v0.93 exact-nine experiment was retired through T-064 and replaced with a source-only GoReleaser archive/checksum/SBOM/signature pipeline through T-068. T-070 resumes F-017-S001 by scanning only the exact advertised Git publication surface with pinned standard tools; later bounded tickets own GitHub-hosted content and manual owner disposition. Private audit-era refs and releases are retired before publication, without claiming that hosting-provider storage, external clones, or caches are physically recalled.
 
 Supporting private evidence cannot authorize visibility conversion. Visibility is a separately approved owner action only after F-017-S001 through F-017-S005 pass.
 
@@ -84,9 +84,9 @@ And announcement waits until the 48-hour canary remains clean.
 
 ## Evidence
 
-- **F-017-S001:** The proposed private publication surface is reconstructed. Conventional scans, manual review, and committed owner disposition remain pending.
+- **F-017-S001:** The proposed private publication surface is reconstructed. T-070 owns the exact advertised Git scan; GitHub-hosted content review, manual privacy/IP/provenance/name review, and committed owner disposition remain subsequent bounded slices. Local stashes, administrative refs, unreachable objects, and the unrelated Codex worktree are preserved non-publication exceptions rather than inputs to T-070.
 - **F-017-S002:** The retained baseline includes existing vulnerability, loopback, webhook, and dashboard hardening, but the complete runtime/filesystem/execution gate has not passed.
-- **F-017-S003:** T-064 through T-068 are retiring v0.93 and preparing the GoReleaser producer/consumer contract, source compatibility, and private rehearsal. Signed public archives, anonymous install/update, negative verification, and rollback remain pending.
+- **F-017-S003:** T-064 through T-068 completed the private v0.93 retirement, GoReleaser producer/consumer contract, source compatibility, and unsigned rehearsal. Fresh packaged bootstrap, complete notices, acceptable producer-vulnerability disposition, signed public archives, anonymous install/update, publication, and rollback remain pending.
 - **F-017-S004:** Pending fork-safe CI, governance, reporting, and disposable hostile-fork rehearsal.
 - **F-017-S005:** Pending private rehearsal, separate visibility approval, logged-out smoke, recovery proof, and 48-hour canary.
 
