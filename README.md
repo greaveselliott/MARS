@@ -238,14 +238,10 @@ Update a source checkout install from a clean worktree with:
 make update-tool
 ```
 
-Binary release assets and GitHub Release mirrors are optional compatibility
-surfaces. If you use them, configure release auth once:
-
-```bash
-mars auth github setup
-mars auth github check
-mars update tool
-```
+Source checkout installation and `make update-tool` are the current supported
+routes. Packaged updates remain unavailable until an approved F-018 cutover
+publishes the exact signed archive contract; historical raw release assets are
+unsupported and must not be advertised as installable.
 
 MARS and initialized target repos use semantic versions and generated
 patch notes:

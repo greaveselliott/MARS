@@ -97,12 +97,16 @@ func TestDogfoodMatrixNamesRequiredEvidence(t *testing.T) {
 		"mars start --repo <temp repo>",
 		"fake-LLM dogfood path",
 		"`../mars` is the supersession target",
-		"Optional GitHub paths are skipped honestly",
+		"not applicable` is allowed only when repository policy explicitly",
 		"docs/validation/profiles/mars-observer.md",
+		"Repository-owned local/remote artifact-contract gate",
 	} {
 		if !strings.Contains(text, needle) {
 			t.Fatalf("dogfood matrix missing %q", needle)
 		}
+	}
+	if strings.Contains(text, "mars release verify-assets") {
+		t.Fatal("dogfood matrix must not invoke the retired release verifier")
 	}
 }
 

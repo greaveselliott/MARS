@@ -154,6 +154,12 @@ Generated target repositories do not inherit this Go-specific producer or
 source floor; each target chooses and documents its own release workflow and
 artifact contract.
 
+T-066 supplies the matching signed archive consumer: release-mode update
+authenticates the exact checksum bytes, release workflow identity, tag and full
+commit, platform/build metadata, archive digest and bounded structure before a
+durable replace-or-restore transaction. The former standalone verification and
+audit commands are retired rather than retained as weaker parallel consumers.
+
 ### AD-312: Attempted GitHub Mirrors Must Converge Before Success
 
 > **Implementation superseded 2026-07-21 by AD-313/T-065/F-018.** T-065
@@ -235,6 +241,14 @@ binary releases. A generic target release skill can be added later when target
 publication modes have a stable contract.
 
 ### AD-068: The Installed Command Can Update Itself
+
+> **Packaged-path amendment 2026-07-22 by AD-313/T-066/F-018.** Release-mode
+> update now accepts only the canonical signed archive contract and verifies
+> its offline Sigstore evidence, immutable tag/full commit, platform/build
+> metadata, checksum, digest, and bounded archive structure before durable
+> replacement. The raw asset/checksum-only packaged path below is retained as
+> historical evidence and is unsupported. Source checkout install/update is the
+> current supported route until an approved cutover publishes signed archives.
 
 Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars` command owns its own update surface through `mars update tool`.
 
@@ -361,9 +375,10 @@ for a commit that does not contain the generated release notes.
 
 ### AD-282: Release Audit Detects Notes-Only And Missing GitHub Releases
 
-> **Partially superseded 2026-07-21 by AD-313/T-065.** The read-only audit is
-> retained, but its exact bespoke-publisher remediation is replaced by a
-> producer-neutral blocker. The original rationale remains historical evidence.
+> **Fully superseded 2026-07-22 by T-066 D1/F-018.** Both standalone commands
+> described below are removed. Repository-owned verification and the future
+> F-018-S004 remote-convergence gate replace them; the original rationale remains
+> historical evidence.
 
 `verify-assets` checks one version at a time, so a notes-only release (tag and
 changelog published, binary assets never mirrored) stays invisible once
@@ -393,7 +408,9 @@ retired GitHub Actions workflows would have hosted.
 - Add `mars release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
 - Add `mars release backfill-notes --repo <path> [--min-version X.Y.Z] [--max-version X.Y.Z] [--dry-run] [--check]`.
 - Add `mars update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
-- Add `mars release verify-assets [--version <tag>]`.
+- Require supported archive consumers to verify the signature, workflow
+  identity, immutable tag/full commit, platform/build metadata, checksum,
+  archive digest, and bounded contents before replacement or announcement.
 - Add `mars update harness --repo <path>`.
 - Add `mars update check --repo <path> [--json] [--skip-remote]`.
 - Add `mars path setup [--install-dir <path>]`.
@@ -415,7 +432,8 @@ retired GitHub Actions workflows would have hosted.
   artifact contract.
 - Defer source tags, signing, GitHub publication, and fresh-download checks to
   the separately approved F-017/F-018 cutover.
-- Audit recent tags for notes-only or missing GitHub releases with `mars release audit` after each publication.
+- Require repository-owned remote-convergence gates after publication; missing,
+  inaccessible, partial, or unverifiable state remains blocked rather than clean.
 - Block release tag creation unless the tag matches `VERSION`, the worktree is
   clean, `HEAD` is the release-note commit, and the tag target is that `HEAD`.
 - Let the installed binary reinstall itself without requiring a source checkout.

@@ -96,25 +96,12 @@ current checkout without fetching remote changes, run:
 make install
 ```
 
-## Optional Binary Releases
+## Packaged Release Status
 
-Binary release assets and GitHub Release mirrors remain available for
-compatibility, but they are not required for source checkout onboarding.
-
-If you use the binary updater, configure release auth once:
-
-```bash
-gh auth login
-mars auth github setup
-mars auth github check
-```
-
-Then:
-
-```bash
-mars update tool
-mars update tool --dry-run
-```
+Source checkout installation and `make update-tool` are the current supported
+routes. Packaged updates remain unavailable until an approved F-018 cutover
+publishes the exact signed archive contract; historical raw release assets are
+unsupported and must not be advertised as installable.
 
 If your current shell still sees an older binary after updating, refresh its command cache with `hash -r`, run the reload hint printed by the command, or open a new terminal.
 

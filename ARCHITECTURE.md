@@ -36,7 +36,7 @@ flowchart TB
     CLI --> SETUP["setup / path setup"]
     CLI --> UPDATE["update check / tool / harness"]
     CLI --> CHECKS["checks run"]
-    CLI --> RELEASE["release notes / audit / verify-assets"]
+    CLI --> RELEASE["release notes / backfill-notes"]
     CLI --> TARGETOPS["init / upgrade / scan / register"]
     CLI --> EXECOPS["start / serve / run"]
     CLI --> TOOLOPS["tools list / run"]
@@ -47,7 +47,8 @@ flowchart TB
     UPDATE --> CONFIG
     CHECKS --> QUEUE
     RELEASE --> SOURCE["mars source repo"]
-    RELEASE --> DIST["Local dist/releases assets"]
+    SOURCE --> SNAPSHOT["pinned snapshot workflow"]
+    SNAPSHOT --> DIST["Local dist/ snapshot artifacts"]
     TARGETOPS --> TARGET["Target repository"]
     EXECOPS --> SERVER["Orchestrator server"]
     TOOLOPS --> TOOLS["Built-in tool registry"]
@@ -154,8 +155,8 @@ flowchart LR
   subgraph OptionalGitHub ["Optional GitHub integration"]
     Webhook["workflow/webhook failures"]
     GHRelease["GitHub Release mirror"]
-    VerifyMirror["verify-assets\nGitHub asset gate"]
-    UpdateTool["update tool\nprivate asset download"]
+    VerifyMirror["approved signed\nremote artifact gate"]
+    UpdateTool["update tool\nsigned archive replacement"]
   end
 
   Intent --> Sync --> CheckGate --> DogfoodGate
@@ -209,7 +210,7 @@ surface is:
 | `mars models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
 | `mars release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
 | `mars release publish-assets` | Retired by T-065; source production now uses the pinned publication-disabled GoReleaser/Syft workflow, while targets own their producer. |
-| `mars release verify-assets [--dist <path>] [--version <tag>]` | Check that local dist assets or an optional GitHub Release mirror has the required platform binaries and checksums. |
+| Pinned GoReleaser snapshot workflow | Build the publication-disabled MARS source archive/SBOM/checksum contract; the workflow grants no tag, signing, upload, or publication authority. |
 
 There is no current top-level `status`, `interventions`, or `stop --now`
 command. Graceful stop is exposed through Ctrl+C, terminal key `q`, and the
@@ -227,9 +228,11 @@ flows usable from outside the source checkout.
 
 Config holds local runtime paths and integration settings. Build info carries
 the packaged version. Update checks compare the installed binary, target
-metadata, release availability, and mirrored operating-model health. Self-update
-downloads release assets, verifies checksums, replaces the installed command
-atomically, and reuses shell path setup.
+metadata, release availability, and mirrored operating-model health. Release-mode
+self-update accepts only the canonical signed archive contract: it verifies the
+offline Sigstore bundle over the exact checksum bytes, immutable tag and full
+commit, platform/build metadata, archive digest and structure, then durably
+replaces or restores the fixed installed command before reusing shell path setup.
 
 ### Scanner and Generated Harness (`internal/scanner/`)
 
@@ -356,10 +359,11 @@ provides the same operational controls during `start` and `serve`: `p`, `r`,
 
 Release notes infer semantic versions from commits, update source build info,
 and prepend generated changelog entries. MARS source production uses the pinned,
-publication-disabled GoReleaser/Syft workflow defined by F-018. Generated
-targets choose their own producer. The retained `release verify-assets` and
-updater consumers remain on the legacy asset contract until T-066 migrates
-them; they do not verify the new archives yet.
+publication-disabled GoReleaser/Syft workflow defined by F-018. The F-018 signed
+archive consumer authenticates checksum bytes, identity, immutable source commit,
+platform/build metadata, archive digest and structure before durable replacement.
+Generated targets choose their own producer and verifier. The former standalone
+`release verify-assets` and `release audit` commands are retired.
 
 ## Generated Target Harness Layout
 

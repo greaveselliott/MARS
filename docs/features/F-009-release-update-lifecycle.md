@@ -18,9 +18,9 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 1. F-009-S001 - Semantic release notes update `VERSION` and `CHANGELOG.md` from commits.
 2. F-009-S002 - Release-note commits are ignored as the base for the next generated entry.
 3. F-009-S003 - Done-ticket metadata classifies shipped BDD scenarios separately from enablers.
-4. F-009-S004 - `update tool` installs checksum-verified release assets atomically.
+4. F-009-S004 - `update tool` authenticates signed release archives and durably replaces or restores the installed binary.
 5. F-009-S005 - `update harness` refreshes deployed harness defaults through the unified update verb.
-6. F-009-S006 - `release verify-assets` fails when platform binaries or checksums are missing from local assets or a GitHub Release mirror.
+6. F-009-S006 - The standalone `release verify-assets` command is retired; MARS source uses F-018 and targets use repository-owned gates.
 7. F-009-S007 - Source and generated targets inherit the same versioning and release-note discipline.
 8. F-009-S008 - Generated release notes explain impact, why, and what changed before commit buckets.
 9. F-009-S009 - Historical release entries are backfilled to the current narrative standard from marker ranges.
@@ -31,7 +31,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 14. F-009-S014 - Version tags can only be created at the release-note commit.
 15. F-009-S015 - Release Manager uses the structured MARS CLI tool instead of stale PATH binaries.
 16. F-009-S016 - Source checkout onboarding and update are the primary path for repo cloners.
-17. F-009-S017 - `release audit` detects notes-only and missing GitHub releases across recent tags.
+17. F-009-S017 - The standalone `release audit` command is retired; F-018-S004 owns fail-closed remote convergence.
 18. F-009-S018 - The bespoke GitHub mirror publisher is retired; its fail-closed invariant moves to F-018-S004.
 
 ## Scenarios
@@ -54,11 +54,15 @@ Given done tickets include `work_type`, `bdd_scenarios`, and evidence metadata
 When release notes are generated
 Then shipped feature scenarios are named separately from enabler work
 
-### F-009-S004: Checksum-Verified Tool Update
+### F-009-S004: Signed Archive Tool Update
 
-Given a release asset and `checksums.txt` are available
+Given an approved release exposes the canonical archive, exact eight-entry
+checksum file, and offline Sigstore bundle for the requested platform
 When `mars update tool` installs the tool
-Then checksum mismatch prevents replacement and valid assets atomically replace the installed binary
+Then the consumer verifies the signature, workflow identity, immutable tag and
+full commit, platform/build metadata, archive checksum, digest, and bounded
+structure before replacement
+And failure preserves or restores the prior fixed binary and remains blocked
 And private releases are authenticated through the Getting Started auth resolver in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then optional local config token
 And `mars auth github setup` saves a verified GitHub CLI token as the owner-only local fallback without printing the token
 And private release assets are downloaded through GitHub asset API URLs when release metadata provides them
@@ -70,15 +74,15 @@ Given a target repo has generated harness metadata
 When `mars update harness --repo <path>` runs
 Then the update path refreshes missing target harness defaults without overwriting user-owned configuration
 
-### F-009-S006: Release Asset Verification
+### F-009-S006: Retired Standalone Asset Verification
 
-Given local release assets exist for version `vX.Y.Z`
-When `mars release verify-assets --dist <path> --version vX.Y.Z` runs
-Then it fails unless all required platform binaries and `checksums.txt` are present and valid
-
-Given a GitHub Release mirror exists for version `vX.Y.Z`
-When `mars release verify-assets --version vX.Y.Z` runs
-Then it fails unless all required platform binaries and `checksums.txt` are attached to the mirror
+Given T-066 D1 has retired the weaker standalone consumer
+When `mars release verify-assets` is invoked
+Then the CLI reports an unknown command and performs no verification
+And MARS source uses the F-018 signed archive contract while target repositories
+use their repository-owned artifact-verification gate
+And missing, inaccessible, partial, or unverifiable state remains blocked rather
+than being classified as clean
 
 ### F-009-S007: Mirrored Release Discipline
 
@@ -128,7 +132,7 @@ And a Release Manager `release_blocked` publication disposition stops dispatch a
 ### F-009-S015: Release Review Uses Structured CLI Resolution
 
 Given a deployed target has an older `mars` binary earlier on `PATH`
-When Release Manager needs release notes, backfill, or asset verification
+When Release Manager needs release notes or backfill
 Then the role uses `mars_cli` with structured args instead of `shell_exec mars ...`
 And `shell_exec` blocks direct `mars` binary invocations with a correction that names the equivalent `mars_cli` args
 
@@ -157,15 +161,14 @@ Then tag creation is blocked until the release-note files are committed as `rele
 And the tag is blocked when its explicit target resolves to any commit other than the current release-note `HEAD`
 And `git_release_guard` fails when `vX.Y.Z` already exists but points at a pre-release-note commit
 
-### F-009-S017: Release Mirror Audit
+### F-009-S017: Retired Standalone Release Audit
 
-Given local `vX.Y.Z` tags exist for published versions
+Given T-066 D1 has retired the standalone audit
 When `mars release audit --repo .` runs
-Then the newest tags (default 10, `--limit` configurable) are checked against the GitHub releases list
-And a tag without a release object is reported as `missing_release`
-And a release object missing required platform binaries or `checksums.txt` is reported as `notes_only` with the missing asset names
-And every finding names a producer-neutral recovery action and the command exits non-zero
-And when local tags or the GitHub API are unavailable the audit reports the skip reason and exits zero so the optional mirror does not fail the pipeline
+Then the CLI reports an unknown command and performs no audit
+And repository-owned remote verification plus F-018-S004 must prove exact signed
+artifact identity and inventory convergence
+And unavailable or unverifiable remote evidence is blocked, never clean
 
 ### F-009-S018: Retired Bespoke GitHub Mirror Publisher
 
@@ -192,9 +195,9 @@ None.
 - F-009-S001: `go test ./internal/release -run TestPrepareGeneratesVersionAndChangelog`
 - F-009-S002: `go test ./internal/release -run TestPrepareUsesChangelogMarkerAsBase`
 - F-009-S003: `go test ./internal/release -run TestPrepareClassifiesDeliveryEvidenceFromDoneTickets`
-- F-009-S004: `go test ./internal/selfupdate -run TestRunReleaseAssets`
+- F-009-S004: `go test ./internal/selfupdate -run 'Test(RunRelease|VerifyMARSReleaseArchive|VerifySigstoreChecksumsEvidenceRealOfflineFixture|MARSSigstorePolicyBindsExactWorkflowAndCommit|FetchVerifiedMARSRelease|ReplaceVerifiedMARSRelease)'`
 - F-009-S005: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
-- F-009-S006: `go test ./cmd/mars -run TestReleaseVerifyAssetsCommandChecksLocalDist` and `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
+- F-009-S006: `go test ./cmd/mars -run TestReleaseLegacyConsumerCommandsAreRetired`
 - F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance
 - F-009-S008: `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'`
 - F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars -run TestReleaseBackfillNotesCommandChecksAndWrites`
@@ -203,5 +206,5 @@ None.
 - F-009-S013: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/tools -run TestReleaseWorkflowsUseRepositoryOwnedProducer`
 - F-009-S014: `go test ./internal/tools -run 'TestShellExecPolicyBlocksReleaseTag|TestGitReleaseGuardReportsStaleReleaseTag'`
 - F-009-S015: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsBinary` and `go test ./internal/scanner -run TestInit_success`
-- F-009-S017: `go test ./internal/release -run TestAudit`
+- F-009-S017: `go test ./cmd/mars -run TestReleaseLegacyConsumerCommandsAreRetired`
 - F-009-S018: `go test ./cmd/mars -run TestReleasePublishAssetsCommandIsRetired` plus the source negative-oracle checks recorded by T-065

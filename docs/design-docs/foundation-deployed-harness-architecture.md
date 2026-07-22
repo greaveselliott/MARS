@@ -232,6 +232,11 @@ mirrored into generated targets in a follow-up slice:
 Existing target repos remain user-owned. `upgrade` should fill missing defaults
 without overwriting deliberate local policy.
 
+Current release boundary (2026-07-22): MARS source uses the exact pinned,
+publication-disabled producer and F-018 signed archive consumer; generated
+targets own both their producer and verifier. Transport success, asset names,
+or checksums alone never prove authenticity or completion.
+
 ## Drift Review Evidence
 
 > The dated review below is retained as historical evidence. Its former source

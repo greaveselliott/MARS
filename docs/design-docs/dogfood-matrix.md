@@ -46,12 +46,13 @@ Evidence is stored in three places:
 | scores/trust/quality | `mars scores --repo <temp repo>`, `mars trust --repo <temp repo>`, `mars scores export --repo <temp repo>` | Empty or live evidence is actionable; quality score refreshes | Scoring/trust ticket |
 | dashboard | HTTP handler tests for quality, repos, roles, status, controls | Server-rendered pages and JSON APIs do not crash on empty modules | Dashboard ticket |
 | local inference | `mars models list` and router missing-model tests | Pinned models and actionable missing-model remediation | Inference ticket |
-| optional GitHub | `mars release verify-assets --version vX.Y.Z` when credentials exist | Release assets verified or explicit blocker recorded | Release blocker ticket |
+| optional GitHub | Repository-owned local/remote artifact-contract gate when configured | Signed artifact identity, archive/digest contract, and remote inventory verified, or an explicit blocker recorded | Release blocker ticket |
 | upgrade safety | `mars update harness --repo <target with edits>` | Missing defaults written, user-owned files preserved | Migration ticket |
 
-Optional GitHub paths are skipped honestly when credentials, remote visibility,
-or release assets are unavailable. A skipped optional path is not a pass; it is
-recorded as blocked or not applicable with the reason.
+When an optional GitHub surface is configured, missing credentials, remote
+visibility, or release assets are recorded as blocked, never clean or not
+applicable. `not applicable` is allowed only when repository policy explicitly
+declares that no GitHub release surface is used.
 
 ## Fake-LLM Loop
 

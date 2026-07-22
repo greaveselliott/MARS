@@ -100,10 +100,20 @@ func TestReleaseProductionUsesPinnedSourceAndRepositoryOwnedTargetContracts(t *t
 		"AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer",
 		"publication-disabled private snapshots",
 		"Generated target repositories do not inherit this Go-specific producer",
+		"signed archive consumer",
+		"Fully superseded 2026-07-22 by T-066 D1/F-018",
 		"Superseded 2026-07-21 by AD-313/T-065/F-018",
 	} {
 		if !strings.Contains(text, needle) {
 			t.Fatalf("release docs must describe the current source/target producer boundary; missing %q", needle)
+		}
+	}
+	for _, retired := range []string{
+		"- Add `mars release verify-assets",
+		"- Audit recent tags for notes-only or missing GitHub releases with `mars release audit`",
+	} {
+		if strings.Contains(text, retired) {
+			t.Fatalf("current release implementation requirements must not retain retired command %q", retired)
 		}
 	}
 }
