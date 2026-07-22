@@ -50,11 +50,13 @@ var (
 //go:embed trusted_root.json
 var pinnedTrustedRootJSON []byte
 
-// SignedChecksums contains the authenticated artifact digests for one MARS
-// release. Its map is private so verification results cannot be confused with
-// caller-owned input maps.
+// SignedChecksums contains authenticated artifact digests and their exact
+// release identity. Its state is private so later verification cannot detach
+// the digests from the tag and commit accepted by Sigstore verification.
 type SignedChecksums struct {
-	digests map[string][sha256.Size]byte
+	digests    map[string][sha256.Size]byte
+	tag        string
+	fullCommit string
 }
 
 // Digest returns one authenticated SHA-256 digest.
@@ -66,6 +68,10 @@ func (s SignedChecksums) Digest(name string) ([sha256.Size]byte, bool) {
 // Len returns the number of authenticated checksum records.
 func (s SignedChecksums) Len() int {
 	return len(s.digests)
+}
+
+func (s SignedChecksums) matchesIdentity(tag, fullCommit string) bool {
+	return s.tag == tag && s.fullCommit == fullCommit
 }
 
 // VerifyMARSSignedChecksums verifies the Sigstore evidence over the exact raw
@@ -90,7 +96,7 @@ func VerifyMARSSignedChecksums(checksums, bundleJSON []byte, tag, fullCommit str
 	if err != nil {
 		return SignedChecksums{}, ErrSignedReleaseChecksums
 	}
-	return SignedChecksums{digests: digests}, nil
+	return SignedChecksums{digests: digests, tag: tag, fullCommit: fullCommit}, nil
 }
 
 type sigstoreReleasePolicy struct {
