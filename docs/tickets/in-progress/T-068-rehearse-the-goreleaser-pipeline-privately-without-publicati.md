@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s003-private-rehearsal-without-publication", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: checkpoint C passed the 0.69.0 dry-run and exact local cleanup, then failed closed on exact-head source-compatibility run 29896978096"
-blocker: "T-069 must make both supported Linux source-compatibility lanes green before checkpoint C can freeze state or close."
-blocked_by: [T-069]
-trace_id: "github-actions:29896978096"
-next_action: "After T-069 passes one exact-head source-compatibility run, resume checkpoint C state reconciliation and final sign-offs without publication."
+last_attempt: "2026-07-22: T-069 exact-head source-compatibility run 29898672813 passed; checkpoint C resumed"
+blocker: "none"
+blocked_by: []
+trace_id: "github-actions:29898672813"
+next_action: "Reconcile final immutable repository state and collect QA, Security, Dogfood, Release Manager, and Orchestrator sign-offs without publication."
 dedupe_key: "release:goreleaser-private-rehearsal"
 metadata:
   classification: "foundation-owned"
