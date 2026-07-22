@@ -84,7 +84,7 @@ And announcement waits until the 48-hour canary remains clean.
 
 ## Evidence
 
-- **F-017-S001:** The proposed private publication surface is reconstructed. T-070 owns the exact advertised Git scan; GitHub-hosted content review, manual privacy/IP/provenance/name review, and committed owner disposition remain subsequent bounded slices. Local stashes, administrative refs, unreachable objects, and the unrelated Codex worktree are preserved non-publication exceptions rather than inputs to T-070.
+- **F-017-S001:** The proposed private publication surface is reconstructed. T-070 froze 302 canonical publication refs and scanned all 11,954 reachable objects with both exact pinned tools without accepted-scan errors/skips. Two opaque test-classified finding groups remain pending owner-only classification, so T-070 is not clean. GitHub-hosted content review, manual privacy/IP/provenance/name review, and committed owner disposition remain subsequent bounded slices. Local stashes, administrative refs, unreachable objects, and the unrelated Codex worktree are preserved non-publication exceptions rather than inputs to T-070.
 - **F-017-S002:** The retained baseline includes existing vulnerability, loopback, webhook, and dashboard hardening, but the complete runtime/filesystem/execution gate has not passed.
 - **F-017-S003:** T-064 through T-068 completed the private v0.93 retirement, GoReleaser producer/consumer contract, source compatibility, and unsigned rehearsal. Fresh packaged bootstrap, complete notices, acceptable producer-vulnerability disposition, signed public archives, anonymous install/update, publication, and rollback remain pending.
 - **F-017-S004:** Pending fork-safe CI, governance, reporting, and disposable hostile-fork rehearsal.
