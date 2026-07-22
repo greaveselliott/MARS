@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: B2 pushed at 92d7ddd with a network-free descriptor-bound durable replacement transaction, verified compensation, focused hostile/race coverage, and Engineer/QA/Security GO"
+last_attempt: "2026-07-22: B3 pushed at 683daf8 with release-mode Run wired through B1/B2, exact running-binary drift binding, redacted plans/output, full focused gates, and Engineer/QA/Security GO"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint B3: wire the release branch of Run and the minimum current-version/commit input to B1 and B2 while preserving source/main, dry-run, and shell-path behavior; validate and push before installer work."
+next_action: "Implement only checkpoint C: migrate scripts/install.sh to the trusted verifier path, or fail closed with a source-installation route if bootstrap cannot reuse that verifier without weakening trust; validate and push before broader consumer/DocSync work."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -49,7 +49,7 @@ B1. Passed at `f3ed495`: bounded credential-safe acquisition enforces exact immu
 
 B2. Passed at `92d7ddd`: the network-free local transaction enforces descriptor-bound destination admission, a persistent nonblocking lock, same-filesystem 0700 staging, 0600 candidate/backup files, file and directory durability, atomic replacement, post-replace verification, and verified compensation or explicit recovery-required evidence. Committed and pushed before updater wiring.
 
-B3. Wire the release branch of `Run` and the minimum current-version/commit input to B1 and B2 while preserving source/main, dry-run, and shell-path behavior. Remove download URLs from the plan/output. Commit and push before installer work.
+B3. Passed at `683daf8`: release-mode `Run` now binds implicit latest to the exact running executable and digest, invokes B1 then B2 before PATH repair, preserves source/main and authority-free dry-run behavior, and removes download URLs from live plans/output. Committed and pushed before installer work.
 
 C. Migrate scripts/install.sh to the same trusted verifier path. If bootstrap cannot invoke the same verifier without weakening trust, make binary installation explicitly unavailable and direct users to source installation; checksum-only compatibility is forbidden. Commit and push.
 
@@ -98,6 +98,14 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Existing and absent destinations use atomic rename or no-replace link semantics. Success requires file and directory durability plus exact post-replacement inode, mode, link-count, bytes, platform, toolchain, and commit verification. Pre-commit cancellation preserves the prior state; post-commit failures either prove compensation or retain explicit recovery-required state and a verified backup without overwriting an unknown replacement.
 - Focused normal and race tests, full `internal/selfupdate` tests, vet, docsconsistency and DocSync, Darwin/Linux AMD64/ARM64 Go 1.26.5 CGO-disabled compile-only tests, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO.
 - B2 is not wired into `Run`; the legacy raw/checksum-only release updater remains reachable until B3. B3 through E remain incomplete. No candidate was executed or installed through a live command, and no version, tag, Release, signature, upload, visibility, or publication authority changed.
+
+## Checkpoint B3 completion — 2026-07-22
+
+- Pushed commit `683daf8` wires release-mode `Run` through B1 acquisition, B2 durable replacement, then shell-PATH repair. Source/main and dry-run paths retain their prior behavior, and dry-run invokes no identity, network, credential, verifier, replacement, or filesystem authority.
+- Implicit latest admits only the exact canonical running `mars` executable with clean full-commit build identity, hashes its descriptor-read bytes before acquisition, and requires B2 to recheck that digest under the destination lock before creating transaction state. Prior drift leaves the changed destination byte-identical and creates no transaction. Explicit-version rollback requests remain governed by their authenticated release identity.
+- The returned plan is populated only from authenticated B1 evidence and exposes no raw download/checksum URLs. A post-commit replacement-identity mismatch returns that plan with recovery-required truth and does not invoke PATH repair.
+- Full `internal/selfupdate` and isolated-home `cmd/mars` tests, focused race tests, vet, docsconsistency, DocSync, Darwin/Linux AMD64/ARM64 Go 1.26.5 CGO-disabled compile-only tests, `make vuln` with zero called vulnerabilities, fuzz smoke, and the lint fallback to whole-source vet passed. Engineer, QA, Security, and Orchestrator are GO.
+- Legacy raw/checksum helpers remain dead and unreachable from `Run` for checkpoint D removal. Checkpoints C through E remain incomplete. No live update was run, and no version, tag, Release, signature, upload, visibility, or publication authority changed.
 
 ## Interfaces and blast radius
 

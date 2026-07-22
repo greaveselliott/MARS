@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint B3 after B2 passed at `92d7ddd`
+**Current Ticket:** T-066 checkpoint C after B3 passed at `683daf8`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,8 +13,8 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002 remains incomplete because the release branch still reaches the legacy raw/checksum-only updater, and the installer boundary, retained-consumer/DocSync migration, and lifecycle evidence have not passed.
-**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, B1 acquires one verified candidate through a bounded credential-safe remote session, and B2 durably replaces or provably restores the fixed local binary without network access. B3 now owns the narrow `Run` wiring before installer work begins.
+**Current Failing Scenario:** F-018-S002 remains incomplete because the installer boundary, retained-consumer/DocSync migration, and lifecycle evidence have not passed.
+**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, B1 acquires one verified candidate through a bounded credential-safe remote session, B2 durably replaces or provably restores the fixed local binary without network access, and B3 routes release-mode `Run` through those fail-closed stages before PATH repair. Checkpoint C now owns the installer boundary.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 checkpoints B3 through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Implement only T-066 checkpoint B3: route the release branch of `Run` through B1 and B2 with the minimum current-version/commit input while preserving source/main, dry-run, and shell-path behavior. Do not change the installer or begin consumer/DocSync migration.
+- **Current Primary Blocker:** T-066 checkpoints C through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Implement only T-066 checkpoint C: migrate `scripts/install.sh` to the trusted archive verifier path, or fail closed with a source-installation route if bootstrap cannot reuse that verifier without weakening trust. Do not begin the broader consumer/DocSync migration.
 
 ## Locked Decisions
 
@@ -146,6 +146,14 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - Existing and absent destinations use atomic rename or no-replace link semantics. Pre-commit failures and cancellation preserve the exact prior state; post-commit failures compensate only after revalidating the candidate, restore, and directory bindings, otherwise retaining explicit recovery-required evidence without overwriting an unknown entry. Success requires file and directory durability and exact post-cleanup identity, bytes, mode, link count, platform, toolchain, and commit proof.
 - Focused normal/race and hostile-filesystem tests, full `internal/selfupdate` tests, vet, docsconsistency, DocSync, four Go 1.26.5 CGO-disabled compile-only targets, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO.
 - B2 remains deliberately unwired. B3 must remove the reachable legacy raw/checksum-only release branch before installer work. B3 through E remain incomplete; the repository remains private and `primary_blocked`, and no live installation, version, tag, Release, signature, upload, visibility, or support claim changed.
+
+## T-066 Checkpoint B3 Evidence — 2026-07-22
+
+- On 2026-07-22, commit `683daf8` was pushed. Release-mode `Run` performs B1 acquisition, B2 durable replacement, then shell-PATH repair; source/main and authority-free dry-run behavior remain unchanged.
+- On 2026-07-22, implicit-latest updates admit only the exact canonical running `mars` executable with clean full-commit build identity, capture its digest before acquisition, and require B2 to recheck that digest under the destination lock before creating transaction state. Drift leaves the changed binary untouched and creates no transaction. Exact-version rollback requests remain bound to their authenticated requested release rather than the running-binary expectation.
+- Plans and CLI output expose only the authenticated tag, commit, and archive identity. Raw download/checksum URLs are no longer produced by the live path. A post-commit identity mismatch returns the populated authenticated plan with recovery-required truth and skips PATH repair.
+- Full `internal/selfupdate` and `cmd/mars` tests, focused race tests, vet, docsconsistency, DocSync, four Go 1.26.5 CGO-disabled compile-only targets, `make vuln` with zero called vulnerabilities, fuzz smoke, and the lint fallback to whole-source vet passed. Engineer, QA, Security, and Orchestrator are GO.
+- Legacy raw/checksum helper code is unreachable from `Run` and remains only for checkpoint D removal. Checkpoints C through E remain incomplete; the repository remains private and `primary_blocked`, and no live update, version, tag, Release, signature, upload, visibility, or support claim changed.
 
 ## Validation Gates
 
