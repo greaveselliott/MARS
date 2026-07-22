@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: T-067 established and validated the exact Go 1.25.12 source floor; A1 is ready to admit exact sigstore-go v1.2.2"
+last_attempt: "2026-07-22: A1 pushed at fcf7397 with exact sigstore-go v1.2.2, pinned offline trust/identity verification, strict checksums, and zero called vulnerabilities"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Admit exact sigstore-go v1.2.2, rerun whole-source and called-path vulnerability gates, then implement only checkpoint A1 checksum and offline Sigstore verification."
+next_action: "Implement only checkpoint A2 bounded archive inspection/extraction against authenticated archive bytes, then validate and push it before updater integration."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -35,13 +35,13 @@ T-065 froze the private GoReleaser producer contract and retired the bespoke pub
 
 The supported artifact set is the T-065 nine-file set plus one signature bundle: four canonical mars_<version>_<os>_<arch>.tar.gz archives, four matching .sbom.json files, canonical checksums.txt with exactly the eight archive/SBOM records, and checksums.txt.sigstore.json.
 
-checksums.txt.sigstore.json is a Sigstore bundle JSON v0.3 over the exact raw bytes of checksums.txt. Verification is offline against a repository-pinned Sigstore trusted-root document and pinned SHA-256; runtime trust-root or identity overrides are forbidden. The accepted OIDC issuer is https://token.actions.githubusercontent.com. The certificate identity is exactly https://github.com/greaveselliott/MARS/.github/workflows/release.yml@refs/tags/v<semver>. In addition to issuer, repository, workflow, and tag-ref checks, the Fulcio/Sigstore GitHub workflow SHA certificate extension must equal the expected full release commit, and the archive binary must report that same full commit. The selected vulnerability-reviewed sigstore-go API must expose and verify this claim; if it cannot, implementation fails closed and records the blocker rather than adding custom certificate or cryptographic parsing. The bundle must also contain a valid transparency-log inclusion proof. Missing, malformed, expired-at-signing, wrong-root, wrong-issuer, wrong-workflow, wrong-repository, wrong-ref, wrong-commit, or unverifiable bundle evidence fails closed. T-066 uses only ephemeral offline synthetic bundles; it does not sign MARS artifacts.
+checksums.txt.sigstore.json is a Sigstore bundle JSON v0.3 over the exact raw bytes of checksums.txt. Verification is offline against a repository-pinned Sigstore trusted-root document and pinned SHA-256; runtime trust-root or identity overrides are forbidden. The accepted OIDC issuer is https://token.actions.githubusercontent.com. The certificate identity is exactly https://github.com/greaveselliott/MARS/.github/workflows/release.yml@refs/tags/v<semver>. In addition to issuer, repository, workflow, and tag-ref checks, the Fulcio/Sigstore GitHub workflow SHA certificate extension must equal the expected full release commit, and the archive binary must report that same full commit. The selected vulnerability-reviewed sigstore-go API must expose and verify this claim; if it cannot, implementation fails closed and records the blocker rather than adding custom certificate or cryptographic parsing. The bundle must also contain a valid transparency-log inclusion proof. Missing, malformed, expired-at-signing, wrong-root, wrong-issuer, wrong-workflow, wrong-repository, wrong-ref, wrong-commit, or unverifiable bundle evidence fails closed. Tests may use synthetic bundles or an immutable upstream public signature vector offline; neither constitutes a MARS signature or release.
 
 The selected archive name is exact for the normalized release version and current GOOS/GOARCH. Before any candidate execution or destination mutation, verify the signature bundle, strict checksum grammar and membership, selected archive digest, exact archive structure, and the extracted binary's debug/buildinfo: GOOS, GOARCH, pinned Go toolchain policy, `CGO_ENABLED=0`, full vcs.revision, vcs.modified=false, and a valid vcs.time. T-065's producer proof owns the commit-derived-time guarantee; T-066 must not claim the signed checksum bundle authenticates a timestamp it does not contain.
 
 ## Checkpoint sequence
 
-A1. Add the production offline Sigstore-bundle and strict canonical-checksum verification primitive plus bounded synthetic positive and hostile table tests. Commit and push before archive work.
+A1. Passed at `fcf7397`: production offline Sigstore-bundle and strict canonical-checksum verification plus bounded upstream-positive and hostile tests. Committed and pushed before archive work.
 
 A2. Add bounded gzip/tar inspection and extraction. Reject absolute/traversal names, backslashes, links, devices/FIFOs, sparse or duplicate members, missing/extra members, multiple gzip streams or trailing data, and member/file-count/compressed/expanded-size quota violations. The archive contains exactly mars, LICENSE, NOTICE, and THIRD_PARTY_NOTICES with fixed regular-file modes. Commit and push before updater integration.
 
@@ -64,6 +64,15 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - The proposed compatibility ticket must set `go 1.25.12`, retain release `toolchain go1.26.5`, add an exact minimum-toolchain lane, reject Go 1.25.11 without auto-download, and make `doctor` patch-aware for explicit MARS source builds while keeping packaged-binary and target users healthy without Go. Generated target repositories do not inherit this source-only floor.
 - The current public-good root candidate was independently identified at `sigstore/root-signing` commit `c9bda74ad2221f938f7d2e0295ca3aad2da710a8`, SHA-256 `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`, and parsed fully offline with v0.7.0. It was not added because no verifier dependency or compatibility-floor change is authorized yet.
 - No MARS dependency, verifier source, tag, Release, signature, upload, version, or visibility change occurred. A2 and every later T-066 checkpoint remain unstarted.
+
+## Checkpoint A1 completion — 2026-07-22
+
+- Pushed commit `fcf7397` admits exact `sigstore-go v1.2.2` from upstream commit `55aa6240784677449a564e66a0fca7a6a3605ecd` with the recorded SumDB hashes and no replacement. The main module remains `go 1.25.12` with release `toolchain go1.26.5`.
+- The embedded public-good root is the 6,787-byte `targets/trusted_root.json` from `sigstore/root-signing` commit `c9bda74ad2221f938f7d2e0295ca3aad2da710a8`, Git blob `effb0a19e6a0b3f69b3f0a2c72b5c2a02a0ddeea`, SHA-256 `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`.
+- Production now requires exact bundle v0.3, one transparency inclusion proof, observer time, SCT, raw checksum bytes, one exact non-regex GitHub Actions identity, modern source/build digests plus the required GitHub workflow SHA/repository/ref extensions, and exactly eight sorted archive/SBOM checksum records. Inputs are bounded and snapshotted; failures return fixed redacted errors. The primitive has no path, network, TUF/live-root, archive, updater, installer, signing, or publication surface.
+- Positive offline conformance uses the public GoReleaser `v2.17.0` `checksums.txt` (SHA-256 `6fad0b6d…c921f`) and signature bundle as a pinned upstream test vector bound to commit `770a4fc7a8fb2dca874b6c98cb739dd64fc931c0`; it is not synthetic and is not MARS release evidence. Tampered bytes, wrong commit/root, missing proof, unsupported version, noncanonical checksum grammar, and hostile error content are rejected.
+- Exact Go 1.25.12 full-source testing passed apart from one DocSync metadata omission, which was corrected and whose failed package plus DocSync/selfupdate reruns passed. Vet, focused race, module verification, exact-Go whole-source `govulncheck`, corrected Go 1.26.5 `make vuln`, and four Go 1.26.5 CGO-disabled cross-builds passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO.
+- A2 through E remain unstarted. Dependency notice completion remains a public-cutover blocker. No MARS tag, Release, signature, upload, version, visibility, or supported-release claim changed.
 
 ## Interfaces and blast radius
 
