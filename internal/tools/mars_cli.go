@@ -551,20 +551,6 @@ Global command surface:
     Flags: --repo <path>, --min-version <X.Y.Z>, --max-version <X.Y.Z>, --dry-run, --check
     Example: ["release", "backfill-notes", "--repo", ".", "--max-version", "0.26.2", "--dry-run"]
 
-  release verify-assets
-    Verify local dist assets or GitHub release metadata/assets for the updater.
-    Flags: --repo <owner/name>, --version <latest|tag>, --release-url <url>, --dist <path>, --json
-    Example: ["release", "verify-assets", "--version", "latest", "--json"]
-    Local example: ["release", "verify-assets", "--dist", "dist/releases", "--version", "v1.2.3"]
-
-  release audit
-    Audit the newest local vX.Y.Z tags against GitHub Releases and report
-    notes-only releases (missing binary assets) or missing release objects,
-    with a producer-neutral recovery action per finding. Skips with a
-    recorded blocker when tags or the GitHub API are unavailable.
-    Flags: --repo <path>, --github-repo <owner/name>, --limit <n>, --json
-    Example: ["release", "audit", "--repo", ".", "--limit", "10"]
-
   checks run
     Run a local check command and record checks_passed/checks_failed in the
     repo database so Mars can route failed checks to pipeline-fixer.

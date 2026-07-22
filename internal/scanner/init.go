@@ -1195,7 +1195,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
-- For releases, use this repository's approved producer and artifact contract; MARS does not inject or select GoReleaser or another producer for target repositories. Create tag ` + "`vX.Y.Z`" + ` only at the clean release-note commit, then run the project-owned production and verification gates before advertising installer or update availability. Use ` + "`mars release verify-assets`" + ` only while its retained contract matches this repository. When GitHub Releases are used, independently require the expected unique remote names, uploaded states, sizes, and SHA-256 digests to converge. Upload-process exit zero or a partial list is not completion. If production or verification is blocked, record the blocker explicitly.
+- For releases, use this repository's approved producer and artifact contract; MARS does not inject or select GoReleaser, another producer, or a generic release-asset verifier for target repositories. Create tag ` + "`vX.Y.Z`" + ` only at the clean release-note commit, then run the project-owned production and verification gates before advertising installer or update availability. When GitHub Releases are used, independently require the expected unique remote names, uploaded states, sizes, and SHA-256 digests to converge. Upload-process exit zero or a partial list is not completion. If production or verification is blocked, record the blocker explicitly.
 - Private MARS release access is part of getting started and version-drift repair. Run ` + "`mars auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
 - Operating rules inherited from MARS apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars update harness --repo .`" + `.
@@ -3037,8 +3037,9 @@ This target repository owns its release producer and artifact contract; MARS
 does not inject or select GoReleaser or another producer. For source-style
 binary releases, tag ` + "`vX.Y.Z`" + ` only at the clean release-note commit,
 then run the repository-owned production and verification gates before
-claiming installer or self-update availability. Use ` + "`mars release verify-assets`" + `
-only while its retained contract matches this repository's output.
+claiming installer or self-update availability. MARS does not provide a generic
+release-asset verifier for target repositories; use this repository's approved
+artifact-contract gate.
 
 When this repository publishes through GitHub Releases, independently require
 the expected unique remote names, uploaded states, sizes, and SHA-256 digests
@@ -4614,7 +4615,7 @@ For direct commits to main:
 5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
 6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
 7. Run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\"]`" + ` and include the backfill in the same release-note commit.
-8. After the release-note commit is pushed, create tag ` + "`vX.Y.Z`" + ` only at that commit, then run this repository's approved producer and artifact-verification gates. MARS does not select a producer for target repositories. Use ` + "`mars release verify-assets`" + ` only while its retained contract matches this repository. When GitHub Releases are used, independently require exact remote name/state/size/SHA-256 convergence before advertising availability. Treat partial or unverifiable state as a blocker even after upload-process exit zero.
+8. After the release-note commit is pushed, create tag ` + "`vX.Y.Z`" + ` only at that commit, then run this repository's approved producer and artifact-verification gates. MARS does not select a producer or generic release-asset verifier for target repositories. When GitHub Releases are used, independently require exact remote name/state/size/SHA-256 convergence before advertising availability. Treat partial or unverifiable state as a blocker even after upload-process exit zero.
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)

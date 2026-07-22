@@ -128,7 +128,7 @@ func handleReleaseOrchestrate(ctx context.Context, root Root, raw json.RawMessag
 6. Push main.
 7. For a target repository, create and push tag ` + "`vX.Y.Z`" + ` only when its approved release workflow authorizes that mutation. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
 8. Run the target repository's approved release producer. MARS does not provide or select a built-in producer for target repositories.
-9. Run ` + "`mars_cli`" + ` with args ["release", "verify-assets", "--dist", "<repository-output>", "--version", "vX.Y.Z"] only while the retained verifier matches that repository's artifact contract.
+9. Run the target repository's approved artifact-contract verifier against the produced output. MARS does not provide a generic release-asset verifier for target repositories.
 10. If production, local verification, or optional remote publication fails, record the blocker before treating release work as complete.`
 	if isMarsFoundationSource(root) {
 		sequence = `1. Read the active F-018 plan and current T-065 through T-067 ticket before changing source release state.
@@ -188,7 +188,7 @@ Remote inspection commands for optional GitHub mirrors:
 - `+"`gh run list --repo <owner/name> --limit 10`"+`
 - `+"`gh run view <run-id> --repo <owner/name> --json status,conclusion,url`"+`
 - `+"`gh release view vX.Y.Z --repo <owner/name> --json tagName,name,assets,url,isDraft,isPrerelease,publishedAt`"+`
-- `+"`mars release verify-assets --version vX.Y.Z`"+`
+- the repository's approved remote artifact-contract verification gate
 
 Interpretation:
 - Tag exists but release is 404: local assets may still be complete; run the repository's approved release workflow or record a publication blocker.

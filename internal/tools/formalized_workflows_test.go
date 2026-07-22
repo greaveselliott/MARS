@@ -90,11 +90,15 @@ func TestReleaseWorkflowsUseRepositoryOwnedProducer(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, result.Output, "repository's approved release producer")
 	require.NotContains(t, result.Output, "publish-assets")
+	require.NotContains(t, result.Output, "release verify-assets")
+	require.NotContains(t, result.Output, "release audit")
 
 	status, err := handleGithubReleaseStatus(context.Background(), root, json.RawMessage(`{}`))
 	require.NoError(t, err)
 	require.Contains(t, status.Output, "repository's approved release workflow")
 	require.NotContains(t, status.Output, "publish-assets")
+	require.NotContains(t, status.Output, "release verify-assets")
+	require.NotContains(t, status.Output, "release audit")
 }
 
 func TestReleaseWorkflowBlocksFoundationSourcePublication(t *testing.T) {

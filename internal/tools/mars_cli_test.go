@@ -38,7 +38,7 @@ func TestMarsCLI_reference(t *testing.T) {
 	for _, command := range []string{
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
 		"scan", "doctor", "auth github check", "auth github setup", "update check", "update tool", "update harness",
-		"path setup", "release notes", "release backfill-notes", "release verify-assets", "checks run", "scores", "scores export",
+		"path setup", "release notes", "release backfill-notes", "checks run", "scores", "scores export",
 		"telemetry status", "telemetry preview", "telemetry export", "telemetry send", "telemetry collect", "telemetry triage-foundation",
 		"docsync audit", "trust", "trust set", "models evaluate", "models eligible", "models list", "models override", "models credentials write-local-env", "guardrails secret-scan", "guardrails install-hooks",
 		"tools list", "tools run <name>", "mcp serve",
@@ -46,6 +46,8 @@ func TestMarsCLI_reference(t *testing.T) {
 		require.Contains(t, res.Output, command)
 	}
 	require.NotContains(t, res.Output, "release publish-assets")
+	require.NotContains(t, res.Output, "release verify-assets")
+	require.NotContains(t, res.Output, "release audit")
 	require.Contains(t, res.Output, "--model-endpoint <real-url>")
 	require.Contains(t, res.Output, "--dashboard-addr <host:port>")
 	require.Contains(t, res.Output, "--dashboard-trusted-origin <exact-https-origin>")
