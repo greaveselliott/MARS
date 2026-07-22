@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint B1 after A1 passed at `fcf7397` and A2 passed at `b824b91`
+**Current Ticket:** T-066 checkpoint B2 after B1 passed at `f3ed495`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -14,7 +14,7 @@
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
 **Current Failing Scenario:** F-018-S002 remains incomplete because the updater transaction, installer boundary, retained-consumer/DocSync migration, and lifecycle evidence have not passed.
-**Walking Skeleton Slice:** As of 2026-07-22, A1 authenticates the exact signed checksum contract and A2 authenticates and safely inspects the selected archive in memory. Checkpoint B will integrate those primitives into the updater transaction before installer work begins.
+**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, and B1 acquires one verified candidate through a bounded credential-safe remote session without filesystem mutation. B2 now owns the network-free durable local transaction before updater wiring or installer work begins.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 checkpoints B through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Implement only T-066 checkpoint B1: bounded credential-safe GitHub release/tag/asset acquisition, A1 then A2 verification, drift recheck, and downgrade/replay rejection with no filesystem writes. Do not begin the local replacement transaction, installer, or consumer/DocSync migration.
+- **Current Primary Blocker:** T-066 checkpoints B2 through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Implement only T-066 checkpoint B2: a serialized, network-free, descriptor-bound local replacement transaction with durable rollback or explicit recovery-required evidence. Do not wire `Run`, change the installer, or begin consumer/DocSync migration.
 
 ## Locked Decisions
 
@@ -132,6 +132,13 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - One clean GoReleaser snapshot, `0.69.0-dev.b824b91`, passed the producer verifier and the A2 Darwin/arm64 environment verifier without candidate execution or installation. Checkpoints B through E remain incomplete; the repository remains private and no version, tag, Release, MARS signature, upload, visibility, or support claim changed.
 
 - COO, CTO-weekly, QA, and Security split checkpoint B into three independently green commits: B1 performs bounded credential-safe acquisition and A1/A2 verification without filesystem writes; B2 performs the serialized durable local transaction without network access; B3 wires `Run` and the minimum current-version identity while preserving source mode. Installer work remains C and broader CLI/audit/docs retirement remains D.
+
+## T-066 Checkpoint B1 Evidence — 2026-07-22
+
+- Commit `f3ed495` is pushed. It reconciles one exact immutable ten-asset GitHub Release, resolves and boundedly peels its exact tag to a full commit, applies default-selector/downgrade/replay policy, acquires only checksums, signature bundle, and the selected platform archive, then runs A1 and A2 before returning a private cloned candidate.
+- Anonymous access is attempted first; optional credentials are resolved only after an exact GitHub API 401/403/404 and are never forwarded across the bounded HTTPS asset redirect. Metadata, evidence, archive, redirect, tag-chain, response-size, and overall acquisition limits fail closed with fixed redacted errors.
+- All eight signed archive/SBOM digests must match the immutable Release inventory, selected bytes must match their declared size and digest, and a final exact Release ID, default selector when used, inventory, and ref-chain recheck must match the opening snapshot. The implementation performs no filesystem write, candidate execution, installation, signing, or publication.
+- `go test ./internal/selfupdate`, focused B1 race, `go vet ./internal/selfupdate`, docsconsistency and DocSync, four Go 1.26.5 CGO-disabled compile-only tests, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO. Checkpoints B2 through E remain incomplete; the repository remains private and no version, tag, Release, signature, upload, visibility, or support claim changed.
 
 ## Validation Gates
 

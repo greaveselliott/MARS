@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: A2 pushed at b824b91 with authenticated canonical-archive inspection, bounded exact extraction, release build-metadata verification, clean snapshot evidence, and QA/Security GO"
+last_attempt: "2026-07-22: B1 pushed at f3ed495 with exact immutable release/tag/asset acquisition, all-eight signed inventory binding, A1/A2 verification, replay/drift rejection, and QA/Security GO"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint B1 bounded credential-safe release acquisition and A1/A2 verification with no filesystem writes; validate and push before B2."
+next_action: "Implement only checkpoint B2 network-free descriptor-bound durable replacement with rollback or explicit recovery-required evidence; validate and push before B3."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -45,7 +45,7 @@ A1. Passed at `fcf7397`: production offline Sigstore-bundle and strict canonical
 
 A2. Passed at `b824b91`: bounded in-memory gzip/tar inspection and extraction rejects unsafe or noncanonical archive content and verifies exact release build metadata before returning cloned binary bytes. Committed and pushed before updater integration.
 
-B1. Add bounded credential-safe acquisition with exact release/tag/commit and ten-asset reconciliation, anonymous-first GitHub access, manually constrained redirects, strict response quotas, A1 then A2 verification, a final remote drift recheck, and downgrade/replay rejection. Return only a private cloned candidate; perform no filesystem writes. Commit and push.
+B1. Passed at `f3ed495`: bounded credential-safe acquisition enforces exact immutable release/tag/commit and ten-asset reconciliation, anonymous-first GitHub access, manually constrained redirects, strict response quotas, A1 then A2 verification, a final remote drift recheck, and downgrade/replay rejection. It returns only a private cloned candidate and performs no filesystem writes.
 
 B2. Add the network-free local transaction: descriptor-bound destination admission, a persistent nonblocking lock, same-filesystem 0700 staging, 0600 candidate/backup files, file and directory durability, atomic replacement, post-replace verification, and verified compensation or explicit recovery-required evidence. Commit and push.
 
@@ -85,6 +85,12 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Focused normal/race tests, vet, DocSync, four CGO-disabled cross-compiles, and vulnerability scanning passed with zero called vulnerabilities. QA and Security accepted the diff after the authenticated checksum result was bound to its exact tag and commit.
 - A clean GoReleaser snapshot `0.69.0-dev.b824b91` passed both the producer verifier and the A2 Darwin/arm64 environment verifier without execution, installation, or destination mutation.
 - Checkpoints B through E remain incomplete. The repository remains private at `VERSION=0.68.49`; no tag, Release, MARS signature, upload, visibility, or supported-release claim changed.
+
+## Checkpoint B1 completion — 2026-07-22
+
+- Pushed commit `f3ed495` performs anonymous-first, optional credential-safe acquisition of one exact immutable ten-asset Release; resolves and boundedly peels its exact tag; enforces latest/downgrade/replay policy; and runs A1 then A2 before returning a private cloned candidate without filesystem mutation.
+- All eight signed archive/SBOM digests bind to the remote inventory. Selected bytes bind to declared size and digest, and final exact Release ID, latest selector when used, inventory, and ref chain must equal the opening snapshot. Quotas, timeouts, redirects, credential handling, and failures are bounded and redacted.
+- `go test ./internal/selfupdate`, focused B1 race, `go vet ./internal/selfupdate`, docsconsistency and DocSync, four Go 1.26.5 CGO-disabled compile-only tests, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO. B2 through E remain incomplete; no candidate was written, executed, or installed and no release or publication authority changed.
 
 ## Interfaces and blast radius
 
