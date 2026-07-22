@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: B1 pushed at f3ed495 with exact immutable release/tag/asset acquisition, all-eight signed inventory binding, A1/A2 verification, replay/drift rejection, and QA/Security GO"
+last_attempt: "2026-07-22: B2 pushed at 92d7ddd with a network-free descriptor-bound durable replacement transaction, verified compensation, focused hostile/race coverage, and Engineer/QA/Security GO"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint B2 network-free descriptor-bound durable replacement with rollback or explicit recovery-required evidence; validate and push before B3."
+next_action: "Implement only checkpoint B3: wire the release branch of Run and the minimum current-version/commit input to B1 and B2 while preserving source/main, dry-run, and shell-path behavior; validate and push before installer work."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -47,7 +47,7 @@ A2. Passed at `b824b91`: bounded in-memory gzip/tar inspection and extraction re
 
 B1. Passed at `f3ed495`: bounded credential-safe acquisition enforces exact immutable release/tag/commit and ten-asset reconciliation, anonymous-first GitHub access, manually constrained redirects, strict response quotas, A1 then A2 verification, a final remote drift recheck, and downgrade/replay rejection. It returns only a private cloned candidate and performs no filesystem writes.
 
-B2. Add the network-free local transaction: descriptor-bound destination admission, a persistent nonblocking lock, same-filesystem 0700 staging, 0600 candidate/backup files, file and directory durability, atomic replacement, post-replace verification, and verified compensation or explicit recovery-required evidence. Commit and push.
+B2. Passed at `92d7ddd`: the network-free local transaction enforces descriptor-bound destination admission, a persistent nonblocking lock, same-filesystem 0700 staging, 0600 candidate/backup files, file and directory durability, atomic replacement, post-replace verification, and verified compensation or explicit recovery-required evidence. Committed and pushed before updater wiring.
 
 B3. Wire the release branch of `Run` and the minimum current-version/commit input to B1 and B2 while preserving source/main, dry-run, and shell-path behavior. Remove download URLs from the plan/output. Commit and push before installer work.
 
@@ -91,6 +91,13 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Pushed commit `f3ed495` performs anonymous-first, optional credential-safe acquisition of one exact immutable ten-asset Release; resolves and boundedly peels its exact tag; enforces latest/downgrade/replay policy; and runs A1 then A2 before returning a private cloned candidate without filesystem mutation.
 - All eight signed archive/SBOM digests bind to the remote inventory. Selected bytes bind to declared size and digest, and final exact Release ID, latest selector when used, inventory, and ref chain must equal the opening snapshot. Quotas, timeouts, redirects, credential handling, and failures are bounded and redacted.
 - `go test ./internal/selfupdate`, focused B1 race, `go vet ./internal/selfupdate`, docsconsistency and DocSync, four Go 1.26.5 CGO-disabled compile-only tests, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO. B2 through E remain incomplete; no candidate was written, executed, or installed and no release or publication authority changed.
+
+## Checkpoint B2 completion — 2026-07-22
+
+- Pushed commit `92d7ddd` adds an unwired, network-free replacement primitive for one A1/A2/B1-verified candidate. It admits only the fixed `mars` leaf beneath a canonical owner-controlled directory, binds operations to no-follow descriptors, serializes with a persistent 0600 nonblocking lock, and uses a same-filesystem 0700 transaction directory with 0600 candidate and backup files.
+- Existing and absent destinations use atomic rename or no-replace link semantics. Success requires file and directory durability plus exact post-replacement inode, mode, link-count, bytes, platform, toolchain, and commit verification. Pre-commit cancellation preserves the prior state; post-commit failures either prove compensation or retain explicit recovery-required state and a verified backup without overwriting an unknown replacement.
+- Focused normal and race tests, full `internal/selfupdate` tests, vet, docsconsistency and DocSync, Darwin/Linux AMD64/ARM64 Go 1.26.5 CGO-disabled compile-only tests, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO.
+- B2 is not wired into `Run`; the legacy raw/checksum-only release updater remains reachable until B3. B3 through E remain incomplete. No candidate was executed or installed through a live command, and no version, tag, Release, signature, upload, visibility, or publication authority changed.
 
 ## Interfaces and blast radius
 

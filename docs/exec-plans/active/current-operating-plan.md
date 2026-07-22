@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint B2 after B1 passed at `f3ed495`
+**Current Ticket:** T-066 checkpoint B3 after B2 passed at `92d7ddd`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,8 +13,8 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002 remains incomplete because the updater transaction, installer boundary, retained-consumer/DocSync migration, and lifecycle evidence have not passed.
-**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, and B1 acquires one verified candidate through a bounded credential-safe remote session without filesystem mutation. B2 now owns the network-free durable local transaction before updater wiring or installer work begins.
+**Current Failing Scenario:** F-018-S002 remains incomplete because the release branch still reaches the legacy raw/checksum-only updater, and the installer boundary, retained-consumer/DocSync migration, and lifecycle evidence have not passed.
+**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, B1 acquires one verified candidate through a bounded credential-safe remote session, and B2 durably replaces or provably restores the fixed local binary without network access. B3 now owns the narrow `Run` wiring before installer work begins.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 checkpoints B2 through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Implement only T-066 checkpoint B2: a serialized, network-free, descriptor-bound local replacement transaction with durable rollback or explicit recovery-required evidence. Do not wire `Run`, change the installer, or begin consumer/DocSync migration.
+- **Current Primary Blocker:** T-066 checkpoints B3 through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Implement only T-066 checkpoint B3: route the release branch of `Run` through B1 and B2 with the minimum current-version/commit input while preserving source/main, dry-run, and shell-path behavior. Do not change the installer or begin consumer/DocSync migration.
 
 ## Locked Decisions
 
@@ -139,6 +139,13 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - Anonymous access is attempted first; optional credentials are resolved only after an exact GitHub API 401/403/404 and are never forwarded across the bounded HTTPS asset redirect. Metadata, evidence, archive, redirect, tag-chain, response-size, and overall acquisition limits fail closed with fixed redacted errors.
 - All eight signed archive/SBOM digests must match the immutable Release inventory, selected bytes must match their declared size and digest, and a final exact Release ID, default selector when used, inventory, and ref-chain recheck must match the opening snapshot. The implementation performs no filesystem write, candidate execution, installation, signing, or publication.
 - `go test ./internal/selfupdate`, focused B1 race, `go vet ./internal/selfupdate`, docsconsistency and DocSync, four Go 1.26.5 CGO-disabled compile-only tests, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO. Checkpoints B2 through E remain incomplete; the repository remains private and no version, tag, Release, signature, upload, visibility, or support claim changed.
+
+## T-066 Checkpoint B2 Evidence — 2026-07-22
+
+- Commit `92d7ddd` is pushed. The unwired, network-free primitive admits only the fixed `mars` leaf under a canonical owner-controlled install directory, binds every mutation to no-follow descriptors, serializes with a persistent 0600 lock, and uses same-filesystem 0700 state with 0600 candidate and backup files.
+- Existing and absent destinations use atomic rename or no-replace link semantics. Pre-commit failures and cancellation preserve the exact prior state; post-commit failures compensate only after revalidating the candidate, restore, and directory bindings, otherwise retaining explicit recovery-required evidence without overwriting an unknown entry. Success requires file and directory durability and exact post-cleanup identity, bytes, mode, link count, platform, toolchain, and commit proof.
+- Focused normal/race and hostile-filesystem tests, full `internal/selfupdate` tests, vet, docsconsistency, DocSync, four Go 1.26.5 CGO-disabled compile-only targets, and `govulncheck ./internal/selfupdate` passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO.
+- B2 remains deliberately unwired. B3 must remove the reachable legacy raw/checksum-only release branch before installer work. B3 through E remain incomplete; the repository remains private and `primary_blocked`, and no live installation, version, tag, Release, signature, upload, visibility, or support claim changed.
 
 ## Validation Gates
 
