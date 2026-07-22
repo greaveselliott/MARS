@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -29,6 +30,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/hardware"
 	jiraintegration "github.com/greaveselliott/mars/internal/jira"
 	"github.com/greaveselliott/mars/internal/queue"
 	"github.com/greaveselliott/mars/internal/scanner"
@@ -37,6 +39,19 @@ import (
 	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	detectServeHardware = func() hardware.Summary {
+		return hardware.Summary{
+			Profile:  hardware.ProfileCPU,
+			RAMMiB:   16 * 1024,
+			CPUCores: 4,
+			OS:       runtime.GOOS,
+			Arch:     runtime.GOARCH,
+		}
+	}
+	os.Exit(m.Run())
+}
 
 type flushSignalWriter struct {
 	header  http.Header

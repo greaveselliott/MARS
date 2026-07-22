@@ -235,6 +235,20 @@ func TestReplaceVerifiedMARSReleaseRejectsUnsafeDestinationBeforeStaging(t *test
 		require.ErrorIs(t, err, ErrSignedReplaceUnsafe)
 		require.NoFileExists(t, filepath.Join(installDir, signedReplaceLockName))
 	})
+
+	t.Run("world-writable parent", func(t *testing.T) {
+		root := signedReplaceTestDir(t)
+		unsafeParent := filepath.Join(root, "unsafe-parent")
+		require.NoError(t, os.Mkdir(unsafeParent, 0o700))
+		require.NoError(t, os.Chmod(unsafeParent, 0o777))
+		installDir := filepath.Join(unsafeParent, "install")
+		require.NoError(t, os.Mkdir(installDir, 0o700))
+
+		_, err := replaceVerifiedMARSReleaseWithDependencies(context.Background(), installDir, signedReplaceTestDownload(t, []byte("candidate")), signedReplaceTestDependencies())
+		require.ErrorIs(t, err, ErrSignedReplaceUnsafe)
+		require.NoFileExists(t, filepath.Join(installDir, signedReplaceLockName))
+		require.NoDirExists(t, filepath.Join(installDir, signedReplaceTransactionName))
+	})
 }
 
 func TestReplaceVerifiedMARSReleasePreservesPriorOnPreCommitFailure(t *testing.T) {
@@ -477,9 +491,16 @@ func signedReplaceTestDownloadFor(t *testing.T, tag, commit string, releaseID in
 
 func signedReplaceTestDir(t *testing.T) string {
 	t.Helper()
-	dir, err := filepath.EvalSymlinks(t.TempDir())
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
+	home, err = filepath.EvalSymlinks(home)
+	require.NoError(t, err)
+	dir, err := os.MkdirTemp(home, ".mars-signed-replace-test-")
 	require.NoError(t, err)
 	require.NoError(t, os.Chmod(dir, 0o700))
+	t.Cleanup(func() {
+		require.NoError(t, os.RemoveAll(dir))
+	})
 	return dir
 }
 

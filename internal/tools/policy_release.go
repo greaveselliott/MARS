@@ -59,7 +59,7 @@ func checkShellReleaseTagPolicy(ctx context.Context, root Root, args shellExecAr
 }
 
 func shellExecReleaseTagMutation(args shellExecArgs) (tag string, target string, ok bool) {
-	fields := normalizedShellExecFields(args)
+	fields := releaseTagShellExecFields(args)
 	subcommand, subArgs := gitShellSubcommand(fields)
 	if subcommand != "tag" {
 		return "", "", false
@@ -104,6 +104,31 @@ func shellExecReleaseTagMutation(args shellExecArgs) (tag string, target string,
 		return tag, target, true
 	}
 	return "", "", false
+}
+
+func releaseTagShellExecFields(args shellExecArgs) []string {
+	if len(args.Argv) > 0 {
+		fields := make([]string, 0, len(args.Argv))
+		for _, field := range args.Argv {
+			field = strings.Trim(strings.TrimSpace(field), `"'`)
+			if field != "" {
+				fields = append(fields, field)
+			}
+		}
+		return normalizeReleaseTagExecutable(fields)
+	}
+	cmd := strings.TrimSpace(args.ShellCommand)
+	if cmd == "" || shellCommandHasControlSyntax(cmd) {
+		return nil
+	}
+	return normalizeReleaseTagExecutable(shellFieldsPreserveCase(cmd))
+}
+
+func normalizeReleaseTagExecutable(fields []string) []string {
+	if len(fields) > 0 && strings.EqualFold(filepathBase(fields[0]), "git") {
+		fields[0] = "git"
+	}
+	return fields
 }
 
 func gitTagArgsListOnly(args []string) bool {

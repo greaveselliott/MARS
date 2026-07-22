@@ -72,6 +72,8 @@ const (
 	recoveryJobStaleAfter = 10 * time.Minute
 )
 
+var detectServeHardware = hardware.Detect
+
 // Config controls the serve command.
 type Config struct {
 	WebhookAddr            string
@@ -217,7 +219,7 @@ func New(cfg Config) (*Server, error) {
 			}
 		}
 	}
-	hw := hardware.Detect()
+	hw := detectServeHardware()
 	var modelSet map[hardware.Tier]hardware.ModelSpec
 
 	modelsDir := strings.TrimSpace(cfg.ModelsDir)

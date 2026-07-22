@@ -1456,6 +1456,72 @@ func TestShellExecPolicyAllowsReleaseTagAtReleaseNotesHead(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestShellExecReleaseTagMutationPreservesOperandCase(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		args       shellExecArgs
+		wantTag    string
+		wantTarget string
+	}{
+		{
+			name:       "argv HEAD target",
+			args:       shellExecArgs{Argv: []string{"git", "tag", "v0.2.0", "HEAD"}},
+			wantTag:    "v0.2.0",
+			wantTarget: "HEAD",
+		},
+		{
+			name:       "shell HEAD target",
+			args:       shellExecArgs{ShellCommand: "git tag v0.2.0 HEAD"},
+			wantTag:    "v0.2.0",
+			wantTarget: "HEAD",
+		},
+		{
+			name:       "case-sensitive file flag",
+			args:       shellExecArgs{Argv: []string{"git", "tag", "-F", "RELEASE_NOTES.md", "v0.2.0", "HEAD"}},
+			wantTag:    "v0.2.0",
+			wantTarget: "HEAD",
+		},
+		{
+			name:       "case-insensitive executable basename",
+			args:       shellExecArgs{Argv: []string{"GIT", "tag", "v0.2.0", "HEAD"}},
+			wantTag:    "v0.2.0",
+			wantTarget: "HEAD",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tag, target, ok := shellExecReleaseTagMutation(tt.args)
+			require.True(t, ok)
+			require.Equal(t, tt.wantTag, tag)
+			require.Equal(t, tt.wantTarget, target)
+		})
+	}
+}
+
+func TestShellExecReleaseTagMutationKeepsExactGrammar(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		args shellExecArgs
+	}{
+		{name: "uppercase subcommand", args: shellExecArgs{Argv: []string{"git", "TAG", "v0.2.0", "HEAD"}}},
+		{name: "delete", args: shellExecArgs{Argv: []string{"git", "tag", "--delete", "v0.2.0"}}},
+		{name: "list", args: shellExecArgs{Argv: []string{"git", "tag", "--list", "v0.2.0"}}},
+		{name: "shell control syntax", args: shellExecArgs{ShellCommand: "git tag v0.2.0 HEAD && git push origin v0.2.0"}},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, _, ok := shellExecReleaseTagMutation(tt.args)
+			require.False(t, ok)
+		})
+	}
+}
+
 func TestShellPolicyBlocksDestructiveVariants(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

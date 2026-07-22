@@ -159,6 +159,7 @@ func initUpdateToolRepo(t *testing.T) (string, string) {
 	configureUpdateToolGitUser(t, local)
 	commitUpdateToolFile(t, local, "README.md", "initial\n", "initial")
 	runGit(t, "", "init", "--bare", origin)
+	runGit(t, origin, "symbolic-ref", "HEAD", "refs/heads/main")
 	runGit(t, local, "remote", "add", "origin", origin)
 	runGit(t, local, "push", "-u", "origin", "main")
 	return local, origin
