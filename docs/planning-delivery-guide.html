@@ -358,10 +358,7 @@ mars release backfill-notes --repo /path/to/repo --check</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Verify the source snapshot contract</h3>
-              <pre><code># Run the exact pinned build, check, snapshot, and verification steps in:
-.github/workflows/release-snapshot.yml
-mars release audit --repo .</code></pre>
-              <p>MARS source uses its pinned, publication-disabled F-018 snapshot workflow. Target repositories choose their own producer and artifact contract; neither path authorizes publication without the repository's release gates.</p>
+              <p>Run the exact pinned build, check, snapshot, and verification steps defined in <code>.github/workflows/release-snapshot.yml</code>. MARS source uses this publication-disabled F-018 snapshot workflow; target repositories choose their own producer and artifact contract. Neither path authorizes publication without the repository's release gates.</p>
             </article>
           </div>
         </section>

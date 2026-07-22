@@ -131,7 +131,7 @@ docs:
                 <tr><td>Runtime queue and telemetry</td><td><code>~/.mars/db/...</code></td><td>Local MARS runtime.</td><td>No.</td></tr>
                 <tr><td>Models and managed binaries</td><td><code>~/.mars/models/</code>, <code>~/.mars/bin/</code></td><td>User machine.</td><td>No.</td></tr>
                 <tr><td>Logs and traces</td><td><code>~/.mars/traces/</code></td><td>User machine.</td><td>No, unless manually copied into a validation report.</td></tr>
-                <tr><td>Release assets</td><td><code>dist/releases/</code>, GitHub Releases mirror.</td><td>Release process.</td><td>No for binaries; yes for <code>VERSION</code> and <code>CHANGELOG.md</code>.</td></tr>
+                <tr><td>Release working output</td><td><code>dist/</code> and a future approved GitHub Release.</td><td>Repository-owned release process.</td><td>No for generated archives, SBOMs, checksums, or working metadata; yes for <code>VERSION</code> and <code>CHANGELOG.md</code>.</td></tr>
                 <tr><td>Secret values</td><td>Environment variables or ignored <code>.harness/.env.local</code>.</td><td>Operator.</td><td>Never.</td></tr>
               </tbody>
             </table>
@@ -360,15 +360,14 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
               </tbody>
             </table>
           </div>
-          <pre><code>mars release notes --repo . --bump auto
-# Run the exact pinned build, check, snapshot, and verification steps in:
-.github/workflows/release-snapshot.yml
-mars release audit --repo .</code></pre>
+          <pre><code>mars release notes --repo . --bump auto</code></pre>
           <p>
-            The workflow above is the MARS source snapshot workflow,
+            Run the exact pinned build, check, snapshot, and verification steps
+            defined in <code>.github/workflows/release-snapshot.yml</code>. That is
+            the MARS source snapshot workflow,
             not generated target doctrine and not publication authority. The
-            retained <code>verify-assets</code> consumer remains transitional
-            until T-066 replaces it.
+            standalone verifier and audit are retired; signed consumer and
+            remote-convergence proof remain F-018 gates.
           </p>
         </section>
 
@@ -447,9 +446,8 @@ export OPENAI_API_KEY=...
 mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENAI_API_KEY --yes</code></pre>
             </article>
             <article data-doc-filter>
-              <h3>Verify source release assets</h3>
-              <pre><code>mars release verify-assets --dist dist/releases --version vX.Y.Z
-mars release audit --repo .</code></pre>
+              <h3>Verify source snapshot output</h3>
+              <p>Run the exact pinned build, check, snapshot, and verification steps defined in <code>.github/workflows/release-snapshot.yml</code>. The <code>dist/</code> directory also contains GoReleaser working metadata; only the exact publishable allowlist is candidate release evidence.</p>
             </article>
           </div>
         </section>

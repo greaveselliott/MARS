@@ -33,7 +33,7 @@ docs:
     <title>MARS CLI Reference</title>
     <meta
       name="description"
-      content="Detailed user reference for every MARS command, grouped by install, target lifecycle, execution, operations, models, telemetry, tools, and release workflows."
+      content="Detailed user reference for MARS install, target lifecycle, execution, operations, models, telemetry, tools, release preparation, and signed verification boundaries."
     >
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="site.css">
@@ -193,8 +193,10 @@ mars auth github check --json</code></pre></dd>
               <h3><code>mars update tool</code> and <code>mars update check</code></h3>
               <p>
                 <code>update check</code> reports installed CLI and target
-                harness drift. <code>update tool</code> upgrades or reinstalls
-                the installed command from release assets or source.
+                harness drift. Source checkout <code>make update-tool</code> is
+                the current supported reinstall path. Packaged
+                <code>update tool</code> flags are reserved for a future approved
+                F-018 signed release and historical raw assets are unsupported.
               </p>
               <dl>
                 <dt>Check flags</dt>
@@ -203,10 +205,10 @@ mars auth github check --json</code></pre></dd>
                 <dd><code>--version latest|vX.Y.Z|main</code>, <code>--install-dir</code>, <code>--source</code>, <code>--dry-run</code>, <code>--json</code>.</dd>
                 <dt>Tool aliases</dt>
                 <dd><code>mars update binary</code> and <code>mars update cli</code> run the same command as <code>mars update tool</code>.</dd>
-                <dt>Example</dt>
+                <dt>Current supported example</dt>
                 <dd><pre><code>mars update check --repo ~/my-project --json
-mars update tool --dry-run
-mars update tool</code></pre></dd>
+make update-tool
+mars version</code></pre></dd>
               </dl>
             </article>
           </div>
@@ -535,35 +537,17 @@ mars release notes --repo . --bump auto</code></pre>
 mars release backfill-notes --repo . --min-version 0.60.0 --max-version 0.68.0 --dry-run</code></pre>
             </article>
             <article data-doc-filter>
-              <h3><code>mars release verify-assets</code></h3>
+              <h3>Release artifact verification</h3>
               <p>
-                Verifies the retained legacy local or GitHub release asset
-                contract while T-066 migrates consumers to the F-018 archive
-                format. The former <code>publish-assets</code> command is retired;
-                MARS source uses pinned, publication-disabled GoReleaser/Syft
-                snapshots and target repositories choose their own producer.
+                <code>mars release verify-assets</code> and
+                <code>mars release audit</code> were retired by T-066 D1 and are
+                unknown commands. MARS source uses the exact pinned,
+                publication-disabled snapshot contract and F-018 signed archive
+                consumer; target repositories use their repository-owned
+                producer and verifier. A Release listing, upload exit, asset
+                names, or checksums alone is not authenticity or completion
+                evidence, and missing or unverifiable state remains blocked.
               </p>
-              <pre><code>mars release verify-assets --dist dist/releases --version vX.Y.Z
-mars release verify-assets --version vX.Y.Z</code></pre>
-              <div class="wide-table">
-                <table>
-                  <thead><tr><th>Advanced mirror flag</th><th>Use it for</th></tr></thead>
-                  <tbody>
-                    <tr><td><code>verify-assets --repo owner/name</code></td><td>Verify a GitHub Release mirror. On this command, <code>--repo</code> means GitHub <code>owner/name</code>, not a local checkout path.</td></tr>
-                    <tr><td><code>verify-assets --release-url URL</code></td><td>Verify against a GitHub-compatible release metadata endpoint when the default GitHub API URL is not the right source.</td></tr>
-                    <tr><td><code>audit --github-repo owner/name</code></td><td>Audit recent local tags against a non-default GitHub release mirror.</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </article>
-            <article data-doc-filter>
-              <h3><code>mars release audit</code></h3>
-              <p>
-                Detects notes-only or missing GitHub Releases for recent tags
-                and prints actionable backfill commands.
-              </p>
-              <pre><code>mars release audit --repo .
-mars release audit --repo . --limit 20</code></pre>
             </article>
           </div>
         </section>

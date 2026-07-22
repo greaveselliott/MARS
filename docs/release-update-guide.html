@@ -27,7 +27,7 @@ docs:
     <title>MARS Release And Update Guide</title>
     <meta
       name="description"
-      content="User guide to MARS update checks, CLI self-update, harness update, release notes, changelog backfill, release asset publication, verification, and audit."
+      content="User guide to MARS update checks, CLI self-update, harness update, release notes, changelog backfill, signed artifact verification, and cutover gates."
     >
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="site.css">
@@ -67,7 +67,7 @@ docs:
           <a href="#release-notes">Release Notes</a>
           <a href="#source-release">Source Release</a>
           <a href="#target-release">Target Release</a>
-          <a href="#assets">Assets And Audit</a>
+          <a href="#assets">Assets And Verification</a>
           <a href="#recipes">Recipes</a>
           <a href="#troubleshooting">Troubleshooting</a>
         </nav>
@@ -80,7 +80,7 @@ docs:
             <h1>Update the command, update deployed harnesses, and prepare verifiable releases.</h1>
             <p class="lede">
               MARS uses repo-owned semantic versions, generated changelog
-              entries, target harness version metadata, checksum-verified CLI
+              entries, target harness version metadata, signed archive CLI
               updates, local release evidence, and separately gated GitHub
               Releases. This guide separates day-to-day user updates from
               source maintainer snapshot preparation and approved cutover.
@@ -117,7 +117,7 @@ docs:
                 <tr><td><code>CHANGELOG.md</code></td><td>Source and targets.</td><td>Generated patch notes with Impact, Why, and What Changed sections.</td></tr>
                 <tr><td><code>internal/buildinfo/version.go</code></td><td>MARS source only.</td><td>Fallback version for source-tree builds when release ldflags are absent.</td></tr>
                 <tr><td><code>.harness/metadata.yaml</code></td><td>Target repos.</td><td>Generated harness version drift signal.</td></tr>
-                <tr><td><code>dist/releases/</code></td><td>MARS source release work.</td><td>Local release assets and checksums. This is the required local verification gate.</td></tr>
+                <tr><td><code>dist/</code></td><td>MARS source snapshot work.</td><td>Four archives, four SBOMs, checksums, and GoReleaser working metadata. Only the exact publishable allowlist is candidate evidence; the directory itself proves nothing.</td></tr>
               </tbody>
             </table>
           </div>
@@ -153,19 +153,22 @@ mars update check --repo ~/my-project --json</code></pre>
         <section class="doc-section" id="tool-update">
           <h2>Tool Update</h2>
           <p>
-            <code>mars update tool</code> upgrades the installed command without
-            changing into the source repo. Packaged updates download the
-            platform release asset, verify <code>checksums.txt</code>, and
-            atomically replace the running binary. Source users can choose the
-            source update path.
+            <code>mars update tool</code> has source and packaged modes. Release
+            mode accepts only the canonical signed archive contract: it verifies
+            the offline Sigstore bundle over the exact checksum bytes, immutable
+            tag/full commit, platform/build metadata, archive digest and
+            structure, then durably replaces or restores the fixed binary.
+            Source checkout update is the current supported route; packaged
+            availability stays blocked until the approved F-018 cutover release.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Path</th><th>Command</th><th>Use when</th></tr></thead>
               <tbody>
-                <tr><td>Dry run</td><td><code>mars update tool --dry-run</code></td><td>Preview asset, install directory, shell PATH impact, and replacement plan. See the <a href="shell-integration-reference.html">Shell Integration Reference</a> for PATH and completion repair.</td></tr>
-                <tr><td>Latest release</td><td><code>mars update tool</code></td><td>Packaged users upgrading from release assets.</td></tr>
-                <tr><td>Specific release</td><td><code>mars update tool --version v0.68.9</code></td><td>Pin a known version for reproduction or rollback.</td></tr>
+                <tr><td>Source checkout</td><td><code>make update-tool</code></td><td>Current supported route from a clean clone; fast-forward and reinstall the checked source.</td></tr>
+                <tr><td>Packaged dry run</td><td><code>mars update tool --dry-run</code></td><td>Use only after an approved signed release exists; previewing never grants installation authority.</td></tr>
+                <tr><td>Latest signed release</td><td><code>mars update tool</code></td><td>Blocked until F-018 cutover publishes the exact signed archive contract.</td></tr>
+                <tr><td>Specific signed release</td><td><code>mars update tool --version vX.Y.Z</code></td><td>Requires that exact approved signed contract; historical raw assets are unsupported.</td></tr>
                 <tr><td>Source install</td><td><code>mars update tool --source</code></td><td>Use Go source installation instead of release assets.</td></tr>
                 <tr><td>Main branch source</td><td><code>mars update tool --version main</code></td><td>Source-development update path for users who intentionally track main.</td></tr>
               </tbody>
@@ -208,9 +211,10 @@ git -C ~/my-project diff</code></pre>
         <section class="doc-section" id="auth">
           <h2>Release Auth</h2>
           <p>
-            Private release auth is only for release assets, binary update, and
-            optional GitHub mirror verification. Normal source checkout install
-            can use <code>mars setup --skip-github</code>. For the full
+            Private release auth can grant read access for an approved signed
+            packaged update and optional repository integration. It does not
+            authorize publication or prove artifact authenticity. Normal source
+            checkout install can use <code>mars setup --skip-github</code>. For the full
             credential map, open the
             <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.
           </p>
@@ -289,13 +293,7 @@ git commit -m "release: notes X.Y.Z"</code></pre>
             </li>
             <li>
               <h3>Build and verify private snapshot evidence</h3>
-              <pre><code># Run the exact pinned build, check, snapshot, and verification steps in:
-.github/workflows/release-snapshot.yml</code></pre>
-              <p>This MARS source workflow creates local evidence only. It does not tag, upload, sign, announce, or publish.</p>
-            </li>
-            <li>
-              <h3>Audit recent release mirrors</h3>
-              <pre><code>mars release audit --repo .</code></pre>
+              <p>Run the exact pinned build, check, snapshot, and verification steps defined in <code>.github/workflows/release-snapshot.yml</code>. This MARS source workflow creates local evidence only; it does not tag, upload, sign, announce, or publish.</p>
             </li>
           </ol>
         </section>
@@ -324,39 +322,22 @@ git -C ~/my-project push origin main</code></pre>
         </section>
 
         <section class="doc-section" id="assets">
-          <h2>Assets And Audit</h2>
+          <h2>Assets And Verification</h2>
           <p>
             MARS source uses the pinned, publication-disabled F-018
             GoReleaser/Syft snapshot workflow. Generated target repositories
-            choose and document their own producer. The existing
-            <code>verify-assets</code> and update consumers remain transitional
-            until T-066; they do not make the retired producer reachable.
+            choose and document their own producer and verifier. The standalone
+            verifier and audit commands are retired. Remote transport success is
+            not completion, and unavailable or unverifiable state stays blocked.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
-              <thead><tr><th>Command</th><th>Gate</th><th>What success proves</th></tr></thead>
+              <thead><tr><th>Surface</th><th>Gate</th><th>What success proves</th></tr></thead>
               <tbody>
                 <tr><td>Repository-approved producer</td><td>Build/package contract</td><td>For MARS source, the pinned snapshot produces four archives, four SBOMs, and <code>checksums.txt</code> without publication authority. Targets define their own equivalent contract.</td></tr>
-                <tr><td><code>mars release verify-assets --dist</code></td><td>Local gate</td><td>Required local assets exist for the version.</td></tr>
-                <tr><td><code>gh release view vX.Y.Z</code></td><td>Mirror object</td><td>GitHub Release object exists when mirroring is enabled.</td></tr>
-                <tr><td><code>mars release verify-assets --version</code></td><td>Mirror assets</td><td>GitHub Release contains all required assets and checksums.</td></tr>
-                <tr><td><code>mars release audit</code></td><td>Recent release health</td><td>Recent tags do not have missing or notes-only release mirrors.</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <h3>Transitional Mirror Inspection</h3>
-          <p>
-            The built-in producer has been retired. These remaining read-only
-            commands inspect legacy or future approved mirrors while T-066
-            migrates release consumers.
-          </p>
-          <div class="wide-table" data-doc-filter>
-            <table>
-              <thead><tr><th>Need</th><th>Command shape</th><th>Important distinction</th></tr></thead>
-              <tbody>
-                <tr><td>Audit a different GitHub mirror.</td><td><code>mars release audit --repo . --github-repo owner/name</code></td><td>The audit reads local tags from the source checkout and compares them with the named GitHub repository.</td></tr>
-                <tr><td>Verify a GitHub mirror.</td><td><code>mars release verify-assets --repo owner/name --version vX.Y.Z</code></td><td>For <code>verify-assets</code>, <code>--repo</code> means GitHub <code>owner/name</code>, not a local path.</td></tr>
-                <tr><td>Verify a compatible release metadata URL.</td><td><code>mars release verify-assets --release-url https://api.github.com/repos/owner/name/releases/tags/vX.Y.Z --version vX.Y.Z</code></td><td>Use this only when the release metadata API is GitHub-compatible and the default URL is not correct.</td></tr>
+                <tr><td>F-018 signed archive consumer</td><td>Authenticity and safe replacement</td><td>Signature, workflow identity, immutable commit, platform/build metadata, checksum, archive, and durable transaction all pass.</td></tr>
+                <tr><td>Repository-owned remote gate</td><td>Identity and inventory convergence</td><td>The repository-approved artifacts exactly match the immutable release; MARS source specifically requires F-018 signed identity. Missing, partial, inaccessible, or unverifiable state is blocked.</td></tr>
+                <tr><td><code>gh release view vX.Y.Z</code></td><td>Transport inspection only</td><td>A Release object can be observed; this alone proves neither authenticity nor completion.</td></tr>
               </tbody>
             </table>
           </div>
@@ -368,22 +349,18 @@ git -C ~/my-project push origin main</code></pre>
             <article data-doc-filter>
               <h3>Upgrade a target safely</h3>
               <pre><code>mars update check --repo ~/my-project --json
-mars update tool --dry-run
 mars update harness --repo ~/my-project
 mars doctor --repo ~/my-project --json</code></pre>
             </article>
             <article data-doc-filter>
-              <h3>Repair a packaged install</h3>
-              <pre><code>mars auth github check
-mars update tool --dry-run
-mars update tool
+              <h3>Update a source checkout install</h3>
+              <pre><code>make update-tool
 mars version</code></pre>
             </article>
             <article data-doc-filter>
-              <h3>Verify a source release mirror</h3>
-              <pre><code>gh release view vX.Y.Z --repo greaveselliott/MARS
-mars release verify-assets --version vX.Y.Z
-mars release audit --repo .</code></pre>
+              <h3>Inspect a future approved source release</h3>
+              <pre><code>gh release view vX.Y.Z --repo greaveselliott/MARS</code></pre>
+              <p>Then run the approved F-018 remote-convergence gate; the listing alone is not completion evidence.</p>
             </article>
           </div>
         </section>
@@ -395,7 +372,7 @@ mars release audit --repo .</code></pre>
               <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
               <tbody>
                 <tr><td><code>update check</code> reports remote unknown.</td><td>Latest-release API could not be reached or auth is missing.</td><td>Use <code>--skip-remote</code> for local drift checks, or run <code>mars auth github check</code>.</td></tr>
-                <tr><td><code>update tool</code> cannot download private assets.</td><td>No valid private release auth source.</td><td>Run <code>gh auth login</code>, then <code>mars auth github setup</code>, or set <code>GH_TOKEN</code>/<code>GITHUB_TOKEN</code>.</td></tr>
+                <tr><td>An approved signed <code>update tool</code> run cannot download private assets.</td><td>No valid private release auth source.</td><td>After confirming the approved signed release exists, run <code>gh auth login</code>, then <code>mars auth github setup</code>, or set <code>GH_TOKEN</code>/<code>GITHUB_TOKEN</code>.</td></tr>
                 <tr><td>Release notes sound generic.</td><td>The semantic commit lacks explicit Impact, Why, or What details.</td><td>Polish the top changelog entry before committing release notes.</td></tr>
                 <tr><td>Local asset verification fails.</td><td>The producer output is incomplete or does not satisfy the repository artifact contract.</td><td>Rerun the repository-approved producer and its contract check. For MARS source, use the publication-disabled F-018 snapshot workflow.</td></tr>
                 <tr><td>GitHub release is notes-only.</td><td>The tag/release object exists but its artifact set is incomplete.</td><td>Treat publication as blocked and use the separately approved repository release workflow; the retired MARS producer cannot repair it.</td></tr>

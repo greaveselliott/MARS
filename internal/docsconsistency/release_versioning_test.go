@@ -16,6 +16,7 @@ import (
 )
 
 var changelogHeadingRE = regexp.MustCompile(`(?m)^## \[[^\]]+\] - [^\n]+`)
+var htmlExecutableSurfaceRE = regexp.MustCompile(`(?is)<pre><code>.*?</code></pre>|<td>\s*<code>[^<]*</code>\s*</td>`)
 
 func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	root := repoRoot(t)
@@ -114,6 +115,34 @@ func TestReleaseProductionUsesPinnedSourceAndRepositoryOwnedTargetContracts(t *t
 	} {
 		if strings.Contains(text, retired) {
 			t.Fatalf("current release implementation requirements must not retain retired command %q", retired)
+		}
+	}
+}
+
+func TestLiveReleaseGuidesDoNotInvokeRetiredConsumerCommands(t *testing.T) {
+	root := repoRoot(t)
+	for _, rel := range []string{
+		"docs/cli-reference.html",
+		"docs/auth-credentials-reference.html",
+		"docs/files-state-reference.html",
+		"docs/planning-delivery-guide.html",
+		"docs/release-update-guide.html",
+		"docs/troubleshooting-guide.html",
+	} {
+		data, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		executableSurfaces := htmlExecutableSurfaceRE.FindAllString(string(data), -1)
+		for _, retired := range []string{
+			"mars release verify-assets",
+			"mars release audit",
+		} {
+			for _, surface := range executableSurfaces {
+				if strings.Contains(surface, retired) {
+					t.Fatalf("%s must not invoke retired command %q in an executable surface", rel, retired)
+				}
+			}
 		}
 	}
 }
