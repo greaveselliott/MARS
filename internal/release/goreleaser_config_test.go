@@ -326,6 +326,7 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	for _, command := range []string{
 		`rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"`,
 		`trap cleanup EXIT`,
+		`chmod -R u+w -- "$rehearsal_root" 2>/dev/null || true`,
 		`rm -rf -- "$rehearsal_root" || status=1`,
 		`if [ -e "$rehearsal_root" ]; then status=1; fi`,
 		`snapshot_commit="$GITHUB_SHA"`,
@@ -334,8 +335,9 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 		`for lane in a b; do`,
 		`git clone --quiet --no-local --no-hardlinks "$GITHUB_WORKSPACE" "$root"`,
 		`git -C "$root" checkout --quiet --detach "$snapshot_commit"`,
-		`git -C "$root" remote remove origin`,
-		`test -z "$(git -C "$root" remote)"`,
+		`test "$(git -C "$root" remote)" = origin`,
+		`test "$(git -C "$root" remote get-url origin)" = "$GITHUB_WORKSPACE"`,
+		`git -C "$root" config --local --get-regexp '^http\..*\.extraheader$|^credential\.'`,
 		`/usr/bin/env -i HOME="$home" TMPDIR="$tmp" PATH="$rehearsal_path"`,
 		`GOPROXY=off GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= GOCACHE="$cache"`,
 		`"$tool_bin/goreleaser" release --snapshot --clean --skip=ko,sign,announce,publish`,
@@ -382,6 +384,7 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	require.Equal(t, "${{ always() }}", cleanupStep.If)
 	require.Empty(t, cleanupStep.Uses)
 	require.Contains(t, cleanupStep.Run, `rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"`)
+	require.Contains(t, cleanupStep.Run, `if [ -e "$rehearsal_root" ]; then chmod -R u+w -- "$rehearsal_root" 2>/dev/null || true; fi`)
 	require.Contains(t, cleanupStep.Run, `if [ -e "$rehearsal_root" ]; then rm -rf -- "$rehearsal_root"; fi`)
 	require.Contains(t, cleanupStep.Run, `test ! -e "$rehearsal_root"`)
 

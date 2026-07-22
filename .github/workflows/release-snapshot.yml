@@ -96,6 +96,7 @@ jobs:
           rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"
           cleanup() {
             status=$?
+            chmod -R u+w -- "$rehearsal_root" 2>/dev/null || true
             rm -rf -- "$rehearsal_root" || status=1
             if [ -e "$rehearsal_root" ]; then status=1; fi
             exit "$status"
@@ -122,9 +123,10 @@ jobs:
             mkdir -m 700 "$home" "$tmp"
             git clone --quiet --no-local --no-hardlinks "$GITHUB_WORKSPACE" "$root"
             git -C "$root" checkout --quiet --detach "$snapshot_commit"
-            git -C "$root" remote remove origin
             test "$(git -C "$root" rev-parse HEAD)" = "$snapshot_commit"
-            test -z "$(git -C "$root" remote)"
+            test "$(git -C "$root" remote)" = origin
+            test "$(git -C "$root" remote get-url origin)" = "$GITHUB_WORKSPACE"
+            test -z "$(git -C "$root" config --local --get-regexp '^http\..*\.extraheader$|^credential\.' || true)"
             test -z "$(git -C "$root" status --porcelain=v1 --untracked-files=all)"
             (
               cd "$root"
@@ -242,5 +244,6 @@ jobs:
         run: |
           set -euo pipefail
           rehearsal_root="$RUNNER_TEMP/mars-t068-rehearsal"
+          if [ -e "$rehearsal_root" ]; then chmod -R u+w -- "$rehearsal_root" 2>/dev/null || true; fi
           if [ -e "$rehearsal_root" ]; then rm -rf -- "$rehearsal_root"; fi
           test ! -e "$rehearsal_root"
