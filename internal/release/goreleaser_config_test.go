@@ -135,9 +135,15 @@ type snapshotWorkflow struct {
 }
 
 type workflowJob struct {
-	RunsOn         string         `yaml:"runs-on"`
-	TimeoutMinutes int            `yaml:"timeout-minutes"`
-	Steps          []workflowStep `yaml:"steps"`
+	RunsOn         string           `yaml:"runs-on"`
+	TimeoutMinutes int              `yaml:"timeout-minutes"`
+	Strategy       workflowStrategy `yaml:"strategy"`
+	Steps          []workflowStep   `yaml:"steps"`
+}
+
+type workflowStrategy struct {
+	FailFast bool                `yaml:"fail-fast"`
+	Matrix   map[string][]string `yaml:"matrix"`
 }
 
 type workflowStep struct {
@@ -312,6 +318,55 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	} {
 		require.NotContains(t, text, forbidden)
 	}
+}
+
+func TestSourceCompatibilityWorkflowContract(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(releaseRepoRoot(t), ".github", "workflows", "source-compatibility.yml")
+	raw := readStrictYAML(t, path, new(snapshotWorkflow))
+	var workflow snapshotWorkflow
+	readStrictYAMLInto(t, raw, &workflow)
+
+	require.Equal(t, "source-compatibility", workflow.Name)
+	require.Equal(t, []string{"pull_request", "push", "workflow_dispatch"}, sortedKeys(workflow.On))
+	require.Equal(t, map[string]string{"contents": "read"}, workflow.Permissions)
+	require.Equal(t, []string{"below-minimum", "supported-source"}, sortedKeys(workflow.Jobs))
+
+	supported := workflow.Jobs["supported-source"]
+	require.Equal(t, "ubuntu-24.04", supported.RunsOn)
+	require.Equal(t, 30, supported.TimeoutMinutes)
+	require.False(t, supported.Strategy.FailFast)
+	require.Equal(t, map[string][]string{"go-version": {"1.25.12", "1.26.5"}}, supported.Strategy.Matrix)
+	require.Len(t, supported.Steps, 3)
+	require.Equal(t, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", supported.Steps[0].Uses)
+	require.Equal(t, map[string]any{"fetch-depth": 0, "persist-credentials": false}, supported.Steps[0].With)
+	require.Equal(t, "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e", supported.Steps[1].Uses)
+	require.Equal(t, map[string]any{"go-version": "${{ matrix.go-version }}", "cache": false}, supported.Steps[1].With)
+	require.Equal(t, map[string]string{"GOTOOLCHAIN": "local"}, supported.Steps[2].Env)
+	for _, command := range []string{
+		`test "$(go env GOVERSION)" = "go${{ matrix.go-version }}"`,
+		"go mod tidy -go=1.25.12",
+		"git diff --exit-code -- go.mod go.sum",
+		"CGO_ENABLED=0 go build ./cmd/mars",
+		"go test ./...",
+		"go vet ./...",
+		"go install golang.org/x/vuln/cmd/govulncheck@v1.6.0",
+		`"$RUNNER_TEMP/govulncheck" ./...`,
+	} {
+		require.Contains(t, supported.Steps[2].Run, command)
+	}
+
+	below := workflow.Jobs["below-minimum"]
+	require.Equal(t, "ubuntu-24.04", below.RunsOn)
+	require.Equal(t, 10, below.TimeoutMinutes)
+	require.Len(t, below.Steps, 3)
+	require.Equal(t, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", below.Steps[0].Uses)
+	require.Equal(t, "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e", below.Steps[1].Uses)
+	require.Equal(t, map[string]any{"go-version": "1.25.11", "cache": false}, below.Steps[1].With)
+	require.Equal(t, map[string]string{"GOTOOLCHAIN": "local"}, below.Steps[2].Env)
+	require.Contains(t, below.Steps[2].Run, `test "$(go env GOVERSION)" = "go1.25.11"`)
+	require.Contains(t, below.Steps[2].Run, `output="$(go list -m 2>&1)"`)
+	require.Contains(t, below.Steps[2].Run, `grep -F "go.mod requires go >= 1.25.12"`)
 }
 
 func readStrictYAML[T any](t *testing.T, path string, target *T) []byte {

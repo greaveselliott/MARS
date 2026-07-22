@@ -76,6 +76,19 @@ tool calls.
   vulnerability-database, and reachable-vulnerability failures propagate the
   scanner's non-zero result instead of being treated as optional evidence.
 
+### AD-314: Source Builds Require Go 1.25.12 While Packaged Operation Does Not Require An External Go Toolchain
+
+The canonical MARS source module declares `go 1.25.12` and retains
+`toolchain go1.26.5` for release and snapshot builds. Read-only CI exercises
+the exact 1.25.12 and 1.26.5 toolchains with `GOTOOLCHAIN=local`, while an
+exact 1.25.11 lane must fail specifically at the module floor without
+auto-downloading a newer compiler.
+
+Only `mars doctor --repo <mars-source>` enforces this source prerequisite.
+Packaged/default operation and ordinary target repositories do not invoke or
+require an externally installed Go toolchain. Generated target repositories
+do not inherit the MARS source floor and choose their own toolchain.
+
 ## Discoveries
 
 - **2026-06-11 — First fuzz run found a real parser bug in seconds:**
@@ -98,6 +111,11 @@ tool calls.
   `govulncheck` invocation block `make vuln` with a pinned recovery command.
   Offline environments must install the pinned scanner before making a passing
   source-security claim.
+- **2026-07-22 — the source compatibility floor moved without changing target or packaged requirements:**
+  AD-314 supersedes the current source-floor portion of the 2026-07-12
+  discovery with exact Go 1.25.12 compatibility and retained release
+  toolchain Go 1.26.5. The historical dependency disposition above remains
+  unchanged evidence; generated targets still choose their own toolchain.
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
   `cmd/mars` (test additions between runs) and packages landing on

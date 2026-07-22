@@ -1,0 +1,77 @@
+# MarsDocSync:
+# docs:
+# - docs/design-docs/source-quality-gates.md
+# - docs/features/F-018-goreleaser-distribution.md
+name: source-compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supported-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.25.12", "1.26.5"]
+    steps:
+      - name: Check out source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install exact Go toolchain
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false
+
+      - name: Verify source compatibility
+        env:
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          test "$(go env GOVERSION)" = "go${{ matrix.go-version }}"
+          go mod tidy -go=1.25.12
+          git diff --exit-code -- go.mod go.sum
+          CGO_ENABLED=0 go build ./cmd/mars
+          go test ./...
+          go vet ./...
+          GOBIN="$RUNNER_TEMP" go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+          "$RUNNER_TEMP/govulncheck" ./...
+
+  below-minimum:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Go immediately below the source floor
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.25.11
+          cache: false
+
+      - name: Prove the module floor rejects Go 1.25.11
+        env:
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          test "$(go env GOVERSION)" = "go1.25.11"
+          if output="$(go list -m 2>&1)"; then
+            echo "Go 1.25.11 unexpectedly accepted the source module" >&2
+            exit 1
+          fi
+          grep -F "go.mod requires go >= 1.25.12" <<<"$output"

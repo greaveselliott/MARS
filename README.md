@@ -99,7 +99,7 @@ The active source plan is tracked in
 
 - macOS or Linux
 - Git
-- Go 1.22+ for source installs
+- Go 1.25.12+ for source installs; packaged MARS operation does not require an externally installed Go toolchain
 - Network access for first setup downloads
 - Disk space for multi-GB GGUF model files under `~/.mars/models`
 - Recommended GPU: Apple Silicon/Metal, NVIDIA CUDA, or AMD ROCm

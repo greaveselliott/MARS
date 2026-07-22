@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: v1.2.2 probe compiled the exact APIs; Go 1.25.8 retained eight called stdlib findings while Go 1.25.12 produced zero called findings"
-blocker: "Owner-approved T-067 must establish the exact Go 1.25.12 source compatibility floor before sigstore-go v1.2.2 can be admitted"
-blocked_by: [T-067]
+last_attempt: "2026-07-22: T-067 established and validated the exact Go 1.25.12 source floor; A1 is ready to admit exact sigstore-go v1.2.2"
+blocker: "none"
+blocked_by: []
 trace_id: "TBD"
-next_action: "Wait for T-067 to establish and validate the exact Go 1.25.12 source floor, then restore T-066 to in-progress and rerun A1 admission for sigstore-go v1.2.2."
+next_action: "Admit exact sigstore-go v1.2.2, rerun whole-source and called-path vulnerability gates, then implement only checkpoint A1 checksum and offline Sigstore verification."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"

@@ -96,7 +96,7 @@ docs:
               <tbody>
                 <tr><td>macOS or Linux</td><td>MARS configures Unix-like shells and publishes darwin/linux binaries.</td><td><code>uname -s</code></td></tr>
                 <tr><td>Git</td><td>Source install, target harness review, release notes, and generated docs all rely on git.</td><td><code>git --version</code></td></tr>
-                <tr><td>Go 1.22 or newer</td><td>Source checkout installs build the CLI locally.</td><td><code>go version</code></td></tr>
+                <tr><td>Go 1.25.12 or newer for source installs</td><td>Source checkout installs build the CLI locally. Packaged MARS operation does not require an externally installed Go toolchain.</td><td><code>go version</code></td></tr>
                 <tr><td>Disk space</td><td>Local GGUF model bundles are large and live under <code>~/.mars/models/</code>.</td><td><code>df -h ~</code></td></tr>
                 <tr><td>Network for setup</td><td>First setup may contact GitHub and download llama.cpp/model artifacts.</td><td><code>mars setup --dry-run</code></td></tr>
                 <tr><td>GPU recommended</td><td>Autonomous coding work is designed for local model throughput.</td><td><code>mars doctor</code></td></tr>
@@ -371,7 +371,7 @@ mars update check --repo /path/to/repo --skip-remote</code></pre>
             <table>
               <thead><tr><th>Check</th><th>What it proves</th><th>Common next action</th></tr></thead>
               <tbody>
-                <tr><td><code>go-version</code></td><td>The Go toolchain is installed and new enough for source builds.</td><td>Install or upgrade Go, then rerun <code>mars doctor</code>.</td></tr>
+                <tr><td><code>go-version</code></td><td>With <code>--repo</code> selecting the canonical MARS source module, the external Go toolchain is at least 1.25.12. Packaged/default and ordinary target checks report that Go is not required without invoking it.</td><td>For source work, install or upgrade Go and rerun <code>mars doctor --repo .</code></td></tr>
                 <tr><td><code>config-file</code></td><td><code>~/.mars/config.yaml</code> or the path passed with <code>--config</code> exists.</td><td>Run <code>mars setup</code> if the config file is missing.</td></tr>
                 <tr><td><code>model-registry</code></td><td>Default model entries are pinned by immutable revision and SHA256.</td><td>Source maintainers must pin registry entries before release; ordinary users should update MARS if this fails.</td></tr>
                 <tr><td><code>models-dir</code></td><td>The local model directory exists and contains GGUF model files.</td><td>Run <code>mars setup</code> or place required <code>.gguf</code> files in <code>~/.mars/models/</code>.</td></tr>

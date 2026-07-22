@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/guardrails.md
 - docs/design-docs/release-versioning.md
+- docs/design-docs/source-quality-gates.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
@@ -63,7 +64,8 @@ const (
 	statusFail = "fail"
 
 	minGoMajor      = 1
-	minGoMinor      = 22
+	minGoMinor      = 25
+	minGoPatch      = 12
 	minDiskSpaceMiB = 5120 // 5 GiB
 )
 
@@ -506,68 +508,111 @@ func statusIcon(status string) string {
 	}
 }
 
-func checkGoVersion(_ Config) CheckResult {
+func checkGoVersion(cfg Config) CheckResult {
+	return checkGoVersionWithRunner(cfg, func() ([]byte, error) {
+		return exec.Command("go", "version").Output()
+	})
+}
+
+func checkGoVersionWithRunner(cfg Config, run func() ([]byte, error)) CheckResult {
 	start := time.Now()
 	name := "go-version"
+	if !requiresMarsSourceGo(cfg.RepoPath) {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "external Go toolchain not required for packaged or target operation",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
 
-	out, err := exec.Command("go", "version").Output()
+	out, err := run()
 	if err != nil {
 		return CheckResult{
 			Name:     name,
 			Status:   statusFail,
 			Message:  "go not found in PATH",
-			Duration: time.Since(start),
-			Fix:      "install Go >= 1.22 from https://go.dev/dl/",
+			Duration: nonZeroDurationSince(start),
+			Fix:      "install Go >= 1.25.12 from https://go.dev/dl/",
 		}
 	}
 
 	version := string(out)
-	major, minor, parseErr := parseGoVersion(version)
+	major, minor, patch, parseErr := parseGoVersion(version)
 	if parseErr != nil {
 		return CheckResult{
 			Name:     name,
-			Status:   statusWarn,
+			Status:   statusFail,
 			Message:  fmt.Sprintf("could not parse version from: %s", strings.TrimSpace(version)),
-			Duration: time.Since(start),
+			Duration: nonZeroDurationSince(start),
+			Fix:      "install Go >= 1.25.12 from https://go.dev/dl/",
 		}
 	}
 
-	if major < minGoMajor || (major == minGoMajor && minor < minGoMinor) {
+	if !goVersionAtLeastMinimum(major, minor, patch) {
 		return CheckResult{
 			Name:     name,
 			Status:   statusFail,
-			Message:  fmt.Sprintf("go %d.%d found, need >= %d.%d", major, minor, minGoMajor, minGoMinor),
-			Duration: time.Since(start),
-			Fix:      fmt.Sprintf("upgrade Go to >= %d.%d from https://go.dev/dl/", minGoMajor, minGoMinor),
+			Message:  fmt.Sprintf("go %d.%d.%d found, need >= %d.%d.%d", major, minor, patch, minGoMajor, minGoMinor, minGoPatch),
+			Duration: nonZeroDurationSince(start),
+			Fix:      fmt.Sprintf("upgrade Go to >= %d.%d.%d from https://go.dev/dl/", minGoMajor, minGoMinor, minGoPatch),
 		}
 	}
 
 	return CheckResult{
 		Name:     name,
 		Status:   statusOK,
-		Message:  fmt.Sprintf("go %d.%d", major, minor),
-		Duration: time.Since(start),
+		Message:  fmt.Sprintf("go %d.%d.%d", major, minor, patch),
+		Duration: nonZeroDurationSince(start),
 	}
 }
 
-func parseGoVersion(output string) (major, minor int, err error) {
-	// "go version go1.22.4 darwin/arm64"
+func requiresMarsSourceGo(repoPath string) bool {
+	if strings.TrimSpace(repoPath) == "" {
+		return false
+	}
+	data, err := os.ReadFile(filepath.Join(repoPath, "go.mod"))
+	if err != nil {
+		return false
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == "module" && fields[1] == "github.com/greaveselliott/mars" {
+			return true
+		}
+	}
+	return false
+}
+
+func goVersionAtLeastMinimum(major, minor, patch int) bool {
+	if major != minGoMajor {
+		return major > minGoMajor
+	}
+	if minor != minGoMinor {
+		return minor > minGoMinor
+	}
+	return patch >= minGoPatch
+}
+
+func parseGoVersion(output string) (major, minor, patch int, err error) {
+	// "go version go1.25.12 darwin/arm64"
 	fields := strings.Fields(output)
 	for _, f := range fields {
 		if strings.HasPrefix(f, "go") && strings.Contains(f, ".") {
 			ver := strings.TrimPrefix(f, "go")
-			parts := strings.SplitN(ver, ".", 3)
-			if len(parts) < 2 {
+			parts := strings.Split(ver, ".")
+			if len(parts) != 3 {
 				continue
 			}
 			maj, e1 := strconv.Atoi(parts[0])
 			min, e2 := strconv.Atoi(parts[1])
-			if e1 == nil && e2 == nil {
-				return maj, min, nil
+			pat, e3 := strconv.Atoi(parts[2])
+			if e1 == nil && e2 == nil && e3 == nil {
+				return maj, min, pat, nil
 			}
 		}
 	}
-	return 0, 0, fmt.Errorf("no version found in %q", output)
+	return 0, 0, 0, fmt.Errorf("no version found in %q", output)
 }
 
 func checkConfigFile(cfg Config) CheckResult {

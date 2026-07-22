@@ -10,6 +10,7 @@ docs:
 package doctor
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -58,11 +59,51 @@ func TestCheckPrivateReleaseAuthSkipsWithSkipRemote(t *testing.T) {
 	assert.Contains(t, result.Message, "skipped")
 }
 
-func TestCheckGoVersion_findsGo(t *testing.T) {
+func TestCheckGoVersionDoesNotRunOutsideMarsSource(t *testing.T) {
 	t.Parallel()
-	result := checkGoVersion(Config{})
-	assert.Equal(t, "go-version", result.Name)
-	assert.Equal(t, statusOK, result.Status, "expected go to be installed; message: %s", result.Message)
+	target := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/target\n"), 0o644))
+
+	for _, cfg := range []Config{{}, {RepoPath: target}} {
+		called := false
+		result := checkGoVersionWithRunner(cfg, func() ([]byte, error) {
+			called = true
+			return nil, errors.New("must not run")
+		})
+		assert.Equal(t, "go-version", result.Name)
+		assert.Equal(t, statusOK, result.Status)
+		assert.Contains(t, result.Message, "not required")
+		assert.False(t, called)
+	}
+}
+
+func TestCheckGoVersionEnforcesExactMarsSourceFloor(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "go.mod"), []byte("module github.com/greaveselliott/mars\n"), 0o644))
+
+	tests := []struct {
+		name       string
+		output     string
+		runErr     error
+		wantStatus string
+		wantText   string
+	}{
+		{name: "missing", runErr: errors.New("not found"), wantStatus: statusFail, wantText: "go not found"},
+		{name: "malformed", output: "go version devel", wantStatus: statusFail, wantText: "could not parse"},
+		{name: "below floor", output: "go version go1.25.11 darwin/arm64", wantStatus: statusFail, wantText: "need >= 1.25.12"},
+		{name: "minimum", output: "go version go1.25.12 darwin/arm64", wantStatus: statusOK, wantText: "go 1.25.12"},
+		{name: "release", output: "go version go1.26.5 darwin/arm64", wantStatus: statusOK, wantText: "go 1.26.5"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := checkGoVersionWithRunner(Config{RepoPath: repo}, func() ([]byte, error) {
+				return []byte(tt.output), tt.runErr
+			})
+			assert.Equal(t, tt.wantStatus, result.Status)
+			assert.Contains(t, result.Message, tt.wantText)
+		})
+	}
 }
 
 func TestParseGoVersion(t *testing.T) {
@@ -71,22 +112,41 @@ func TestParseGoVersion(t *testing.T) {
 		input         string
 		expectMajor   int
 		expectMinor   int
+		expectPatch   int
 		expectFailure bool
 	}{
-		{"go version go1.22.4 darwin/arm64", 1, 22, false},
-		{"go version go1.23.0 linux/amd64", 1, 23, false},
-		{"go version go1.21.0 linux/amd64", 1, 21, false},
-		{"no version here", 0, 0, true},
+		{"go version go1.25.11 darwin/arm64", 1, 25, 11, false},
+		{"go version go1.25.12 linux/amd64", 1, 25, 12, false},
+		{"go version go1.26.5 linux/arm64", 1, 26, 5, false},
+		{"go version go1.25rc1 linux/amd64", 0, 0, 0, true},
+		{"go version go1.25.12rc1 linux/amd64", 0, 0, 0, true},
+		{"no version here", 0, 0, 0, true},
 	}
 	for _, tt := range tests {
-		major, minor, err := parseGoVersion(tt.input)
+		major, minor, patch, err := parseGoVersion(tt.input)
 		if tt.expectFailure {
 			assert.Error(t, err)
 		} else {
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectMajor, major)
 			assert.Equal(t, tt.expectMinor, minor)
+			assert.Equal(t, tt.expectPatch, patch)
 		}
+	}
+}
+
+func TestGoVersionAtLeastMinimum(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		major, minor, patch int
+		want                bool
+	}{
+		{1, 25, 11, false},
+		{1, 25, 12, true},
+		{1, 26, 0, true},
+		{2, 0, 0, true},
+	} {
+		assert.Equal(t, tt.want, goVersionAtLeastMinimum(tt.major, tt.minor, tt.patch))
 	}
 }
 
