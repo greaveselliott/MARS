@@ -12,8 +12,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"sort"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -24,37 +25,13 @@ import (
 const (
 	DefaultRepoFullName     = "greaveselliott/MARS"
 	DefaultLatestReleaseURL = "https://api.github.com/repos/" + DefaultRepoFullName + "/releases/latest"
+	maxLatestReleaseBytes   = 256 << 10
 )
 
-// ReleaseAsset is the subset of GitHub release asset metadata the harness
-// needs for update and release verification.
-type ReleaseAsset struct {
-	APIURL             string `json:"url"`
-	Name               string `json:"name"`
-	BrowserDownloadURL string `json:"browser_download_url"`
-}
-
-// ReleaseInfo is the subset of GitHub release metadata used by update and
-// release verification commands.
+// ReleaseInfo is the subset of GitHub release metadata used by update checks.
 type ReleaseInfo struct {
-	TagName string         `json:"tag_name"`
-	Name    string         `json:"name"`
-	HTMLURL string         `json:"html_url"`
-	Assets  []ReleaseAsset `json:"assets"`
-}
-
-// ReleaseAssetReport records whether a release satisfies the binary asset
-// contract expected by installers and self-updates.
-type ReleaseAssetReport struct {
-	TagName   string   `json:"tag_name"`
-	Version   string   `json:"version"`
-	URL       string   `json:"url"`
-	Required  []string `json:"required"`
-	Found     []string `json:"found"`
-	Missing   []string `json:"missing"`
-	Extra     []string `json:"extra,omitempty"`
-	Duplicate []string `json:"duplicate,omitempty"`
-	OK        bool     `json:"ok"`
+	TagName string `json:"tag_name"`
+	Name    string `json:"name"`
 }
 
 // VersionRelation describes how two semantic versions compare.
@@ -86,31 +63,55 @@ func LatestRelease(ctx context.Context, client *http.Client, url string) (string
 
 // LatestReleaseInfo fetches the newest published release metadata from a
 // GitHub-compatible releases/latest endpoint.
-func LatestReleaseInfo(ctx context.Context, client *http.Client, url string) (ReleaseInfo, error) {
-	if strings.TrimSpace(url) == "" {
-		url = DefaultLatestReleaseURL
+func LatestReleaseInfo(ctx context.Context, client *http.Client, endpoint string) (ReleaseInfo, error) {
+	if strings.TrimSpace(endpoint) == "" {
+		endpoint = DefaultLatestReleaseURL
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil || parsed.Fragment != "" || parsed.Opaque != "" {
+		return ReleaseInfo{}, fmt.Errorf("latest release: endpoint must be HTTPS with a host and without user information or fragments")
 	}
 	if client == nil {
-		client = &http.Client{Timeout: 5 * time.Second}
+		client = &http.Client{}
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	clonedClient := *client
+	if clonedClient.Timeout <= 0 {
+		clonedClient.Timeout = 5 * time.Second
+	}
+	clonedClient.Jar = nil
+	clonedClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	client = &clonedClient
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
 	if err != nil {
-		return ReleaseInfo{}, fmt.Errorf("latest release: build request: %w", err)
+		return ReleaseInfo{}, fmt.Errorf("latest release: cannot build the validated metadata request")
 	}
 	setGitHubHeaders(req, "mars-update-check")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return ReleaseInfo{}, fmt.Errorf("latest release: request %s: %w", url, err)
+		return ReleaseInfo{}, fmt.Errorf("latest release: metadata request failed; check access to the configured HTTPS endpoint")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return ReleaseInfo{}, fmt.Errorf("latest release: %s returned %s%s", url, resp.Status, githubAuthHint(resp.StatusCode))
+		return ReleaseInfo{}, fmt.Errorf("latest release: endpoint returned HTTP %d%s", resp.StatusCode, githubAuthHint(parsed.String(), resp.StatusCode))
+	}
+	if resp.ContentLength > maxLatestReleaseBytes {
+		return ReleaseInfo{}, fmt.Errorf("latest release: metadata response exceeds %d bytes", maxLatestReleaseBytes)
+	}
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxLatestReleaseBytes+1))
+	if err != nil {
+		return ReleaseInfo{}, fmt.Errorf("latest release: cannot read metadata response")
+	}
+	if len(raw) == 0 {
+		return ReleaseInfo{}, fmt.Errorf("latest release: metadata response is empty")
+	}
+	if len(raw) > maxLatestReleaseBytes {
+		return ReleaseInfo{}, fmt.Errorf("latest release: metadata response exceeds %d bytes", maxLatestReleaseBytes)
 	}
 	var payload ReleaseInfo
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return ReleaseInfo{}, fmt.Errorf("latest release: decode response: %w", err)
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return ReleaseInfo{}, fmt.Errorf("latest release: metadata response is not valid JSON")
 	}
 	version := NormalizeVersion(payload.TagName)
 	if version == "" {
@@ -125,130 +126,25 @@ func LatestReleaseInfo(ctx context.Context, client *http.Client, url string) (Re
 func setGitHubHeaders(req *http.Request, userAgent string) {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", userAgent)
-	setGitHubAuth(req)
-}
-
-// SetGitHubAPIHeaders applies the standard GitHub API accept, user-agent, and
-// resolved auth headers used by harness release and update requests.
-func SetGitHubAPIHeaders(req *http.Request, userAgent string) {
-	setGitHubHeaders(req, userAgent)
-}
-
-func setGitHubDownloadHeaders(req *http.Request, userAgent string) {
-	req.Header.Set("Accept", "application/octet-stream")
-	req.Header.Set("User-Agent", userAgent)
-	setGitHubAuth(req)
+	if exactGitHubAPIURL(req.URL.String()) {
+		setGitHubAuth(req)
+	}
 }
 
 func setGitHubAuth(req *http.Request) {
 	githubauth.Apply(req, githubauth.Options{})
 }
 
-func githubAuthHint(statusCode int) string {
+func githubAuthHint(requestURL string, statusCode int) string {
 	switch statusCode {
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return "\nprivate releases require auth. Run `mars auth github setup`, or set GH_TOKEN/GITHUB_TOKEN with repository contents read access for headless installs."
+		if exactGitHubAPIURL(requestURL) {
+			return "\nGitHub release metadata access was denied. Run `mars auth github check`; signed updates resolve optional GitHub auth without printing token values."
+		}
+		return "\ncustom release metadata endpoints are anonymous-only; use the official MARS endpoint or omit --latest-release-url."
 	default:
 		return ""
 	}
-}
-
-// ReleaseAPIURL returns a GitHub-compatible release metadata endpoint for a
-// repository and release version.
-func ReleaseAPIURL(repoFullName, version string) string {
-	repo := strings.TrimSpace(repoFullName)
-	if repo == "" {
-		repo = DefaultRepoFullName
-	}
-	v := strings.TrimSpace(version)
-	if v == "" || v == DefaultVersion {
-		return "https://api.github.com/repos/" + repo + "/releases/latest"
-	}
-	return "https://api.github.com/repos/" + repo + "/releases/tags/" + releaseTag(v)
-}
-
-// ExpectedReleaseAssetNames returns the complete release asset contract for a
-// MARS GitHub release.
-func ExpectedReleaseAssetNames() []string {
-	return []string{
-		"mars-linux-amd64",
-		"mars-linux-arm64",
-		"mars-darwin-amd64",
-		"mars-darwin-arm64",
-		"mars-harness-linux-amd64",
-		"mars-harness-linux-arm64",
-		"mars-harness-darwin-amd64",
-		"mars-harness-darwin-arm64",
-		"checksums.txt",
-	}
-}
-
-// VerifyReleaseAssets fetches release metadata and reports whether all expected
-// binary assets and checksums.txt are present.
-func VerifyReleaseAssets(ctx context.Context, client *http.Client, releaseURL string) (ReleaseAssetReport, error) {
-	release, err := LatestReleaseInfo(ctx, client, releaseURL)
-	if err != nil {
-		return ReleaseAssetReport{}, err
-	}
-	return VerifyReleaseAssetInfo(release), nil
-}
-
-// VerifyReleaseAssetInfo reports whether release metadata satisfies the asset
-// contract without making network calls.
-func VerifyReleaseAssetInfo(release ReleaseInfo) ReleaseAssetReport {
-	required := ExpectedReleaseAssetNames()
-	requiredSet := make(map[string]bool, len(required))
-	for _, name := range required {
-		requiredSet[name] = true
-	}
-	foundCount := make(map[string]int, len(release.Assets))
-	var extra []string
-	for _, asset := range release.Assets {
-		if asset.Name != "" {
-			foundCount[asset.Name]++
-			if !requiredSet[asset.Name] {
-				extra = append(extra, safeReleaseAssetDiagnosticName(asset.Name))
-			}
-		}
-	}
-	found := make([]string, 0, len(foundCount))
-	missing := make([]string, 0)
-	for _, name := range required {
-		if foundCount[name] > 0 {
-			found = append(found, name)
-			continue
-		}
-		missing = append(missing, name)
-	}
-	var duplicate []string
-	for name, count := range foundCount {
-		if count > 1 {
-			duplicate = append(duplicate, fmt.Sprintf("%s (%d copies)", safeReleaseAssetDiagnosticName(name), count))
-		}
-	}
-	sort.Strings(found)
-	sort.Strings(extra)
-	sort.Strings(duplicate)
-	return ReleaseAssetReport{
-		TagName:   release.TagName,
-		Version:   NormalizeVersion(release.TagName),
-		URL:       release.HTMLURL,
-		Required:  required,
-		Found:     found,
-		Missing:   missing,
-		Extra:     extra,
-		Duplicate: duplicate,
-		OK:        len(missing) == 0 && len(extra) == 0 && len(duplicate) == 0,
-	}
-}
-
-func safeReleaseAssetDiagnosticName(value string) string {
-	for _, name := range ExpectedReleaseAssetNames() {
-		if value == name {
-			return name
-		}
-	}
-	return "<redacted-asset-name>"
 }
 
 // CompareVersions compares dotted semantic versions. Unknown/dev values return

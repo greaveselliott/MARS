@@ -12,7 +12,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"debug/buildinfo"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -28,10 +27,9 @@ import (
 )
 
 const (
-	DefaultPackage            = "github.com/greaveselliott/mars/cmd/mars"
-	DefaultVersion            = "latest"
-	DefaultBinary             = "mars"
-	DefaultReleaseDownloadURL = "https://github.com/" + DefaultRepoFullName + "/releases/download"
+	DefaultPackage = "github.com/greaveselliott/mars/cmd/mars"
+	DefaultVersion = "latest"
+	DefaultBinary  = "mars"
 )
 
 var (
@@ -51,17 +49,15 @@ const (
 
 // Config controls an installed-tool update run.
 type Config struct {
-	Version          string
-	CurrentVersion   string
-	CurrentCommit    string
-	InstallDir       string
-	BinaryName       string
-	Method           UpdateMethod
-	DryRun           bool
-	SkipShellPath    bool
-	LatestReleaseURL string
-	ReleaseBaseURL   string
-	HTTPClient       *http.Client
+	Version        string
+	CurrentVersion string
+	CurrentCommit  string
+	InstallDir     string
+	BinaryName     string
+	Method         UpdateMethod
+	DryRun         bool
+	SkipShellPath  bool
+	HTTPClient     *http.Client
 }
 
 // Plan is the resolved update action.
@@ -74,8 +70,6 @@ type Plan struct {
 	InstallDir    string           `json:"install_dir"`
 	BinaryPath    string           `json:"binary_path"`
 	AssetName     string           `json:"asset_name,omitempty"`
-	DownloadURL   string           `json:"download_url,omitempty"`
-	ChecksumsURL  string           `json:"checksums_url,omitempty"`
 	AuthSource    string           `json:"auth_source,omitempty"`
 	Command       []string         `json:"command,omitempty"`
 	ShellPath     shellpath.Result `json:"shell_path"`
@@ -358,57 +352,6 @@ func currentMARSBuildInfoMatchesCommit(info *buildinfo.BuildInfo, commit string)
 	return len(seen) == len(want)
 }
 
-func shouldResolveReleaseAssetInfo(cfg Config, plan Plan) bool {
-	if plan.Version == DefaultVersion {
-		return true
-	}
-	return strings.TrimSpace(cfg.ReleaseBaseURL) == ""
-}
-
-func resolveReleaseAssetPlan(ctx context.Context, client *http.Client, cfg Config, plan Plan) (Plan, error) {
-	releaseURL := cfg.LatestReleaseURL
-	if plan.Version != DefaultVersion {
-		releaseURL = ReleaseAPIURL(DefaultRepoFullName, plan.ReleaseTag)
-	}
-	release, err := LatestReleaseInfo(ctx, client, releaseURL)
-	if err != nil {
-		return Plan{}, err
-	}
-	report := VerifyReleaseAssetInfo(release)
-	if !report.OK {
-		return Plan{}, fmt.Errorf("update tool: latest release %s is missing required assets: %s\nUse the repository's approved release workflow for %s, then run `mars release verify-assets --version %s` before retrying.",
-			releaseIdentity(release), strings.Join(report.Missing, ", "), releaseIdentity(release), releaseIdentity(release))
-	}
-	plan.Version = report.Version
-	plan.ReleaseTag = release.TagName
-	if plan.ReleaseTag == "" {
-		plan.ReleaseTag = releaseTag(report.Version)
-	}
-	for _, asset := range release.Assets {
-		switch asset.Name {
-		case plan.AssetName:
-			if asset.APIURL != "" {
-				plan.DownloadURL = asset.APIURL
-			} else if asset.BrowserDownloadURL != "" {
-				plan.DownloadURL = asset.BrowserDownloadURL
-			}
-		case "checksums.txt":
-			if asset.APIURL != "" {
-				plan.ChecksumsURL = asset.APIURL
-			} else if asset.BrowserDownloadURL != "" {
-				plan.ChecksumsURL = asset.BrowserDownloadURL
-			}
-		}
-	}
-	if plan.DownloadURL == "" {
-		plan.DownloadURL = releaseDownloadURL(cfg.ReleaseBaseURL, plan.ReleaseTag, plan.AssetName)
-	}
-	if plan.ChecksumsURL == "" {
-		plan.ChecksumsURL = releaseDownloadURL(cfg.ReleaseBaseURL, plan.ReleaseTag, "checksums.txt")
-	}
-	return plan, nil
-}
-
 func resolveMethod(version string, requested UpdateMethod) (UpdateMethod, error) {
 	if requested != "" {
 		switch requested {
@@ -424,113 +367,9 @@ func resolveMethod(version string, requested UpdateMethod) (UpdateMethod, error)
 	return MethodReleaseAssets, nil
 }
 
-func releaseAssetName(binary, goos, goarch string) (string, error) {
-	switch goos {
-	case "linux", "darwin":
-	default:
-		return "", fmt.Errorf("update tool: release assets are available for linux/darwin on amd64/arm64; current platform is %s/%s. Use --source from a Go-enabled source-development environment.",
-			goos, goarch)
-	}
-	switch goarch {
-	case "amd64", "arm64":
-	default:
-		return "", fmt.Errorf("update tool: release assets are available for linux/darwin on amd64/arm64; current platform is %s/%s. Use --source from a Go-enabled source-development environment.",
-			goos, goarch)
-	}
-	return fmt.Sprintf("%s-%s-%s", binary, goos, goarch), nil
-}
-
 func displayVersion(version string) string {
 	if version == DefaultVersion || version == "main" {
 		return version
 	}
 	return NormalizeVersion(version)
-}
-
-func releaseTag(version string) string {
-	v := strings.TrimSpace(version)
-	v = strings.TrimPrefix(v, "@")
-	if v == "" || v == DefaultVersion {
-		return DefaultVersion
-	}
-	if strings.HasPrefix(v, "v") {
-		return v
-	}
-	if _, ok := parseSemver(v); ok {
-		return "v" + v
-	}
-	return v
-}
-
-func releaseDownloadURL(baseURL, tag, asset string) string {
-	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	if base == "" {
-		base = DefaultReleaseDownloadURL
-	}
-	return base + "/" + tag + "/" + asset
-}
-
-func releaseIdentity(release ReleaseInfo) string {
-	if release.TagName != "" {
-		return release.TagName
-	}
-	if release.Name != "" {
-		return release.Name
-	}
-	return "latest"
-}
-
-func downloadFile(ctx context.Context, client *http.Client, url, path string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return fmt.Errorf("build request: %w", err)
-	}
-	setGitHubDownloadHeaders(req, "mars-self-update")
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("%s returned %s%s", url, resp.Status, githubAuthHint(resp.StatusCode))
-	}
-	out, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("create %s: %w", path, err)
-	}
-	defer out.Close()
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return fmt.Errorf("write %s: %w", path, err)
-	}
-	return nil
-}
-
-func checksumForAsset(checksumsPath, assetName string) (string, error) {
-	data, err := os.ReadFile(checksumsPath)
-	if err != nil {
-		return "", err
-	}
-	for _, line := range strings.Split(string(data), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 2 {
-			continue
-		}
-		if fields[1] == assetName || strings.TrimPrefix(fields[1], "*") == assetName {
-			return fields[0], nil
-		}
-	}
-	return "", fmt.Errorf("%s not found in checksums.txt", assetName)
-}
-
-func sha256File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
 }

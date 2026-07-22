@@ -110,13 +110,11 @@ func TestRunReleaseWiresAcquisitionReplacementAndShellPath(t *testing.T) {
 	}
 
 	plan, err := runWithReleaseDependencies(context.Background(), Config{
-		Version:          DefaultVersion,
-		CurrentVersion:   "0.68.49",
-		CurrentCommit:    testRunCurrentCommit,
-		InstallDir:       installDir,
-		HTTPClient:       client,
-		LatestReleaseURL: "https://attacker.invalid/latest",
-		ReleaseBaseURL:   "https://attacker.invalid/download",
+		Version:        DefaultVersion,
+		CurrentVersion: "0.68.49",
+		CurrentCommit:  testRunCurrentCommit,
+		InstallDir:     installDir,
+		HTTPClient:     client,
 	}, deps)
 	require.NoError(t, err)
 	require.Equal(t, []string{"destination", "acquire", "replace", "path"}, events)

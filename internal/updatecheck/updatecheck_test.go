@@ -22,7 +22,7 @@ import (
 
 func TestRun_reportsBehindToolAndCurrentHarness(t *testing.T) {
 	t.Parallel()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"tag_name":"v999.0.0"}`))
 	}))
 	defer server.Close()

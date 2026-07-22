@@ -28,8 +28,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -43,10 +41,8 @@ import (
 
 	"github.com/greaveselliott/mars/internal/foundationtelemetry"
 	"github.com/greaveselliott/mars/internal/queue"
-	"github.com/greaveselliott/mars/internal/release"
 	"github.com/greaveselliott/mars/internal/scanner"
 	"github.com/greaveselliott/mars/internal/scoring"
-	"github.com/greaveselliott/mars/internal/selfupdate"
 	"github.com/greaveselliott/mars/internal/serve"
 	harnesstools "github.com/greaveselliott/mars/internal/tools"
 	"github.com/spf13/cobra"
@@ -312,28 +308,28 @@ func TestChecksRunRecordsFailedOutcome(t *testing.T) {
 	require.Equal(t, "engineer", counts[0].Role)
 }
 
-func TestReleaseVerifyAssetsCommandChecksLocalDist(t *testing.T) {
+func TestReleaseLegacyConsumerCommandsAreRetired(t *testing.T) {
 	t.Parallel()
-	distDir := t.TempDir()
-	var checksumLines []string
-	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
-		if name == "checksums.txt" {
-			continue
-		}
-		path := filepath.Join(distDir, name)
-		require.NoError(t, os.WriteFile(path, []byte(name+"\n"), 0o644))
-		sum := sha256.Sum256([]byte(name + "\n"))
-		checksumLines = append(checksumLines, fmt.Sprintf("%x  %s", sum, name))
+	for _, name := range []string{"verify-assets", "audit"} {
+		name := name
+		t.Run(name, func(t *testing.T) {
+			cmd := releaseCmd()
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetErr(&out)
+			cmd.SetArgs([]string{name})
+			err := cmd.Execute()
+			require.ErrorContains(t, err, "unknown command")
+
+			root := newRootCommand()
+			out.Reset()
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs([]string{"release", name})
+			err = root.Execute()
+			require.ErrorContains(t, err, "unknown command")
+		})
 	}
-	require.NoError(t, os.WriteFile(filepath.Join(distDir, "checksums.txt"), []byte(strings.Join(checksumLines, "\n")+"\n"), 0o644))
-
-	cmd := releaseVerifyAssetsCmd()
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--dist", distDir, "--version", "v1.2.3"})
-
-	require.NoError(t, cmd.Execute())
-	require.Contains(t, out.String(), "Status: ok")
 }
 
 func TestReleasePublishAssetsCommandIsRetired(t *testing.T) {
@@ -399,106 +395,6 @@ func TestUpdateToolDryRunDoesNotExposeOrResolveReleaseURLs(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestPrintReleaseAssetReportDoesNotTranscribeHostileRemoteLabels(t *testing.T) {
-	t.Parallel()
-	var out bytes.Buffer
-	err := printReleaseAssetReport(&out, selfupdate.ReleaseAssetReport{
-		TagName:   "v1.2.3\nghp_SECRET",
-		URL:       "https://example.test/ghp_SECRET",
-		Required:  []string{"AKIAIOSFODNN7EXAMPLE"},
-		Found:     []string{"opaque-high-entropy-value"},
-		Missing:   []string{"https://user:password@example.test/path?key=value"},
-		Extra:     []string{"ghp_SECRET\nextra"},
-		Duplicate: []string{"ghp_SECRET (2 copies)"},
-	}, false)
-	require.Error(t, err)
-	require.NotContains(t, out.String(), "ghp_SECRET")
-	require.NotContains(t, out.String(), "AKIAIOSFODNN7EXAMPLE")
-	require.NotContains(t, out.String(), "opaque-high-entropy-value")
-	require.NotContains(t, out.String(), "password")
-	require.NotContains(t, err.Error(), "ghp_SECRET")
-	require.Contains(t, out.String(), "Extra: 1 unexpected asset(s)")
-	require.Contains(t, out.String(), "Duplicate: 1 duplicate asset name(s)")
-}
-
-func TestPrintReleaseAssetReportJSONRejectsIncompleteAndRedactsRemoteLabels(t *testing.T) {
-	t.Parallel()
-	assets := make([]selfupdate.ReleaseAsset, 0, len(selfupdate.ExpectedReleaseAssetNames())+2)
-	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
-		assets = append(assets, selfupdate.ReleaseAsset{Name: name})
-	}
-	assets = append(assets,
-		selfupdate.ReleaseAsset{Name: "AKIAIOSFODNN7EXAMPLE"},
-		selfupdate.ReleaseAsset{Name: "AKIAIOSFODNN7EXAMPLE"},
-	)
-	reportWithHostileRemoteData := selfupdate.VerifyReleaseAssetInfo(selfupdate.ReleaseInfo{
-		TagName: "v1.2.3\nghp_SECRET",
-		HTMLURL: "https://user:password@example.test/github_pat_SECRET?credential=opaque#fragment",
-		Assets:  assets,
-	})
-	var out bytes.Buffer
-	err := printReleaseAssetReport(&out, reportWithHostileRemoteData, true)
-	require.ErrorContains(t, err, "does not satisfy the required asset contract")
-	require.NotContains(t, out.String(), "ghp_SECRET")
-	require.NotContains(t, out.String(), "github_pat_SECRET")
-	require.NotContains(t, out.String(), "AKIAIOSFODNN7EXAMPLE")
-	require.NotContains(t, out.String(), "password")
-	require.NotContains(t, out.String(), "opaque")
-	require.NotContains(t, out.String(), "v1.2.3\\nghp_SECRET")
-
-	var report selfupdate.ReleaseAssetReport
-	require.NoError(t, json.Unmarshal(out.Bytes(), &report))
-	require.False(t, report.OK)
-	require.Equal(t, "<redacted>", report.TagName)
-	require.Equal(t, "<redacted>", report.Version)
-	require.Equal(t, "<redacted>", report.URL)
-	require.Equal(t, []string{"<redacted>", "<redacted>"}, report.Extra)
-	require.Equal(t, []string{"<redacted>"}, report.Duplicate)
-}
-
-func TestPrintReleaseAuditResultReportsFindingsAndSkips(t *testing.T) {
-	t.Parallel()
-
-	var clean bytes.Buffer
-	require.NoError(t, printReleaseAuditResult(&clean, release.AuditResult{
-		RepoFullName: "owner/repo",
-		Checked:      []string{"v0.2.0", "v0.1.0"},
-	}, false))
-	require.Contains(t, clean.String(), "Status: ok")
-
-	var findings bytes.Buffer
-	err := printReleaseAuditResult(&findings, release.AuditResult{
-		RepoFullName: "owner/repo",
-		Checked:      []string{"v0.2.0"},
-		Findings: []release.AuditFinding{{
-			TagName:     "v0.2.0",
-			Class:       release.AuditNotesOnly,
-			Missing:     []string{"checksums.txt"},
-			Remediation: "use the repository's approved release workflow for v0.2.0",
-		}},
-	}, false)
-	require.Error(t, err)
-	require.Contains(t, findings.String(), "FINDING (notes_only): v0.2.0")
-	require.Contains(t, findings.String(), "checksums.txt")
-	require.Contains(t, findings.String(), "repository's approved release workflow for v0.2.0")
-	require.NotContains(t, findings.String(), "publish-assets")
-
-	var skipped bytes.Buffer
-	require.NoError(t, printReleaseAuditResult(&skipped, release.AuditResult{
-		RepoFullName: "owner/repo",
-		Skipped:      true,
-		SkipReason:   "cannot list GitHub releases",
-	}, false))
-	require.Contains(t, skipped.String(), "Skipped: cannot list GitHub releases")
-
-	var jsonOut bytes.Buffer
-	require.NoError(t, printReleaseAuditResult(&jsonOut, release.AuditResult{
-		RepoFullName: "owner/repo",
-		Checked:      []string{"v0.1.0"},
-	}, true))
-	require.Contains(t, jsonOut.String(), `"repo_full_name": "owner/repo"`)
 }
 
 func TestDocSyncAuditCommandReportsStatus(t *testing.T) {

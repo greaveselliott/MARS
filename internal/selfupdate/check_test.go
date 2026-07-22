@@ -10,10 +10,14 @@ package selfupdate
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -38,6 +42,84 @@ func TestLatestRelease_readsGitHubStyleTag(t *testing.T) {
 	require.Equal(t, "0.7.0", version)
 }
 
+func TestLatestReleaseInfoDoesNotSendCredentialsToCustomOrigin(t *testing.T) {
+	t.Setenv("GH_TOKEN", "gh-token-canary")
+	endpoint := "https://example.test/releases/latest"
+	parsed, err := url.Parse(endpoint)
+	require.NoError(t, err)
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+	jar.SetCookies(parsed, []*http.Cookie{{Name: "session", Value: "cookie-canary"}})
+	client := &http.Client{Jar: jar, Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		require.Empty(t, r.Header.Get("Authorization"))
+		require.Empty(t, r.Header.Get("Cookie"))
+		deadline, ok := r.Context().Deadline()
+		require.True(t, ok)
+		require.LessOrEqual(t, time.Until(deadline), 5*time.Second)
+		return textResponse(http.StatusOK, `{"tag_name":"v0.7.0"}`), nil
+	})}
+
+	_, err = LatestReleaseInfo(context.Background(), client, endpoint)
+	require.NoError(t, err)
+}
+
+func TestLatestReleaseInfoRejectsRedirects(t *testing.T) {
+	t.Setenv("GH_TOKEN", "gh-token-canary")
+	requests := 0
+	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+		requests++
+		require.Equal(t, "Bearer gh-token-canary", r.Header.Get("Authorization"))
+		response := textResponse(http.StatusFound, "redirect")
+		response.Header.Set("Location", "https://example.test/collect")
+		return response, nil
+	})
+
+	_, err := LatestReleaseInfo(context.Background(), client, DefaultLatestReleaseURL)
+	require.ErrorContains(t, err, "returned HTTP 302")
+	require.Equal(t, 1, requests)
+}
+
+func TestLatestReleaseInfoRejectsUnsafeEndpointsBeforeRequest(t *testing.T) {
+	for _, endpoint := range []string{
+		"http://example.test/releases/latest",
+		"https://user:password@example.test/releases/latest",
+		"https:///missing-host",
+		"https://example.test/releases/latest#fragment",
+	} {
+		t.Run(endpoint, func(t *testing.T) {
+			requests := 0
+			client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+				requests++
+				return textResponse(http.StatusOK, `{}`), nil
+			})
+			_, err := LatestReleaseInfo(context.Background(), client, endpoint)
+			require.ErrorContains(t, err, "endpoint must be HTTPS")
+			require.NotContains(t, err.Error(), "password")
+			require.Equal(t, 0, requests)
+		})
+	}
+}
+
+func TestLatestReleaseInfoBoundsAndRedactsMetadata(t *testing.T) {
+	t.Run("oversized", func(t *testing.T) {
+		client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+			return textResponse(http.StatusOK, strings.Repeat("x", maxLatestReleaseBytes+1)), nil
+		})
+		_, err := LatestReleaseInfo(context.Background(), client, "https://example.test/releases/latest")
+		require.ErrorContains(t, err, "exceeds")
+	})
+
+	t.Run("request error", func(t *testing.T) {
+		const canary = "query-secret-canary"
+		client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+			return nil, errors.New("network failure: " + canary)
+		})
+		_, err := LatestReleaseInfo(context.Background(), client, "https://example.test/releases/latest?token="+canary)
+		require.ErrorContains(t, err, "metadata request failed")
+		require.NotContains(t, err.Error(), canary)
+	})
+}
+
 func TestDefaultRepoFullNameUsesCanonicalMARSRepo(t *testing.T) {
 	t.Parallel()
 	require.Equal(t, "greaveselliott/MARS", DefaultRepoFullName)
@@ -45,94 +127,28 @@ func TestDefaultRepoFullNameUsesCanonicalMARSRepo(t *testing.T) {
 }
 
 func TestLatestReleaseInfoReportsPrivateReleaseAuthHint(t *testing.T) {
-	t.Parallel()
+	t.Setenv("GH_TOKEN", "gh-token-canary")
 	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+		require.Equal(t, "Bearer gh-token-canary", r.Header.Get("Authorization"))
 		return textResponse(http.StatusUnauthorized, `{"message":"bad credentials"}`), nil
 	})
 
+	_, err := LatestReleaseInfo(context.Background(), client, DefaultLatestReleaseURL)
+	require.ErrorContains(t, err, "auth github check")
+	require.NotContains(t, err.Error(), "gh-token-canary")
+}
+
+func TestLatestReleaseInfoExplainsAnonymousOnlyCustomOrigin(t *testing.T) {
+	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+		require.Empty(t, r.Header.Get("Authorization"))
+		response := textResponse(http.StatusUnauthorized, `{"message":"bad credentials"}`)
+		response.Status = "401 ghp_STATUS_CANARY"
+		return response, nil
+	})
+
 	_, err := LatestReleaseInfo(context.Background(), client, "https://example.test/releases/latest")
-	require.ErrorContains(t, err, "GH_TOKEN")
-	require.ErrorContains(t, err, "private releases")
-}
-
-func TestVerifyReleaseAssetsReportsMissingAssets(t *testing.T) {
-	t.Parallel()
-	report := VerifyReleaseAssetInfo(ReleaseInfo{
-		TagName: "v1.2.3",
-		HTMLURL: "https://example.test/release",
-		Assets: []ReleaseAsset{
-			{Name: "mars-linux-amd64"},
-			{Name: "checksums.txt"},
-		},
-	})
-
-	require.False(t, report.OK)
-	require.Equal(t, "1.2.3", report.Version)
-	require.Contains(t, report.Found, "mars-linux-amd64")
-	require.Contains(t, report.Found, "checksums.txt")
-	require.ElementsMatch(t, []string{
-		"mars-linux-arm64",
-		"mars-darwin-amd64",
-		"mars-darwin-arm64",
-		"mars-harness-linux-amd64",
-		"mars-harness-linux-arm64",
-		"mars-harness-darwin-amd64",
-		"mars-harness-darwin-arm64",
-	}, report.Missing)
-}
-
-func TestVerifyReleaseAssetInfoRejectsExtraAndDuplicateNames(t *testing.T) {
-	t.Parallel()
-	assets := make([]ReleaseAsset, 0, len(ExpectedReleaseAssetNames())+2)
-	for _, name := range ExpectedReleaseAssetNames() {
-		assets = append(assets, ReleaseAsset{Name: name})
-	}
-	assets = append(assets, ReleaseAsset{Name: ExpectedReleaseAssetNames()[0]}, ReleaseAsset{Name: "unexpected.bin"})
-	report := VerifyReleaseAssetInfo(ReleaseInfo{TagName: "v1.2.3", Assets: assets})
-	require.False(t, report.OK)
-	require.Equal(t, []string{"<redacted-asset-name>"}, report.Extra)
-	require.Equal(t, []string{ExpectedReleaseAssetNames()[0] + " (2 copies)"}, report.Duplicate)
-}
-
-func TestVerifyReleaseAssetInfoNeverTranscribesUnknownAssetNames(t *testing.T) {
-	t.Parallel()
-	const opaqueCredential = "AKIAIOSFODNN7EXAMPLE"
-	report := VerifyReleaseAssetInfo(ReleaseInfo{
-		TagName: "v1.2.3",
-		Assets: []ReleaseAsset{
-			{Name: opaqueCredential},
-			{Name: opaqueCredential},
-		},
-	})
-	diagnostics := strings.Join(append(append([]string{}, report.Extra...), report.Duplicate...), " ")
-	require.NotContains(t, diagnostics, opaqueCredential)
-	require.Contains(t, diagnostics, "<redacted-asset-name>")
-}
-
-func TestVerifyReleaseAssetInfoRedactsHostileExtraAndDuplicateNames(t *testing.T) {
-	t.Parallel()
-	assets := make([]ReleaseAsset, 0, len(ExpectedReleaseAssetNames())+2)
-	for _, name := range ExpectedReleaseAssetNames() {
-		assets = append(assets, ReleaseAsset{Name: name})
-	}
-	const hostile = "ghp_SECRET\nforged"
-	assets = append(assets, ReleaseAsset{Name: hostile}, ReleaseAsset{Name: hostile})
-	report := VerifyReleaseAssetInfo(ReleaseInfo{TagName: "v1.2.3", Assets: assets})
-	require.False(t, report.OK)
-	diagnostics := strings.Join(append(append([]string{}, report.Extra...), report.Duplicate...), " ")
-	require.Contains(t, diagnostics, "<redacted-asset-name>")
-	require.NotContains(t, diagnostics, "ghp_SECRET")
-	require.NotContains(t, diagnostics, "\n")
-}
-
-func TestReleaseAPIURLBuildsLatestAndTaggedURLs(t *testing.T) {
-	t.Parallel()
-	require.Equal(t,
-		"https://api.github.com/repos/example/project/releases/latest",
-		ReleaseAPIURL("example/project", "latest"))
-	require.Equal(t,
-		"https://api.github.com/repos/example/project/releases/tags/v1.2.3",
-		ReleaseAPIURL("example/project", "1.2.3"))
+	require.ErrorContains(t, err, "anonymous-only")
+	require.NotContains(t, err.Error(), "ghp_STATUS_CANARY")
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
