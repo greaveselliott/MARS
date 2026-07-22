@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: C pushed at f45d5d2; unsafe shell binary bootstrap now fails closed to an independently reviewed source checkout, with hostile-environment tests and Engineer/QA/Security GO"
+last_attempt: "2026-07-22: D completed through 64c7d3b; legacy verifier/audit code and commands are retired, generated and live guidance is synchronized, and Engineer/QA/Security/CTO reviews are GO"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint D: migrate or retire retained release verification/audit, CLI/MarsCLI, live docs, DocSync routes, and generated target guidance; remove legacy raw asset names and checksum-only semantics without adding a publisher or installer."
+next_action: "Run only checkpoint E: focused hostile/race tests, the preserved full source/vulnerability/fuzz/lint/DocSync/cross-build tail, install a commit-bound source binary into an isolated prefix, initialize a fresh target, and exercise one offline synthetic signed update plus explicit rollback before closing T-066/F-018-S002."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -53,7 +53,7 @@ B3. Passed at `683daf8`: release-mode `Run` now binds implicit latest to the exa
 
 C. Passed at `f45d5d2`: because shell bootstrap cannot invoke an independently trusted verifier without circular trust, binary installation is explicitly unavailable and `scripts/install.sh` fails closed to an independently reviewed exact source checkout. Checksum-only compatibility is absent. Committed and pushed before broader consumer migration.
 
-D. Migrate or retire release verify-assets, release audit, CLI/MarsCLI, current docs, DocSync routes, and generated target guidance. Remove legacy raw asset names mars-<os>-<arch> and mars-harness-<os>-<arch> and legacy checksum-only semantics; update binary/cli command aliases are not raw-asset aliases. Commit and push.
+D. Passed through `64c7d3b`: retired release verify-assets, release audit, CLI/MarsCLI entries, legacy raw/checksum-only helpers, and stale current guidance; synchronized generated targets, BDD, design, product, and operator docs without rewriting historical evidence. Committed and pushed.
 
 E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-068 retains two-build and clean macOS/Linux pipeline rehearsal.
 
@@ -113,6 +113,13 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Latest and explicit-version hostile-environment tests prove the script invokes no network, credential resolver, external command, temporary file, privilege escalation, PATH mutation, or destination mutation. An existing `mars` canary remains byte-identical and the only destination entry; caller-controlled version, path, and token canaries remain absent from output.
 - Focused and race installer/source-update tests, full `internal/selfupdate` tests, vet, Bash syntax, docsconsistency, DocSync, and diff checks passed. Engineer, QA, Security, and Orchestrator are GO.
 - Fresh binary bootstrap remains unavailable and blocks public cutover until a non-circular trusted bootstrap is designed and validated. Checkpoints D and E remain incomplete. No live install was run, and no version, tag, Release, signature, upload, visibility, or publication authority changed.
+
+## Checkpoint D completion — 2026-07-22
+
+- Pushed `9d2d8c9` removes the standalone local/remote verifier and rolling audit, their CLI registrations/printers/tests, and dead raw/checksum-only updater helpers. The retained version-only release lookup is HTTPS-only, bounded, redirect-closed, credential-scoped to the exact GitHub API origin, cookie-free, and fixed/redacted on hostile transport/status/body failures.
+- Pushed `bb4b620` removes both retired commands from MarsCLI and formalized/generated target workflows. Generated repositories now own both producer and verifier, while exact remote name/state/size/digest convergence remains required when they use GitHub Releases.
+- Pushed `527646b` synchronizes current architecture, product, F-009, release-versioning, source/target boundary, dogfood, README, and quickstart truth. Pushed `64c7d3b` synchronizes six operator HTML guides and adds an executable-surface regression guard; source checkout is the supported route, packaged availability remains blocked pending approved signed cutover, and historical AD bodies remain intact under dated supersession notes.
+- Focused Go 1.26.5 release/selfupdate/CLI, tools/scanner, signed archive/Sigstore/acquisition/replacement, docsconsistency, and DocSync gates passed. CTO-weekly, QA, Security, and Orchestrator are GO. Checkpoint E remains incomplete; no live update, version, tag, Release, signature, upload, visibility, or publication authority changed.
 
 ## Interfaces and blast radius
 

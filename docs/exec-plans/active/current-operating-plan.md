@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint D after C passed at `f45d5d2`
+**Current Ticket:** T-066 checkpoint E after D passed through `64c7d3b`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,8 +13,8 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002 remains incomplete because retained-consumer/DocSync migration and lifecycle evidence have not passed; fresh binary bootstrap is deliberately unavailable until a non-circular trusted bootstrap exists.
-**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, B1 acquires one verified candidate through a bounded credential-safe remote session, B2 durably replaces or provably restores the fixed local binary without network access, B3 routes release-mode `Run` through those fail-closed stages before PATH repair, and C retires checksum-only shell bootstrap to a non-mutating reviewed-source route. Checkpoint D now owns retained consumers and DocSync.
+**Current Failing Scenario:** F-018-S002 remains incomplete only pending checkpoint E's installed commit-bound source lifecycle and offline synthetic signed update/rollback evidence; fresh packaged bootstrap remains deliberately unavailable until a non-circular trusted bootstrap exists and is a later cutover blocker.
+**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, B1 acquires one verified candidate through a bounded credential-safe remote session, B2 durably replaces or provably restores the fixed local binary without network access, B3 routes release-mode `Run` through those fail-closed stages before PATH repair, C retires checksum-only shell bootstrap to a non-mutating reviewed-source route, and D retires weaker parallel consumers while synchronizing generated and live guidance. Checkpoint E now owns final installed lifecycle evidence.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 checkpoints D through E, the unavailable fresh binary bootstrap, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Implement only T-066 checkpoint D: migrate or retire retained release verification/audit, CLI/MarsCLI, live docs, DocSync routes, and generated target guidance. Remove legacy raw asset names and checksum-only semantics without adding a new publisher or installer.
+- **Current Primary Blocker:** T-066 checkpoint E, the unavailable fresh packaged bootstrap, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Run only T-066 checkpoint E: preserve the already-green source gate, execute focused hostile/race plus remaining vulnerability/fuzz/lint/DocSync/cross-build checks, install a commit-bound source binary into an isolated prefix, initialize a fresh target, and prove one offline synthetic signed update and explicit rollback lifecycle.
 
 ## Locked Decisions
 
@@ -53,7 +53,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | --- | --- | --- | --- |
 | T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
 | T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
-| T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 and T-067 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw `mars-<os>-<arch>` / `mars-harness-<os>-<arch>` asset names are absent. |
+| T-066 / F-018-S002 | A1 through D passed; run the final installed/offline lifecycle evidence. | T-065 and T-067 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw `mars-<os>-<arch>` / `mars-harness-<os>-<arch>` asset names are absent; installed source and synthetic signed update/rollback evidence passes. |
 | T-067 | Passed 2026-07-22: raised the MARS source minimum to exact Go 1.25.12 without imposing an external Go requirement on packaged operation or generated targets. | Owner approved 2026-07-22. | Exact Go 1.25.12 and release Go 1.26.5 gates, real Go 1.25.11 rejection, patch-aware source doctor tests, four cross-builds, installed/fresh-target smoke, and QA/Security review passed without Sigstore or publication changes. |
 | T-068 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete after T-067. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
@@ -161,6 +161,12 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - On 2026-07-22, latest and explicit-version hostile-environment tests proved no external command, network, credential, temporary-file, privilege, PATH, or destination authority is exercised; a prior `mars` binary remains byte-identical and alone. The script remains executable and contains no legacy release URL, raw asset, or checksum bootstrap path.
 - Focused and race script/source-update tests, full `internal/selfupdate` tests, vet, Bash syntax, docsconsistency, DocSync, and diff checks passed. Engineer, QA, Security, and Orchestrator are GO.
 - Fresh binary bootstrap remains unavailable and is a public-cutover blocker, not a completed install claim. Checkpoints D and E remain incomplete; the repository remains private and `primary_blocked`, and no live install, version, tag, Release, signature, upload, visibility, or support claim changed.
+
+## T-066 Checkpoint D Evidence — 2026-07-22
+
+- `9d2d8c9` retires the standalone verifier/audit commands and implementations plus dead legacy raw/checksum-only updater helpers; the retained version-only remote lookup is bounded, credential-scoped, redirect-closed, and redacted. `bb4b620` removes the retired commands from MarsCLI, formal workflows, and generated target doctrine while preserving repository-owned producer/verifier responsibility and exact remote convergence.
+- `527646b` synchronizes current architecture, product, BDD, release-versioning, source/target, dogfood, README, and quickstart contracts. `64c7d3b` synchronizes the six live operator guides and adds a guard that rejects either retired command in executable HTML recipes or command-only cells. Original superseded AD bodies, tickets, reports, changelog, and dated review evidence remain unchanged.
+- Focused Go 1.26.5 release/selfupdate/CLI, tools/scanner, positive Sigstore/archive/acquisition/replacement, docsconsistency, and DocSync gates passed. CTO-weekly, QA, Security, and Orchestrator are GO. Checkpoint E alone remains; the repository stays private and `primary_blocked`, packaged bootstrap remains unavailable, and no live update, version, tag, Release, signature, upload, visibility, or support claim changed.
 
 ## Validation Gates
 
