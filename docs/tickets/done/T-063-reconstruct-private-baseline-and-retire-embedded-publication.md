@@ -6,7 +6,7 @@ complexity: large
 work_type: enabler
 bdd_scenarios: []
 end_to_end_evidence: required
-evidence_links: ["git show --stat 6d326ffa82e236570509b3783711b87911e5500d", "docs/tickets/in-progress/T-063-reconstruct-private-baseline-and-retire-embedded-publication.md#evidence"]
+evidence_links: ["git show --stat 6d326ffa82e236570509b3783711b87911e5500d", "docs/tickets/done/T-063-reconstruct-private-baseline-and-retire-embedded-publication.md#evidence"]
 verified_by: "qa, security, dogfood, release-manager, foundation-maintainer (reconstruction and retirement only)"
 owner: "none"
 last_attempt: "2026-07-21: original exact-nine release outcome superseded by owner-approved v0.93 retirement and GoReleaser migration"
