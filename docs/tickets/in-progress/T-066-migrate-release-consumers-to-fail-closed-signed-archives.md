@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: A1 pushed at fcf7397 with exact sigstore-go v1.2.2, pinned offline trust/identity verification, strict checksums, and zero called vulnerabilities"
+last_attempt: "2026-07-22: A2 pushed at b824b91 with authenticated canonical-archive inspection, bounded exact extraction, release build-metadata verification, clean snapshot evidence, and QA/Security GO"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint A2 bounded archive inspection/extraction against authenticated archive bytes, then validate and push it before updater integration."
+next_action: "Implement only checkpoint B updater integration using the committed A1/A2 primitives; validate and push it before installer work."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -43,7 +43,7 @@ The selected archive name is exact for the normalized release version and curren
 
 A1. Passed at `fcf7397`: production offline Sigstore-bundle and strict canonical-checksum verification plus bounded upstream-positive and hostile tests. Committed and pushed before archive work.
 
-A2. Add bounded gzip/tar inspection and extraction. Reject absolute/traversal names, backslashes, links, devices/FIFOs, sparse or duplicate members, missing/extra members, multiple gzip streams or trailing data, and member/file-count/compressed/expanded-size quota violations. The archive contains exactly mars, LICENSE, NOTICE, and THIRD_PARTY_NOTICES with fixed regular-file modes. Commit and push before updater integration.
+A2. Passed at `b824b91`: bounded in-memory gzip/tar inspection and extraction rejects unsafe or noncanonical archive content and verifies exact release build metadata before returning cloned binary bytes. Committed and pushed before updater integration.
 
 B. Integrate mars update tool: fetch bounded metadata, signature bundle, checksums, and only the selected archive; verify completely; stage in a same-filesystem 0700 directory with non-final files 0600; serialize updates; atomically replace only after durability checks; retain/restore the prior binary on every failure and give an actionable recovery command. Source update modes remain unchanged. Commit and push.
 
@@ -63,7 +63,7 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Go 1.25.8 is not an acceptable MARS security floor: exact called-path scanning found eight reachable standard-library findings (`GO-2026-5856`, `GO-2026-5039`, `GO-2026-5037`, `GO-2026-4971`, `GO-2026-4947`, `GO-2026-4946`, `GO-2026-4870`, and `GO-2026-4865`). The identical wrapper built with Go 1.25.12 produced zero called findings. Residual `GO-2026-5970` and `GO-2026-5932` were uncalled or module-only on this path and remain subject to the whole-source gate after dependency admission.
 - The proposed compatibility ticket must set `go 1.25.12`, retain release `toolchain go1.26.5`, add an exact minimum-toolchain lane, reject Go 1.25.11 without auto-download, and make `doctor` patch-aware for explicit MARS source builds while keeping packaged-binary and target users healthy without Go. Generated target repositories do not inherit this source-only floor.
 - The current public-good root candidate was independently identified at `sigstore/root-signing` commit `c9bda74ad2221f938f7d2e0295ca3aad2da710a8`, SHA-256 `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`, and parsed fully offline with v0.7.0. It was not added because no verifier dependency or compatibility-floor change is authorized yet.
-- No MARS dependency, verifier source, tag, Release, signature, upload, version, or visibility change occurred. A2 and every later T-066 checkpoint remain unstarted.
+- No MARS dependency, verifier source, tag, Release, signature, upload, version, or visibility change occurred. At that blocked admission checkpoint, A2 and every later T-066 checkpoint were unstarted.
 
 ## Checkpoint A1 completion — 2026-07-22
 
@@ -72,7 +72,15 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Production now requires exact bundle v0.3, one transparency inclusion proof, observer time, SCT, raw checksum bytes, one exact non-regex GitHub Actions identity, modern source/build digests plus the required GitHub workflow SHA/repository/ref extensions, and exactly eight sorted archive/SBOM checksum records. Inputs are bounded and snapshotted; failures return fixed redacted errors. The primitive has no path, network, TUF/live-root, archive, updater, installer, signing, or publication surface.
 - Positive offline conformance uses the public GoReleaser `v2.17.0` `checksums.txt` (SHA-256 `6fad0b6d…c921f`) and signature bundle as a pinned upstream test vector bound to commit `770a4fc7a8fb2dca874b6c98cb739dd64fc931c0`; it is not synthetic and is not MARS release evidence. Tampered bytes, wrong commit/root, missing proof, unsupported version, noncanonical checksum grammar, and hostile error content are rejected.
 - Exact Go 1.25.12 full-source testing passed apart from one DocSync metadata omission, which was corrected and whose failed package plus DocSync/selfupdate reruns passed. Vet, focused race, module verification, exact-Go whole-source `govulncheck`, corrected Go 1.26.5 `make vuln`, and four Go 1.26.5 CGO-disabled cross-builds passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator are GO.
-- A2 through E remain unstarted. Dependency notice completion remains a public-cutover blocker. No MARS tag, Release, signature, upload, version, visibility, or supported-release claim changed.
+- At the A1 checkpoint, A2 through E were unstarted. Dependency notice completion remained a public-cutover blocker. No MARS tag, Release, signature, upload, version, visibility, or supported-release claim changed.
+
+## Checkpoint A2 completion — 2026-07-22
+
+- Pushed commit `b824b915bb6424636bb9e09fd91c9f9501f259ac` adds a byte-only, offline archive verifier. It requires the A1 checksum result's exact tag/full-commit identity, derives the canonical platform archive name, authenticates its SHA-256 before decompression, and exposes only a cloned verified binary.
+- The archive contract is exact and bounded: four ordered USTAR regular files, fixed root ownership and modes, no links/devices/PAX/xattrs or extra data, and fixed compressed, expanded, document, and binary quotas. Binary build information must match Go 1.26.5, the canonical MARS module/command, requested platform and architecture level, `CGO_ENABLED=0`, trimpath, exact clean Git revision, and valid VCS time.
+- Focused normal/race tests, vet, DocSync, four CGO-disabled cross-compiles, and vulnerability scanning passed with zero called vulnerabilities. QA and Security accepted the diff after the authenticated checksum result was bound to its exact tag and commit.
+- A clean GoReleaser snapshot `0.69.0-dev.b824b91` passed both the producer verifier and the A2 Darwin/arm64 environment verifier without execution, installation, or destination mutation.
+- Checkpoints B through E remain incomplete. The repository remains private at `VERSION=0.68.49`; no tag, Release, MARS signature, upload, visibility, or supported-release claim changed.
 
 ## Interfaces and blast radius
 

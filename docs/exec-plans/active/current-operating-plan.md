@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint A2 after A1 passed at `fcf7397`
+**Current Ticket:** T-066 checkpoint B after A1 passed at `fcf7397` and A2 passed at `b824b91`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,8 +13,8 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002 remains incomplete because archive inspection/extraction and the updater, installer, and retained consumer migrations have not passed.
-**Walking Skeleton Slice:** As of 2026-07-22, A1 authenticates one pinned upstream Sigstore test vector and the exact canonical MARS checksum contract; A2 will safely inspect and extract one current-platform archive before updater integration.
+**Current Failing Scenario:** F-018-S002 remains incomplete because the updater transaction, installer boundary, retained-consumer/DocSync migration, and lifecycle evidence have not passed.
+**Walking Skeleton Slice:** As of 2026-07-22, A1 authenticates the exact signed checksum contract and A2 authenticates and safely inspects the selected archive in memory. Checkpoint B will integrate those primitives into the updater transaction before installer work begins.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 A1 passed, but archive extraction, updater/installer integration, retained-consumer migration, and lifecycle evidence remain incomplete. T-068 and the independent F-017 audit, runtime, contribution, and cutover gates also remain incomplete.
-- **Next Primary Action:** Implement only T-066 A2 bounded archive inspection/extraction against authenticated bytes. No tag, Release, MARS signature, or supported-release claim is authorized.
+- **Current Primary Blocker:** T-066 checkpoints B through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Implement only T-066 checkpoint B: bounded updater fetching, complete A1/A2 verification, same-filesystem staging, serialization, durable atomic replacement, prior-binary preservation, and actionable recovery. Do not begin installer or consumer/DocSync migration.
 
 ## Locked Decisions
 
@@ -112,7 +112,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 
 - The newest admissible-floor candidate, official `sigstore-go v0.7.0` at `9c466a8b8df6a1886292e0a82023bc217968da9e`, retained the main module's Go 1.22.4 directive after exact-toolchain tidy and compiled every required offline bundle, identity, commit-extension, log, timestamp, SCT, and artifact-byte API.
 - Independent Engineer and Security probes both rejected it: exact called-path `govulncheck v1.3.0` found 14 called findings, decisively including the `GO-2026-5952` multi-log verification-threshold bypass in the verification path. Its upstream fix is `sigstore-go v1.2.0`, which requires Go 1.25.0.
-- T-066 cannot authorize a minimum-Go compatibility migration or custom cryptography. No dependency or source change landed, the repository remains private at `VERSION=0.68.49`, and checkpoints A2 through E remain unstarted until the blocker is resolved through a separately approved ticket or a secure Go-1.22-compatible upstream release.
+- At that dependency-admission checkpoint, T-066 could not authorize a minimum-Go compatibility migration or custom cryptography. No dependency or source change had landed, the repository remained private at `VERSION=0.68.49`, and checkpoints A2 through E were unstarted pending a separately approved ticket or a secure Go-1.22-compatible upstream release.
 - A bounded follow-up established an exact candidate route without changing MARS: newest official `sigstore-go v1.2.2` at `55aa6240784677449a564e66a0fca7a6a3605ecd` compiles the full offline wrapper. Its declared Go 1.25.8 floor still produced eight called standard-library findings, while the identical path on Go 1.25.12 produced zero called findings.
 - The owner approved that bounded source-only compatibility route on 2026-07-22. T-067 now owns `go 1.25.12`, retained `toolchain go1.26.5`, exact minimum/release lanes, Go 1.25.11 rejection, patch-aware canonical-source checking, and no external Go requirement for packaged or generated-target operation; no Sigstore dependency or verifier work belongs in T-067.
 
@@ -122,7 +122,14 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - The production primitive is byte-only and offline: it hash-pins the 6,787-byte public-good root at `6494e21e…0b66`, requires bundle v0.3, one inclusion proof, observer time, SCT, exact artifact bytes, and one exact GitHub Actions workflow/repository/tag/full-commit identity before accepting exactly eight sorted MARS archive/SBOM checksums. It exposes no path, network, root override, updater, installer, signing, or publication authority.
 - The positive conformance vector is the public GoReleaser `v2.17.0` `checksums.txt` and signature bundle, pinned to source commit `770a4fc7a8fb2dca874b6c98cb739dd64fc931c0`; it is upstream release evidence used offline, not a synthetic or MARS signature. Tampered bytes, wrong commit/root, missing proof, unsupported bundle version, noncanonical checksum grammar, and hostile error content are rejected.
 - Exact Go 1.25.12 full-source testing passed after the sole DocSync metadata finding was corrected and its package rerun passed. Vet, focused race, four Go 1.26.5 CGO-disabled cross-builds, module verification, exact-Go whole-source `govulncheck`, and the corrected Go 1.26.5 `make vuln` lane passed with zero called vulnerabilities. Engineer, QA, Security, and Orchestrator accepted A1.
-- A2 through E remain unstarted. Dependency notices remain provisional and public cutover remains blocked; no MARS tag, Release, signature, upload, version, visibility, or support claim changed.
+- At the A1 checkpoint, A2 through E were unstarted. Dependency notices remained provisional and public cutover remained blocked; no MARS tag, Release, signature, upload, version, visibility, or support claim changed.
+
+## T-066 Checkpoint A2 Evidence — 2026-07-22
+
+- Commit `b824b915bb6424636bb9e09fd91c9f9501f259ac` is pushed. The byte-only verifier binds the authenticated checksum result to the exact tag and full commit, selects the canonical platform archive, authenticates its digest before decompression, and returns only a cloned verified binary.
+- Inspection permits exactly the ordered `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`, and `mars` USTAR members with fixed ownership and modes; applies compressed, expanded, document, and binary limits; rejects unsafe types, metadata, missing/extra content, multiple streams, and trailing data; and requires exact Go 1.26.5, module, platform, architecture, CGO, trimpath, VCS revision, clean-state, and timestamp build metadata.
+- Focused normal and race tests, vet, DocSync, four CGO-disabled cross-compiles, and vulnerability scanning passed with zero called vulnerabilities. QA and Security are GO after the authenticated checksum result was bound to its exact tag and commit.
+- One clean GoReleaser snapshot, `0.69.0-dev.b824b91`, passed the producer verifier and the A2 Darwin/arm64 environment verifier without candidate execution or installation. Checkpoints B through E remain incomplete; the repository remains private and no version, tag, Release, MARS signature, upload, visibility, or support claim changed.
 
 ## Validation Gates
 
