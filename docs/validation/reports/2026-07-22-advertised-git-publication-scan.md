@@ -4,7 +4,7 @@
 - Ticket: T-070
 - Scenario: F-017-S001
 - Source commit: `375a3a30140c9248f10c19eb4ff8a66ba83b7522`
-- Status: `owner_review_required`
+- Status: `plausible_secret_rotation_required`
 - Primary Status: `primary_blocked`
 - Publication authority: denied
 
@@ -16,17 +16,17 @@
 
 **Primary Status:** `primary_blocked`
 
-**Current Primary Blocker:** The two T-070 finding groups require owner-only classification; GitHub-hosted content, manual privacy/IP/provenance/name review, owner disposition, and every later F-017 gate remain incomplete.
+**Current Primary Blocker:** Elliott classified at least one owner-only candidate as potentially real. T-070 and every later audit slice stop until all affected provider/accounts are identified locally, every potentially real credential is rotated or revoked through a separately approved owner action, and both tools' Git-history and raw-object lanes are rerun.
 
-**Next Primary Action:** Elliott classifies every locally opened candidate as deliberately synthetic or potentially real without copying values or locations into chat. A potentially real credential stops work for separately approved rotation.
+**Next Primary Action:** Elliott identifies all affected provider/accounts locally, rotates or revokes every potentially real credential outside the agent boundary, and records only the affected opaque group ID or IDs plus `rotation complete`. Candidate values and locations must remain outside chat and repository evidence.
 
-**Supporting Evidence:** The frozen 302-ref, 11,954-object publication surface completed both pinned scanner lanes without accepted-scan errors or skips; the redacted coverage below does not claim that unresolved findings are clean.
+**Supporting Evidence:** The frozen 302-ref, 11,954-object publication surface completed both pinned tools' Git-history and raw-object lanes without accepted-scan errors or skips; the redacted coverage below does not claim that unresolved findings are clean.
 
 ## Outcome
 
 The exact advertised Git publication surface was frozen and scanned with pinned standard tools. Raw reports and candidate data remain in an owner-only FileVault-protected boundary and were not read into agent, chat, CI, trace, or repository output. Accepted scans reported zero execution errors and zero skip events.
 
-The scan is not clean yet. Two opaque finding groups remain pending owner-only review. Every reported Git-mode location was classified mechanically as test-like, but location classification cannot prove that a candidate value is synthetic. T-070 therefore remains in progress and F-017-S001 remains blocked.
+The scan is not clean. Elliott classified at least one owner-only candidate as potentially real on 2026-07-22. The response did not identify which opaque group, so both groups remain unresolved without reproducing the candidate or inferring a safe group. T-070 therefore stops before further acquisition, scanning, remediation, or disposition, and F-017-S001 remains blocked.
 
 ## Frozen Surface
 
@@ -67,10 +67,10 @@ The difference between 844 reachable commit objects and 838 Gitleaks-reported co
 
 | Opaque finding ID | Broad class | Status |
 | --- | --- | --- |
-| `a2a292e31d652f22` | generic API-key detector results | `owner_review_required` |
-| `e32927624f4a2cac` | unverified URI detector results | `owner_review_required` |
+| `a2a292e31d652f22` | generic API-key detector results | `unresolved_rotation_scope` |
+| `e32927624f4a2cac` | unverified URI detector results | `unresolved_rotation_scope` |
 
-No candidate value, fragment, location, filename, email, URL, body, raw scanner record, or candidate-derived hash is included here. The owner must review every candidate locally and classify it as deliberately synthetic or potentially real. A potentially real credential changes the status to `plausible_secret_rotation_required` and stops the ticket before separately approved rotation/revocation.
+No candidate value, fragment, location, filename, email, URL, body, raw scanner record, or candidate-derived hash is included here. The owner classification changed this report to `plausible_secret_rotation_required`. Both opaque groups remain unresolved until the owner locally identifies the affected group or groups and completes separately approved rotation/revocation.
 
 ## Rejected Attempts
 
@@ -87,4 +87,4 @@ Two TruffleHog setup invocations failed before scanning because a bare mirror di
 
 ## Remaining Gate
 
-Owner-only candidate classification is required before T-070 can pass. If every candidate is confirmed synthetic, QA and Security must review the redacted coverage and T-070 can close without completing F-017-S001. GitHub-hosted content, manual privacy/IP/provenance/name review, and final owner disposition remain separate later tickets.
+Owner rotation/revocation is required before T-070 can resume. After every potentially real credential is rotated or revoked, both pinned tools' Git-history and raw-object lanes must rerun against a newly frozen publication manifest; the affected candidates must no longer be usable or publishable, and any retained synthetic fixture must be explicitly classified without exposing it. GitHub-hosted content, manual privacy/IP/provenance/name review, and final owner disposition remain blocked behind this stop.

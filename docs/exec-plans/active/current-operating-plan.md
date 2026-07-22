@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** The reconstructed publication surface has not completed current secret/history scanning, GitHub-surface review, manual privacy/IP/provenance/name review, or owner disposition. Runtime, contribution, cutover, and canary gates are also incomplete.
-- **Next Primary Action:** The pinned Git-history and 11,954-object scans completed with zero accepted-scan errors/skips. Elliott must classify the two owner-only test-classified finding groups; a potentially real credential stops work for separately approved rotation. Do not publish or mutate GitHub state.
+- **Current Primary Blocker:** Elliott classified at least one T-070 candidate as potentially real. Both opaque groups remain unresolved until all affected provider/accounts are identified locally, every potentially real credential is rotated or revoked through a separately approved owner action, and both pinned tools' Git-history and raw-object lanes rerun. GitHub-surface, manual disposition, runtime, contribution, cutover, and canary gates are also incomplete.
+- **Next Primary Action:** Elliott rotates or revokes every potentially real credential outside the agent boundary and reports only the affected opaque group ID or IDs plus `rotation complete`. Do not publish, continue acquisition, or mutate GitHub state.
 
 ## Scope Decision
 
@@ -78,5 +78,5 @@ T-070 changes only planning and redacted audit evidence while public release sta
 
 - Source `375a3a30140c9248f10c19eb4ff8a66ba83b7522` froze 302 canonical publication refs, 844 commits, and 11,954 objects. The post-scan manifest matched, visibility stayed private, Actions was quiescent, and no unexpected namespace appeared.
 - Exact Gitleaks v8.30.1 and signed TruffleHog v3.95.9 completed Git-history plus raw-object lanes with zero accepted-scan errors or skip events.
-- Two opaque finding groups remain `owner_review_required`. All Git-mode locations were mechanically test-like, but only the owner may inspect candidate values and decide whether they are deliberately synthetic.
-- T-070 and F-017-S001 remain incomplete; the next GitHub-hosted slice cannot start until the plausible-secret stop rule is resolved.
+- Elliott classified at least one candidate as potentially real. Both opaque groups remain unresolved because the affected group was not disclosed, and no agent inspected or reproduced raw evidence.
+- T-070 and F-017-S001 are stopped on separately approved owner rotation/revocation plus a complete rescan; the next GitHub-hosted slice cannot start.
