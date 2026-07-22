@@ -13,7 +13,7 @@ last_attempt: "2026-07-22: A2 pushed at b824b91 with authenticated canonical-arc
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint B updater integration using the committed A1/A2 primitives; validate and push it before installer work."
+next_action: "Implement only checkpoint B1 bounded credential-safe release acquisition and A1/A2 verification with no filesystem writes; validate and push before B2."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -45,7 +45,11 @@ A1. Passed at `fcf7397`: production offline Sigstore-bundle and strict canonical
 
 A2. Passed at `b824b91`: bounded in-memory gzip/tar inspection and extraction rejects unsafe or noncanonical archive content and verifies exact release build metadata before returning cloned binary bytes. Committed and pushed before updater integration.
 
-B. Integrate mars update tool: fetch bounded metadata, signature bundle, checksums, and only the selected archive; verify completely; stage in a same-filesystem 0700 directory with non-final files 0600; serialize updates; atomically replace only after durability checks; retain/restore the prior binary on every failure and give an actionable recovery command. Source update modes remain unchanged. Commit and push.
+B1. Add bounded credential-safe acquisition with exact release/tag/commit and ten-asset reconciliation, anonymous-first GitHub access, manually constrained redirects, strict response quotas, A1 then A2 verification, a final remote drift recheck, and downgrade/replay rejection. Return only a private cloned candidate; perform no filesystem writes. Commit and push.
+
+B2. Add the network-free local transaction: descriptor-bound destination admission, a persistent nonblocking lock, same-filesystem 0700 staging, 0600 candidate/backup files, file and directory durability, atomic replacement, post-replace verification, and verified compensation or explicit recovery-required evidence. Commit and push.
+
+B3. Wire the release branch of `Run` and the minimum current-version/commit input to B1 and B2 while preserving source/main, dry-run, and shell-path behavior. Remove download URLs from the plan/output. Commit and push before installer work.
 
 C. Migrate scripts/install.sh to the same trusted verifier path. If bootstrap cannot invoke the same verifier without weakening trust, make binary installation explicitly unavailable and direct users to source installation; checksum-only compatibility is forbidden. Commit and push.
 

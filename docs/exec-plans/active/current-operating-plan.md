@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint B after A1 passed at `fcf7397` and A2 passed at `b824b91`
+**Current Ticket:** T-066 checkpoint B1 after A1 passed at `fcf7397` and A2 passed at `b824b91`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -25,7 +25,7 @@
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-066 checkpoints B through E, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Implement only T-066 checkpoint B: bounded updater fetching, complete A1/A2 verification, same-filesystem staging, serialization, durable atomic replacement, prior-binary preservation, and actionable recovery. Do not begin installer or consumer/DocSync migration.
+- **Next Primary Action:** Implement only T-066 checkpoint B1: bounded credential-safe GitHub release/tag/asset acquisition, A1 then A2 verification, drift recheck, and downgrade/replay rejection with no filesystem writes. Do not begin the local replacement transaction, installer, or consumer/DocSync migration.
 
 ## Locked Decisions
 
@@ -130,6 +130,8 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - Inspection permits exactly the ordered `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`, and `mars` USTAR members with fixed ownership and modes; applies compressed, expanded, document, and binary limits; rejects unsafe types, metadata, missing/extra content, multiple streams, and trailing data; and requires exact Go 1.26.5, module, platform, architecture, CGO, trimpath, VCS revision, clean-state, and timestamp build metadata.
 - Focused normal and race tests, vet, DocSync, four CGO-disabled cross-compiles, and vulnerability scanning passed with zero called vulnerabilities. QA and Security are GO after the authenticated checksum result was bound to its exact tag and commit.
 - One clean GoReleaser snapshot, `0.69.0-dev.b824b91`, passed the producer verifier and the A2 Darwin/arm64 environment verifier without candidate execution or installation. Checkpoints B through E remain incomplete; the repository remains private and no version, tag, Release, MARS signature, upload, visibility, or support claim changed.
+
+- COO, CTO-weekly, QA, and Security split checkpoint B into three independently green commits: B1 performs bounded credential-safe acquisition and A1/A2 verification without filesystem writes; B2 performs the serialized durable local transaction without network access; B3 wires `Run` and the minimum current-version identity while preserving source mode. Installer work remains C and broader CLI/audit/docs retirement remains D.
 
 ## Validation Gates
 
