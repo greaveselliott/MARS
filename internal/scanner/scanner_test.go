@@ -14,6 +14,7 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 - docs/roles/ROLES.md
 */
 package scanner
@@ -26,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/docsync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -425,6 +427,10 @@ func TestInit_success(t *testing.T) {
 	}
 
 	assert.Contains(t, manifestStr, "orchestration_mode: dispatch", "generated manifest should return terminal dispositions through the orchestrator")
+	assert.Contains(t, manifestStr, "docsync:\n  include_roots:", "generated manifest should expose target-owned DocSync selection")
+	assert.Contains(t, manifestStr, ".ts, .tsx, .mts, .cts", "generated DocSync defaults should cover TypeScript monorepos")
+	assert.Contains(t, manifestStr, `"**/node_modules/**"`, "generated DocSync defaults should exclude dependencies")
+	assert.Contains(t, manifestStr, `"**/.expo/**"`, "generated DocSync defaults should exclude Expo output")
 	assert.NotContains(t, manifestStr, "then: [cto-weekly]", "dispatch defaults should not encode fixed role-to-role handoffs")
 	assert.NotContains(t, manifestStr, "idle_then:", "dispatch defaults should route idle work through dispositions and the orchestrator")
 
@@ -804,7 +810,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(docSyncArchitecture), "Universal Operating Model")
 	assert.Contains(t, string(docSyncArchitecture), "docsync_audit")
 	assert.Contains(t, string(docSyncArchitecture), "Role Responsibilities")
-	assert.Contains(t, string(docSyncArchitecture), "deployed app roots")
+	assert.Contains(t, string(docSyncArchitecture), "configured roots")
+	assert.Contains(t, string(docSyncArchitecture), "TypeScript/TSX")
 	assert.Contains(t, string(docSyncArchitecture), "compact inline static metadata")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
@@ -1075,6 +1082,27 @@ func TestInit_success(t *testing.T) {
 	assert.NotContains(t, string(releasePrompt), "release audit")
 	assert.Contains(t, string(releasePrompt), "Never add, rewrite, guess, or")
 	assert.Contains(t, string(releasePrompt), "Do not add a placeholder origin")
+}
+
+func TestInitGeneratedManifestAuditsTypeScriptMonorepoAndExcludesBuildOutput(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, Init(dir, false))
+
+	authored := filepath.Join(dir, "apps", "web", "src", "page.tsx")
+	require.NoError(t, os.MkdirAll(filepath.Dir(authored), 0o755))
+	require.NoError(t, os.WriteFile(authored, []byte(`/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
+export default function Page() { return null }
+`), 0o644))
+	generated := filepath.Join(dir, "apps", "web", "dist", "page.js")
+	require.NoError(t, os.MkdirAll(filepath.Dir(generated), 0o755))
+	require.NoError(t, os.WriteFile(generated, []byte("export default null\n"), 0o644))
+
+	report, err := docsync.Audit(docsync.Config{RepoRoot: dir})
+	require.NoError(t, err)
+	require.True(t, report.OK(), "unexpected findings: %#v", report.Findings)
+	require.Len(t, report.Files, 1)
+	require.Equal(t, "apps/web/src/page.tsx", report.Files[0].Path)
 }
 
 func TestDefaultHeadOfStrategyPromptIncludesPersonalGuide(t *testing.T) {

@@ -22,6 +22,7 @@ docs:
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-018-goreleaser-distribution.md
 - docs/features/F-012-self-improvement-loop.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package main
 
@@ -421,6 +422,34 @@ package release
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "docsync: checked 1 files, findings 0")
 	require.Contains(t, out.String(), "Status: ok")
+}
+
+func TestDocSyncAuditCommandUsesManifestTypeScriptSelection(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeToolRunRepoFile(t, dir, "docs/features/F-019-typescript-monorepo-docsync.md", "feature")
+	writeToolRunRepoFile(t, dir, ".harness/manifest.yaml", `name: test
+docsync:
+  include_roots: [modules]
+  include_extensions: [.tsx]
+  exclude_globs: ["**/generated/**"]
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+	writeToolRunRepoFile(t, dir, "modules/ui/card.tsx", `/* MarsDocSync: ["docs/features/F-019-typescript-monorepo-docsync.md"] */
+export const Card = () => null
+`)
+	writeToolRunRepoFile(t, dir, "modules/generated/card.tsx", "export const Generated = () => null\n")
+
+	cmd := docsyncAuditCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--repo", dir, "--json"})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), `"path": "modules/ui/card.tsx"`)
+	require.NotContains(t, out.String(), "modules/generated/card.tsx")
 }
 
 func TestScoresCommandMissingDBDirectoryIsActionable(t *testing.T) {

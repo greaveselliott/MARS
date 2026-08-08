@@ -130,7 +130,8 @@ The following checks keep the mirrors synchronized:
   doctrine, skills, and tool guidance.
 - `go test ./internal/docsconsistency/...` verifies operating-model docs.
 - `mars docsync audit --repo .` verifies changed source files point to
-  the owning docs.
+  the owning docs using the repository's effective manifest DocSync roots,
+  extensions, and exclusions.
 - `mars tools run harness_doctrine_sync --repo . --args-json '{}'`
   checks mirrored doctrine when operating rules or generated defaults change.
 

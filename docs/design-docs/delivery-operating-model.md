@@ -62,6 +62,12 @@ docs were checked and did not need content changes. The full docsync
 architecture and universal operating model are documented in
 [documentation-sync-architecture.md](documentation-sync-architecture.md).
 
+Target repositories select the authored source surface through the optional
+`docsync` manifest section. Safe built-in defaults include TypeScript/TSX
+monorepo roots and exclude generated dependency, build, coverage, Expo, and
+React Router output. CLI, mirrored-tool, file-write, and disposition gates
+must resolve the same validated selection; F-019 owns this behavior.
+
 Operating-model changes must be **symbiotic** with the existing system. A new
 rule, artifact, role behavior, tool, gate, or automation must fit the closed
 loop without creating handoff gaps, duplicate sources of truth, or

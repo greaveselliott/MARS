@@ -21,6 +21,7 @@ docs:
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-017-open-source-publication.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 - docs/runbooks/atlassian-mcp-jira-intake.md
 - docs/roles/ROLES.md
 */
@@ -628,6 +629,20 @@ func defaultManifest(projectName string) string {
 description: Starter autonomous AI pipeline for %s — strict trunk, configurable roles
 orchestration_mode: dispatch
 
+docsync:
+  include_roots: [cmd, internal, pkg, examples, src, app, apps, pages, packages, public, web, workers, static, tests, .github/workflows]
+  include_extensions: [.go, .html, .css, .js, .jsx, .mjs, .cjs, .ts, .tsx, .mts, .cts, .yaml, .yml]
+  exclude_globs:
+    - "**/.git/**"
+    - "**/node_modules/**"
+    - "**/build/**"
+    - "**/dist/**"
+    - "**/vendor/**"
+    - "**/coverage/**"
+    - "**/.expo/**"
+    - "**/.react-router/**"
+    - "**/*.generated.*"
+
 roles:
   # ── Strategy ─────────────────────────────────────────────
   ceo:
@@ -1108,6 +1123,7 @@ would otherwise live only in chat.
 - **Business logic** — product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation.
 - **No stale documentation** — all durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs`" + ` array listing associated documentation so reviewers and automation know which docs must be checked.
 - **MarsDocSync block** — a top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing a ` + "`docs:`" + ` list of repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code.
+- **DocSync source selection** — optional ` + "`.harness/manifest.yaml`" + ` ` + "`docsync.include_roots`" + `, ` + "`include_extensions`" + `, and ` + "`exclude_globs`" + ` fields define the authored source surface; missing fields use safe TypeScript-monorepo-capable defaults, non-empty fields replace that field's default, and all paths remain repository-contained.
 - **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `.
 - **Foundation operating model** — the operating model for ` + "`mars`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
@@ -2029,7 +2045,7 @@ mars tools run docsync_audit --repo . --args-json '{}'
 
 ## Metadata Shape
 
-Go, JavaScript, and CSS files use block comments:
+Go, JavaScript, TypeScript, TSX, and CSS files use block comments:
 
 ` + "```" + `go
 /*
@@ -2051,10 +2067,18 @@ short:
 /* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
 ` + "```" + `
 
-` + "`mars docsync audit`" + ` audits common app roots such as ` + "`src/`" + `,
-` + "`app/`" + `, ` + "`pages/`" + `, ` + "`public/`" + `, ` + "`web/`" + `, and ` + "`static/`" + `.
+` + "`mars docsync audit`" + ` audits root-level source files and configured roots.
+Generated targets default to ` + "`cmd/`" + `, ` + "`internal/`" + `, ` + "`pkg/`" + `, ` + "`examples/`" + `,
+` + "`src/`" + `, ` + "`app/`" + `, ` + "`apps/`" + `, ` + "`pages/`" + `, ` + "`packages/`" + `, ` + "`public/`" + `,
+` + "`web/`" + `, ` + "`workers/`" + `, ` + "`static/`" + `, ` + "`tests/`" + `, and ` + "`.github/workflows/`" + `.
 Those app-root files must point to the local feature contracts or design docs
 that own the product behavior.
+
+The optional ` + "`docsync`" + ` manifest section configures ` + "`include_roots`" + `,
+` + "`include_extensions`" + `, and ` + "`exclude_globs`" + `. An absent or empty field uses
+the built-in default for that field; a non-empty field replaces it. Values must
+remain repository-relative, extensions must be dot-prefixed, and generated or
+dependency paths should stay excluded.
 
 ## Maintenance Rules
 
@@ -2096,11 +2120,13 @@ docsync evidence, and record which docs changed or remained current.
 The model has six layers:
 
 1. Metadata layer: near-top ` + "`MarsDocSync`" + ` metadata with a structured ` + "`docs:`" + `
-   list, or compact inline static metadata for CSS/JavaScript assets.
+   list for authored Go, JavaScript, TypeScript/TSX, CSS, and configuration
+   source, or compact inline static metadata for CSS/JavaScript assets.
 2. Map layer: ` + "`docs/design-docs/code-documentation-map.md`" + ` records expected
    docs for source prefixes.
-3. Audit layer: ` + "`mars docsync audit --repo .`" + ` checks foundation
-   roots and deployed app roots for metadata, missing docs, and map coverage.
+3. Audit layer: ` + "`mars docsync audit --repo .`" + ` resolves safe manifest
+   roots, extensions, and exclusions, then checks metadata, missing docs, and
+   foundation map coverage.
 4. Tool layer: ` + "`docsync_audit`" + ` exposes the same check to harness agents.
 5. Evidence layer: tickets, reviews, releases, and traces record docsync output.
 6. Generated target layer: this target receives the same doctrine, feature
@@ -2134,9 +2160,12 @@ The model has six layers:
 ## Maintenance Rules
 
 - New source packages add metadata, update the code map, and run docsync.
-- Static app files under ` + "`src/`" + `, ` + "`app/`" + `, ` + "`pages/`" + `, ` + "`public/`" + `,
-  ` + "`web/`" + `, or ` + "`static/`" + ` must carry metadata pointing to local feature or
-  design docs; they do not inherit foundation package defaults.
+- Authored app, package, worker, and test files under configured roots such as
+  ` + "`src/`" + `, ` + "`apps/`" + `, ` + "`packages/`" + `, ` + "`workers/`" + `, and ` + "`tests/`" + ` must carry
+  metadata pointing to local feature or design docs; they do not inherit
+  foundation package defaults.
+- DocSync manifest roots and globs must be repository-relative, extensions must
+  be dot-prefixed, and exclusions must keep generated output out of evidence.
 - Moved files re-check expected docs for the target prefix.
 - New feature contracts or design docs are added to metadata for files they own.
 - Deleted or renamed docs require metadata and map repairs before completion.
@@ -2523,6 +2552,7 @@ harness and deployed harnesses.
 | Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation. |
 | No stale documentation | All durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing associated documentation so reviewers and automation know which docs must be checked. |
 | MarsDocSync block | A top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing a ` + "`docs:`" + ` list of repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code. |
+| DocSync source selection | Optional ` + "`.harness/manifest.yaml`" + ` ` + "`docsync.include_roots`" + `, ` + "`include_extensions`" + `, and ` + "`exclude_globs`" + ` fields define the authored source surface; missing fields use safe TypeScript-monorepo-capable defaults, non-empty fields replace that field's default, and all paths remain repository-contained. |
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |
@@ -2685,7 +2715,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | ` + "`harness_doctrine_sync`" + ` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
-| ` + "`docsync_audit`" + ` | Audit source files for ` + "`MarsDocSync`" + ` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). |
+| ` + "`docsync_audit`" + ` | Audit source files for ` + "`MarsDocSync`" + ` metadata and associated documentation pointers. | Non-mutating. Resolves validated ` + "`docsync.include_roots`" + `, ` + "`include_extensions`" + `, and ` + "`exclude_globs`" + ` from ` + "`.harness/manifest.yaml`" + `, using safe TypeScript-monorepo-capable defaults per missing field. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). |
 | ` + "`git_release_guard`" + ` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. Fails when a version tag exists but does not point at the current release-note commit. |
 | ` + "`tool_inventory_audit`" + ` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
 | ` + "`tool_creation_guard`" + ` | Audit whether built-in tool creation followed the governed ` + "`tool_create`" + ` and ` + "`record_decision`" + ` path. | Non-mutating. Use when reviewing new tool work or exception handling. |

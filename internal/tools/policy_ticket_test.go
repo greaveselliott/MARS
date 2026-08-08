@@ -7,6 +7,7 @@ docs:
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-007-guardrails-and-safety.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package tools
 
@@ -2066,6 +2067,71 @@ func main() {}
 	}
 	if err := preToolPolicy(context.Background(), root, "file_write", raw); err != nil {
 		t.Fatalf("expected source file with existing doc metadata to pass, got %v", err)
+	}
+}
+
+func TestFileWritePolicyUsesManifestDocSyncSelectionForTypeScript(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	manifestPath := filepath.Join(dir, ".harness", "manifest.yaml")
+	if err := os.MkdirAll(filepath.Dir(manifestPath), 0o755); err != nil {
+		t.Fatalf("mkdir manifest: %v", err)
+	}
+	if err := os.WriteFile(manifestPath, []byte(`name: test
+docsync:
+  include_roots: [modules]
+  include_extensions: [.tsx]
+  exclude_globs: ["**/generated/**"]
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	for _, tc := range []struct {
+		path    string
+		blocked bool
+	}{
+		{path: "modules/ui/card.tsx", blocked: true},
+		{path: "modules/ui/card.ts", blocked: false},
+		{path: "modules/generated/card.tsx", blocked: false},
+		{path: "apps/web/card.tsx", blocked: false},
+	} {
+		raw, err := json.Marshal(map[string]string{"path": tc.path, "content": "export const card = true\n"})
+		if err != nil {
+			t.Fatalf("marshal %s: %v", tc.path, err)
+		}
+		err = preToolPolicy(context.Background(), root, "file_write", raw)
+		if tc.blocked && (err == nil || !strings.Contains(err.Error(), "MarsDocSync")) {
+			t.Fatalf("expected %s to require metadata, got %v", tc.path, err)
+		}
+		if !tc.blocked && err != nil {
+			t.Fatalf("expected %s outside effective DocSync selection, got %v", tc.path, err)
+		}
+	}
+}
+
+func TestFileWritePolicyAllowsRepairingInvalidDocSyncManifest(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	manifestPath := filepath.Join(dir, ".harness", "manifest.yaml")
+	if err := os.MkdirAll(filepath.Dir(manifestPath), 0o755); err != nil {
+		t.Fatalf("mkdir manifest: %v", err)
+	}
+	if err := os.WriteFile(manifestPath, []byte("docsync:\n  include_roots: [../outside]\n"), 0o644); err != nil {
+		t.Fatalf("write invalid manifest: %v", err)
+	}
+	raw, err := json.Marshal(map[string]string{
+		"path":    ".harness/manifest.yaml",
+		"content": "name: repaired\nroles:\n  engineer:\n    prompt: roles/engineer.md\n",
+	})
+	if err != nil {
+		t.Fatalf("marshal manifest repair: %v", err)
+	}
+	if err := preToolPolicy(context.Background(), root, "file_write", raw); err != nil {
+		t.Fatalf("expected invalid DocSync manifest to remain repairable, got %v", err)
 	}
 }
 

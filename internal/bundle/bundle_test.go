@@ -3,9 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/context-efficiency.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/role-customization.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package bundle
 
@@ -30,6 +32,10 @@ func TestLoad_ValidManifest(t *testing.T) {
 	writeFixture(t, root, ".harness/manifest.yaml", `
 name: test-project
 description: A test bundle
+docsync:
+  include_roots: [apps, packages]
+  include_extensions: [.ts, .tsx]
+  exclude_globs: ["**/dist/**"]
 roles:
   fixer:
     prompt: roles/fixer.md
@@ -54,6 +60,9 @@ roles:
 	assert.Equal(t, "test-project", m.Name)
 	assert.Equal(t, "A test bundle", m.Description)
 	assert.Len(t, m.Roles, 2)
+	assert.Equal(t, []string{"apps", "packages"}, m.DocSync.IncludeRoots)
+	assert.Equal(t, []string{".ts", ".tsx"}, m.DocSync.IncludeExtensions)
+	assert.Equal(t, []string{"**/dist/**"}, m.DocSync.ExcludeGlobs)
 
 	fixer := m.Roles["fixer"]
 	assert.Equal(t, "roles/fixer.md", fixer.Prompt)
@@ -80,6 +89,29 @@ roles:
 	m, err := Load(root)
 	require.NoError(t, err)
 	require.True(t, m.DispatchMode())
+}
+
+func TestLoadDocSyncConfigDoesNotRequireRoleValidation(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `docsync:
+  include_roots: [apps]
+  include_extensions: [.ts, .tsx]
+  exclude_globs: ["**/dist/**"]
+`)
+
+	config, found, err := LoadDocSyncConfig(root)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, []string{"apps"}, config.IncludeRoots)
+	require.Equal(t, []string{".ts", ".tsx"}, config.IncludeExtensions)
+	require.Equal(t, []string{"**/dist/**"}, config.ExcludeGlobs)
+}
+
+func TestLoadDocSyncConfigMissingManifestUsesDefaultsAtCaller(t *testing.T) {
+	config, found, err := LoadDocSyncConfig(t.TempDir())
+	require.NoError(t, err)
+	require.False(t, found)
+	require.Empty(t, config.IncludeRoots)
 }
 
 func TestLoad_InvalidOrchestrationMode(t *testing.T) {

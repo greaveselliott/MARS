@@ -202,6 +202,11 @@ Documentation must not go stale. Code written or materially changed by agents
 uses a top-of-file `MarsDocSync` metadata block to list the docs that describe
 or constrain the behavior, and those docs are updated in the same change or
 explicitly checked as still current.
+Targets may select authored code through repository-contained
+`docsync.include_roots`, dot-prefixed `include_extensions`, and
+`exclude_globs` in `.harness/manifest.yaml`; missing fields use safe
+TypeScript-monorepo-capable defaults and the CLI, mirrored tool, file-write
+policy, and disposition gates resolve the same selection.
 
 Exec plans mirror the ticket lifecycle. Exactly one plan may be active at a
 time. Waiting plans live in `docs/exec-plans/backlog/` with explicit priority,

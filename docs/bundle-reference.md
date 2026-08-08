@@ -41,6 +41,11 @@ name: my-project
 description: MARS bundle for my-project
 orchestration_mode: dispatch
 
+docsync:
+  include_roots: [apps, packages, workers, tests]
+  include_extensions: [.ts, .tsx, .mts, .cts, .js, .jsx, .css, .yaml, .yml]
+  exclude_globs: ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/.expo/**", "**/.react-router/**", "**/*.generated.*"]
+
 roles:
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
@@ -69,6 +74,7 @@ roles:
 | `name` | Yes | Bundle identifier. Used in job IDs and logs. |
 | `description` | No | Human-readable description. |
 | `orchestration_mode` | No | Empty, `legacy`, or `dispatch`. New generated manifests use `dispatch`. |
+| `docsync` | No | Authored-source selection for DocSync. `include_roots` and `exclude_globs` must be repository-relative; `include_extensions` values must be dot-prefixed. Missing fields use safe TypeScript-monorepo-capable defaults, while non-empty fields replace that field's default. |
 | `roles` | Yes | Map of role name to role config. At least one required. |
 
 ### Role configuration

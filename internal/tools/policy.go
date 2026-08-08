@@ -10,6 +10,7 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package tools
 
@@ -400,7 +401,16 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 
 func checkSourceFileDocSyncWritePolicy(root Root, rel, content string) error {
 	rel = cleanRepoPath(rel)
-	if !sourceFileRequiresDocSync(rel) {
+	// The selection file must remain writable so an invalid DocSync value can be
+	// repaired instead of deadlocking every subsequent source-file write.
+	if rel == ".harness/manifest.yaml" {
+		return nil
+	}
+	required, err := docsync.RequiresMetadata(root.Abs(), rel)
+	if err != nil {
+		return fmt.Errorf("policy: cannot resolve DocSync configuration for %s: %w", rel, err)
+	}
+	if !required {
 		return nil
 	}
 	docs := docsync.MetadataDocs(content)

@@ -15,6 +15,7 @@ docs:
 - docs/design-docs/board-driven-integrations.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-013-board-driven-integrations.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 - docs/harness-guide.html
 - docs/models-guide.html
 - docs/code-intel-reference.html
@@ -221,6 +222,11 @@ mars telemetry send --repo ~/my-project</code></pre>
 description: Starter autonomous AI pipeline for my-project
 orchestration_mode: dispatch
 
+docsync:
+  include_roots: [apps, packages, workers, tests]
+  include_extensions: [.ts, .tsx, .mts, .cts, .js, .jsx, .css, .yaml, .yml]
+  exclude_globs: ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/.expo/**", "**/.react-router/**", "**/*.generated.*"]
+
 roles:
   engineer:
     prompt: roles/engineer.md
@@ -242,6 +248,9 @@ roles:
                 <tr><td><code>name</code></td><td>Non-empty string.</td><td>Stable bundle name used in logs and jobs.</td></tr>
                 <tr><td><code>description</code></td><td>String.</td><td>Human-readable target harness summary.</td></tr>
                 <tr><td><code>orchestration_mode</code></td><td>Empty, <code>legacy</code>, or <code>dispatch</code>.</td><td>Use <code>dispatch</code> for new targets unless preserving a legacy chain deliberately.</td></tr>
+                <tr><td><code>docsync.include_roots</code></td><td>Repository-relative source directories.</td><td>Missing or empty uses built-in app/package/worker/test defaults; non-empty replaces them.</td></tr>
+                <tr><td><code>docsync.include_extensions</code></td><td>Dot-prefixed suffixes such as <code>.ts</code> and <code>.tsx</code>.</td><td>Missing or empty uses built-in Go/static/TypeScript defaults; non-empty replaces them.</td></tr>
+                <tr><td><code>docsync.exclude_globs</code></td><td>Repository-relative <code>*</code>, <code>**</code>, and <code>?</code> patterns.</td><td>Keep dependencies, builds, coverage, framework output, and generated files outside audit evidence.</td></tr>
                 <tr><td><code>roles</code></td><td>Map of role key to role config.</td><td>Every executable role lives here.</td></tr>
                 <tr><td><code>prompt</code></td><td>Path relative to <code>.harness/</code>.</td><td>Required for every role.</td></tr>
                 <tr><td><code>domain</code></td><td><code>planner</code>, <code>engineer</code>, <code>reviewer</code>, <code>maintainer</code>, <code>end-to-end-tester</code>, <code>orchestrator</code>.</td><td>Optional for compatibility, recommended for all active roles.</td></tr>

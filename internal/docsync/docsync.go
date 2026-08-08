@@ -6,6 +6,7 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package docsync
 
@@ -13,14 +14,55 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/bundle"
 )
 
 type Config struct {
-	RepoRoot string
+	RepoRoot          string
+	IncludeRoots      []string
+	IncludeExtensions []string
+	ExcludeGlobs      []string
+}
+
+var defaultIncludeRoots = []string{
+	"cmd", "internal", "pkg", "examples",
+	"src", "app", "apps", "pages", "packages", "public", "web", "workers", "static", "tests",
+	".github/workflows",
+}
+
+var defaultIncludeExtensions = []string{
+	".go", ".html", ".css", ".js", ".jsx", ".mjs", ".cjs",
+	".ts", ".tsx", ".mts", ".cts", ".yaml", ".yml",
+}
+
+var defaultExcludeGlobs = []string{
+	"**/.git/**",
+	"**/node_modules/**",
+	"**/build/**",
+	"**/dist/**",
+	"**/vendor/**",
+	"**/coverage/**",
+	"**/.expo/**",
+	"**/.react-router/**",
+	"**/*.generated.*",
+}
+
+type sourceSelection struct {
+	includeRoots      []string
+	includeExtensions map[string]struct{}
+	excludeGlobs      []compiledGlob
+}
+
+type compiledGlob struct {
+	raw string
+	re  *regexp.Regexp
 }
 
 type Rule struct {
@@ -61,7 +103,11 @@ func Audit(cfg Config) (Report, error) {
 	if err != nil {
 		return Report{}, fmt.Errorf("docsync: resolve repo path: %w", err)
 	}
-	files, err := SourceFiles(absRoot)
+	selection, err := resolveSourceSelection(absRoot, cfg)
+	if err != nil {
+		return Report{}, err
+	}
+	files, err := sourceFiles(absRoot, selection)
 	if err != nil {
 		return Report{}, err
 	}
@@ -120,61 +166,274 @@ func isFoundationHarnessRoot(root string) bool {
 }
 
 func SourceFiles(root string) ([]string, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("docsync: resolve repo path: %w", err)
+	}
+	selection, err := resolveSourceSelection(absRoot, Config{RepoRoot: absRoot})
+	if err != nil {
+		return nil, err
+	}
+	return sourceFiles(absRoot, selection)
+}
+
+// RequiresMetadata reports whether rel is selected by the repository's
+// effective DocSync configuration. It keeps file-write policy aligned with the
+// same roots, extensions, and exclusions used by Audit.
+func RequiresMetadata(repoRoot, rel string) (bool, error) {
+	absRoot, err := filepath.Abs(strings.TrimSpace(repoRoot))
+	if err != nil {
+		return false, fmt.Errorf("docsync: resolve repo path: %w", err)
+	}
+	selection, err := resolveSourceSelection(absRoot, Config{RepoRoot: absRoot})
+	if err != nil {
+		return false, err
+	}
+	rel = filepath.ToSlash(filepath.Clean(strings.TrimSpace(rel)))
+	if rel == "." || rel == "" || strings.HasPrefix(rel, "../") || path.IsAbs(rel) {
+		return false, nil
+	}
+	if selection.excluded(rel) || !selection.includesExtension(filepath.Ext(rel)) {
+		return false, nil
+	}
+	if !strings.Contains(rel, "/") {
+		return true, nil
+	}
+	for _, root := range selection.includeRoots {
+		if rel == root || strings.HasPrefix(rel, root+"/") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func sourceFiles(root string, selection sourceSelection) ([]string, error) {
 	var files []string
+	seen := map[string]struct{}{}
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		return nil, fmt.Errorf("docsync: read repo root: %w", err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 {
 			continue
 		}
-		if isSourceExtension(filepath.Ext(entry.Name())) {
-			files = append(files, filepath.ToSlash(entry.Name()))
+		rel := filepath.ToSlash(entry.Name())
+		if selection.includesExtension(filepath.Ext(entry.Name())) && !selection.excluded(rel) {
+			seen[rel] = struct{}{}
 		}
 	}
-	sourceRoots := []string{"cmd", "internal", "pkg", "examples", "src", "app", "pages", "public", "web", "static"}
-	for _, sourceRoot := range sourceRoots {
+	for _, sourceRoot := range selection.includeRoots {
 		absSourceRoot := filepath.Join(root, filepath.FromSlash(sourceRoot))
 		if _, err := os.Stat(absSourceRoot); os.IsNotExist(err) {
 			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("docsync: stat source root %s: %w", sourceRoot, err)
 		}
 		err := filepath.WalkDir(absSourceRoot, func(path string, entry os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if entry.IsDir() {
-				switch entry.Name() {
-				case ".git", "build", "dist", "vendor":
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			if !isSourceExtension(filepath.Ext(path)) {
-				return nil
-			}
 			rel, err := filepath.Rel(root, path)
 			if err != nil {
 				return err
 			}
-			files = append(files, filepath.ToSlash(rel))
+			rel = filepath.ToSlash(rel)
+			if entry.Type()&os.ModeSymlink != 0 {
+				if entry.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if entry.IsDir() {
+				if selection.excluded(rel) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if !selection.includesExtension(filepath.Ext(path)) || selection.excluded(rel) {
+				return nil
+			}
+			seen[rel] = struct{}{}
 			return nil
 		})
 		if err != nil {
 			return nil, fmt.Errorf("docsync: walk %s: %w", sourceRoot, err)
 		}
 	}
+	for rel := range seen {
+		files = append(files, rel)
+	}
 	sort.Strings(files)
 	return files, nil
 }
 
-func isSourceExtension(ext string) bool {
-	switch ext {
-	case ".go", ".html", ".css", ".js", ".yaml", ".yml":
-		return true
-	default:
-		return false
+func resolveSourceSelection(root string, cfg Config) (sourceSelection, error) {
+	manifestCfg, err := readManifestDocSyncConfig(root)
+	if err != nil {
+		return sourceSelection{}, err
 	}
+	roots := firstNonEmpty(cfg.IncludeRoots, manifestCfg.IncludeRoots, defaultIncludeRoots)
+	extensions := firstNonEmpty(cfg.IncludeExtensions, manifestCfg.IncludeExtensions, defaultIncludeExtensions)
+	excludes := firstNonEmpty(cfg.ExcludeGlobs, manifestCfg.ExcludeGlobs, defaultExcludeGlobs)
+
+	normalizedRoots, err := normalizeRoots(roots)
+	if err != nil {
+		return sourceSelection{}, err
+	}
+	normalizedExtensions, err := normalizeExtensions(extensions)
+	if err != nil {
+		return sourceSelection{}, err
+	}
+	compiledExcludes, err := compileGlobs(excludes)
+	if err != nil {
+		return sourceSelection{}, err
+	}
+	extensionSet := make(map[string]struct{}, len(normalizedExtensions))
+	for _, ext := range normalizedExtensions {
+		extensionSet[ext] = struct{}{}
+	}
+	return sourceSelection{
+		includeRoots:      normalizedRoots,
+		includeExtensions: extensionSet,
+		excludeGlobs:      compiledExcludes,
+	}, nil
+}
+
+func readManifestDocSyncConfig(root string) (Config, error) {
+	manifest, _, err := bundle.LoadDocSyncConfig(root)
+	if err != nil {
+		return Config{}, fmt.Errorf("docsync: %w", err)
+	}
+	return Config{
+		IncludeRoots:      manifest.IncludeRoots,
+		IncludeExtensions: manifest.IncludeExtensions,
+		ExcludeGlobs:      manifest.ExcludeGlobs,
+	}, nil
+}
+
+func firstNonEmpty(values ...[]string) []string {
+	for _, value := range values {
+		if len(value) > 0 {
+			return append([]string(nil), value...)
+		}
+	}
+	return nil
+}
+
+func normalizeRoots(values []string) ([]string, error) {
+	var roots []string
+	for _, value := range values {
+		raw := strings.TrimSpace(value)
+		if raw == "" {
+			return nil, fmt.Errorf("docsync: include_roots contains an empty path — use repository-relative directories such as apps or packages")
+		}
+		if filepath.IsAbs(raw) || path.IsAbs(filepath.ToSlash(raw)) || windowsAbsolutePattern.MatchString(raw) {
+			return nil, fmt.Errorf("docsync: include_root %q must be repository-relative", raw)
+		}
+		normalized := path.Clean(filepath.ToSlash(raw))
+		if normalized == "." || normalized == ".." || strings.HasPrefix(normalized, "../") {
+			return nil, fmt.Errorf("docsync: include_root %q escapes or selects the repository root — use a contained source directory", raw)
+		}
+		if strings.Contains(normalized, "\\") {
+			return nil, fmt.Errorf("docsync: include_root %q must use repository-relative slash-separated paths", raw)
+		}
+		if !slices.Contains(roots, normalized) {
+			roots = append(roots, normalized)
+		}
+	}
+	return roots, nil
+}
+
+var extensionPattern = regexp.MustCompile(`^\.[A-Za-z0-9]+$`)
+var windowsAbsolutePattern = regexp.MustCompile(`^[A-Za-z]:[\\/]`)
+
+func normalizeExtensions(values []string) ([]string, error) {
+	var extensions []string
+	for _, value := range values {
+		ext := strings.ToLower(strings.TrimSpace(value))
+		if !extensionPattern.MatchString(ext) {
+			return nil, fmt.Errorf("docsync: include_extension %q is invalid — use a dot-prefixed suffix such as .ts or .tsx", value)
+		}
+		if !slices.Contains(extensions, ext) {
+			extensions = append(extensions, ext)
+		}
+	}
+	return extensions, nil
+}
+
+func compileGlobs(values []string) ([]compiledGlob, error) {
+	var globs []compiledGlob
+	for _, value := range values {
+		raw := strings.TrimSpace(value)
+		if raw == "" {
+			return nil, fmt.Errorf("docsync: exclude_globs contains an empty pattern — remove it or use a repository-relative glob")
+		}
+		if filepath.IsAbs(raw) || path.IsAbs(filepath.ToSlash(raw)) || windowsAbsolutePattern.MatchString(raw) {
+			return nil, fmt.Errorf("docsync: exclude_glob %q must be repository-relative", raw)
+		}
+		normalized := filepath.ToSlash(raw)
+		for _, part := range strings.Split(normalized, "/") {
+			if part == ".." {
+				return nil, fmt.Errorf("docsync: exclude_glob %q contains parent traversal", raw)
+			}
+		}
+		re, err := compileGlob(normalized)
+		if err != nil {
+			return nil, fmt.Errorf("docsync: exclude_glob %q is invalid: %w", raw, err)
+		}
+		if !slices.ContainsFunc(globs, func(existing compiledGlob) bool { return existing.raw == normalized }) {
+			globs = append(globs, compiledGlob{raw: normalized, re: re})
+		}
+	}
+	return globs, nil
+}
+
+func compileGlob(glob string) (*regexp.Regexp, error) {
+	var expression strings.Builder
+	expression.WriteString("^")
+	for i := 0; i < len(glob); {
+		switch glob[i] {
+		case '*':
+			if i+1 < len(glob) && glob[i+1] == '*' {
+				i += 2
+				if i < len(glob) && glob[i] == '/' {
+					expression.WriteString("(?:.*/)?")
+					i++
+				} else {
+					expression.WriteString(".*")
+				}
+			} else {
+				expression.WriteString("[^/]*")
+				i++
+			}
+		case '?':
+			expression.WriteString("[^/]")
+			i++
+		case '[', ']':
+			return nil, fmt.Errorf("character classes are not supported; use *, **, or ?")
+		default:
+			expression.WriteString(regexp.QuoteMeta(string(glob[i])))
+			i++
+		}
+	}
+	expression.WriteString("$")
+	return regexp.Compile(expression.String())
+}
+
+func (s sourceSelection) includesExtension(ext string) bool {
+	_, ok := s.includeExtensions[strings.ToLower(ext)]
+	return ok
+}
+
+func (s sourceSelection) excluded(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimPrefix(rel, "./"))
+	for _, glob := range s.excludeGlobs {
+		if glob.re.MatchString(rel) || glob.re.MatchString(rel+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 func MetadataDocs(text string) []string {
@@ -304,7 +563,7 @@ func ExpectedDocs(rel string) []string {
 }
 
 func isDeployedSourcePath(rel string) bool {
-	for _, prefix := range []string{"src/", "app/", "pages/", "public/", "web/", "static/"} {
+	for _, prefix := range []string{"src/", "app/", "apps/", "pages/", "packages/", "public/", "web/", "workers/", "static/", "tests/", ".github/workflows/"} {
 		if strings.HasPrefix(rel, prefix) {
 			return true
 		}

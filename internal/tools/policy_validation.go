@@ -7,6 +7,7 @@ docs:
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-007-guardrails-and-safety.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package tools
 
@@ -623,7 +624,7 @@ func sourceFileRequiresDocSync(rel string) bool {
 		return false
 	}
 	switch filepath.Ext(rel) {
-	case ".go", ".html", ".css", ".js", ".yaml", ".yml":
+	case ".go", ".html", ".css", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".yaml", ".yml":
 	default:
 		return false
 	}
@@ -637,10 +638,14 @@ func sourceFileRequiresDocSync(rel string) bool {
 		"examples/",
 		"src/",
 		"app/",
+		"apps/",
 		"pages/",
+		"packages/",
 		"public/",
 		"web/",
+		"workers/",
 		"static/",
+		"tests/",
 		".github/workflows/",
 	} {
 		if strings.HasPrefix(rel, prefix) {
