@@ -4,7 +4,7 @@
 - Ticket: T-070
 - Scenario: F-017-S001
 - Source commit: `375a3a30140c9248f10c19eb4ff8a66ba83b7522`
-- Status: `plausible_secret_rotation_required`
+- Status: `owner_classification_required`
 - Primary Status: `primary_blocked`
 - Publication authority: denied
 
@@ -16,9 +16,9 @@
 
 **Primary Status:** `primary_blocked`
 
-**Current Primary Blocker:** Elliott classified at least one owner-only candidate as potentially real. T-070 and every later audit slice stop until all affected provider/accounts are identified locally, every potentially real credential is rotated or revoked through a separately approved owner action, and both tools' Git-history and raw-object lanes are rerun.
+**Current Primary Blocker:** After owner-only review, Elliott classified the Gitleaks group as synthetic test stubs. The separate URI-detector group remains unclassified; if real or uncertain, it must be rotated or revoked before both tools' Git-history and raw-object lanes are rerun.
 
-**Next Primary Action:** Elliott identifies all affected provider/accounts locally, rotates or revokes every potentially real credential outside the agent boundary, and records only the affected opaque group ID or IDs plus `rotation complete`. Candidate values and locations must remain outside chat and repository evidence.
+**Next Primary Action:** Elliott reviews opaque URI group `e32927624f4a2cac` locally and records only whether it is synthetic test stubs or real/unknown. If real/unknown, rotate or revoke it outside the agent boundary before the four-lane rescan. Candidate values and locations must remain outside chat and repository evidence.
 
 **Supporting Evidence:** The frozen 302-ref, 11,954-object publication surface completed both pinned tools' Git-history and raw-object lanes without accepted-scan errors or skips; the redacted coverage below does not claim that unresolved findings are clean.
 
@@ -26,7 +26,7 @@
 
 The exact advertised Git publication surface was frozen and scanned with pinned standard tools. Raw reports and candidate data remain in an owner-only FileVault-protected boundary and were not read into agent, chat, CI, trace, or repository output. Accepted scans reported zero execution errors and zero skip events.
 
-The scan is not clean. Elliott classified at least one owner-only candidate as potentially real on 2026-07-22. The response did not identify which opaque group, so both groups remain unresolved without reproducing the candidate or inferring a safe group. T-070 therefore stops before further acquisition, scanning, remediation, or disposition, and F-017-S001 remains blocked.
+The scan is not yet clean. On 2026-08-08, after reviewing the owner-only Gitleaks context, Elliott classified that group as synthetic test stubs. The separate URI-detector group was not part of that review and remains unclassified without reproducing or inferring its candidate values. T-070 therefore remains stopped before further scanning or audit slices, and F-017-S001 remains blocked.
 
 ## Frozen Surface
 
@@ -67,10 +67,10 @@ The difference between 844 reachable commit objects and 838 Gitleaks-reported co
 
 | Opaque finding ID | Broad class | Status |
 | --- | --- | --- |
-| `a2a292e31d652f22` | generic API-key detector results | `unresolved_rotation_scope` |
-| `e32927624f4a2cac` | unverified URI detector results | `unresolved_rotation_scope` |
+| `a2a292e31d652f22` | generic API-key detector results | `resolved_owner_confirmed_synthetic_test_stubs` |
+| `e32927624f4a2cac` | unverified URI detector results | `unresolved_owner_classification` |
 
-No candidate value, fragment, location, filename, email, URL, body, raw scanner record, or candidate-derived hash is included here. The owner classification changed this report to `plausible_secret_rotation_required`. Both opaque groups remain unresolved until the owner locally identifies the affected group or groups and completes separately approved rotation/revocation.
+No candidate value, fragment, location, filename, email, URL, body, raw scanner record, or candidate-derived hash is included here. The owner classification resolves only the Gitleaks group because that was the context reviewed. The URI group remains unresolved until its separate owner-only classification; real or uncertain content requires separately approved rotation/revocation.
 
 ## Rejected Attempts
 
@@ -87,4 +87,4 @@ Two TruffleHog setup invocations failed before scanning because a bare mirror di
 
 ## Remaining Gate
 
-Owner rotation/revocation is required before T-070 can resume. After every potentially real credential is rotated or revoked, both pinned tools' Git-history and raw-object lanes must rerun against a newly frozen publication manifest; the affected candidates must no longer be usable or publishable, and any retained synthetic fixture must be explicitly classified without exposing it. GitHub-hosted content, manual privacy/IP/provenance/name review, and final owner disposition remain blocked behind this stop.
+Owner classification of `e32927624f4a2cac` is required before T-070 can resume. If it is real or uncertain, rotate or revoke it first. After every group is resolved, both pinned tools' Git-history and raw-object lanes must rerun against a newly frozen publication manifest; any retained synthetic fixture must reconcile to its explicit owner classification without exposing it. GitHub-hosted content, manual privacy/IP/provenance/name review, and final owner disposition remain blocked behind this stop.

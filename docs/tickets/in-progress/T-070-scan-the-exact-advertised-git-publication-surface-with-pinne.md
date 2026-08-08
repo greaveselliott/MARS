@@ -9,11 +9,11 @@ end_to_end_evidence: not_applicable
 evidence_links: ["docs/validation/reports/2026-07-22-advertised-git-publication-scan.md"]
 verified_by: "TBD"
 owner: "security"
-last_attempt: "2026-07-22: owner classified at least one candidate as potentially real; both opaque groups remain unresolved because the affected group was not disclosed."
-blocker: "plausible_secret_rotation_required: owner must locally identify all affected provider/accounts and rotate/revoke every potentially real credential through a separately approved action before T-070 or later audit slices resume."
+last_attempt: "2026-08-08: after reviewing the owner-only Gitleaks context, Elliott classified opaque group a2a292e31d652f22 as synthetic test stubs; the separate URI group remains unclassified."
+blocker: "owner_classification_required: opaque group e32927624f4a2cac must be classified through the owner-only review boundary before T-070 or later audit slices resume."
 blocked_by: []
 trace_id: "not_applicable"
-next_action: "Owner rotates/revokes every potentially real credential outside the agent boundary, then records only the affected opaque group ID or IDs plus rotation complete; rerun both pinned tools' Git-history and raw-object lanes afterward."
+next_action: "Owner reviews the URI-detector group locally and records only e32927624f4a2cac plus synthetic test stubs or real/unknown; rotate/revoke first if real/unknown, then rerun both pinned tools' Git-history and raw-object lanes."
 dedupe_key: "open-source:advertised-git-standard-scan"
 metadata:
   audit_mode: "owner-standard-tools"
@@ -67,5 +67,5 @@ No product code, generated target content, refs, Releases, settings, visibility,
 - Frozen source `375a3a30140c9248f10c19eb4ff8a66ba83b7522` contains 302 canonical publication refs, 844 reachable commits, and 11,954 reachable objects. Pre/post ref manifests match and visibility remains private.
 - Exact Gitleaks v8.30.1 and TruffleHog v3.95.9 completed Git-history and raw-object lanes with zero accepted-scan errors or skip events. The raw-object corpus reconciles every blob, tree, commit, and annotated-tag object.
 - Gitleaks reported seven Git-history and 19 blob occurrences in one broad detector class. TruffleHog reported five Git-history and seven blob occurrences in one broad detector class, representing the same three distinct values across its two lanes. All Git-mode locations were mechanically test-like and no TruffleHog result was verified online.
-- Elliott classified at least one candidate as potentially real. Because the response did not identify an opaque group, `a2a292e31d652f22` and `e32927624f4a2cac` both remain unresolved without reproducing raw evidence or guessing which group is safe.
-- T-070, F-017-S001, and Primary Status are blocked on separately approved owner rotation/revocation and a complete rescan. No GitHub or publication mutation occurred.
+- On 2026-08-08, after reviewing the owner-only Gitleaks context, Elliott classified `a2a292e31d652f22` as synthetic test stubs. No rotation is required for that group.
+- `e32927624f4a2cac` remains unclassified because it belongs to the separate URI-detector context. T-070 remains blocked on that owner-only classification and, if real or uncertain, separately approved rotation/revocation before a complete four-lane rescan. No GitHub or publication mutation occurred.
