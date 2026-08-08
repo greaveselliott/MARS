@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** none — T-071 complete; create T-072 only through `ticket_create`
+**Current Ticket:** T-072 — audit every GitHub-hosted publication surface
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-071 restored the green vulnerability baseline at `59ab946` and run `31278506189`. T-072 must still collect and reconcile every retained GitHub-hosted publication surface with zero scanner error, skip, or unresolved finding.
-- **Next Primary Action:** Create T-072 through `ticket_create`; do not start T-073 or mutate legacy assets before T-072 passes.
+- **Next Primary Action:** Commit and push the T-072 planning handoff, wait for Actions quiescence, then freeze and acquire the hosted surface read-only; do not start T-073 or mutate legacy assets before T-072 passes.
 
 ## Starting Baseline
 
@@ -39,7 +39,7 @@
 
 | Assumption | Evidence | Confidence | Validation Required |
 |---|---|---:|---|
-| The starting source is clean and synchronized at `d2db7c…` | Local HEAD and `origin/main` matched; worktree was clean | 1.0 | Re-fetch before the T-071 source commit |
+| The launch plan started from clean synchronized source at `d2db7c…` | Local HEAD and `origin/main` matched; worktree was clean | 1.0 | Complete — historical activation fact |
 | T-070 clears the advertised Git surface | 12,002 reachable objects, four scanner lanes, zero errors, skips, or unresolved findings | 1.0 | T-072 rechecks publication-ref drift |
 | gRPC v1.82.1 closes the called advisory | Source selects v1.82.1; local gates and exact run `31278506189` report zero called vulnerabilities | 1.0 | Complete — T-071 |
 | Current hosted-surface counts remain stable | Recorded private GitHub inventory | 0.90 | T-072 freeze and exact reconciliation |
