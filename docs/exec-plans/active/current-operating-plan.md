@@ -5,7 +5,7 @@
 **Depends On:** T-056, T-063, T-064, and T-068 complete
 **Blocks:** F-017-S001 and every public cutover action
 **Related Tickets:** T-056 and T-063 through T-070
-**Current Ticket:** T-070 — scan the exact advertised Git publication surface with pinned standard tools
+**Current Ticket:** none — T-070 complete; the next F-017-S001 slice must be created through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-017
@@ -13,7 +13,7 @@
 **Success Evidence:** Both pinned scanners cover every object reachable from the frozen publication-ref manifest with zero errors, skips, unresolved findings, or raw-evidence leakage, while GitHub remains private and unchanged.
 **Falsification Evidence:** A ref drifts, a scanner or object is skipped, a plausible credential appears, raw evidence escapes the owner-only boundary, or the ticket mutates GitHub state.
 **Scenario Schedule:** T-070 advertised Git scan; then separately ticketed GitHub-hosted surface review; then manual privacy/IP/provenance/name review and owner disposition for F-017-S001.
-**Current Failing Scenario:** F-017-S001 — the newly frozen four-lane rescan completed without coverage errors, but opaque group `f3dc0e336620abc6` contains four distinct potentially real values that require owner rotation or revocation.
+**Current Failing Scenario:** F-017-S001 — the advertised Git slice passes, but GitHub-hosted surfaces, manual privacy/IP/provenance/name review, and owner disposition remain incomplete.
 **Walking Skeleton Slice:** Freeze the canonical publication refs, scan their reachable objects offline, and commit only redacted coverage and disposition status.
 **Learning Or MVP Outcome:** Establish whether the retained Git history is technically eligible for later owner disposition before spending authority on broader hosted-surface acquisition.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Security, QA, Release Manager, and repository-owner disposition
@@ -23,14 +23,14 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** The Gitleaks group `a2a292e31d652f22` and URI group `e32927624f4a2cac` are resolved as synthetic test stubs. The 2026-08-08 rescan found opaque group `f3dc0e336620abc6`: 36 occurrences mechanically reduce to four distinct values, and bounded local-MARS review returned unknown for all four. All four require owner rotation or revocation before rescan. GitHub-surface, manual disposition, runtime, contribution, cutover, and canary gates are also incomplete.
-- **Next Primary Action:** Elliott rotates or revokes all four potentially real values in `f3dc0e336620abc6` outside the agent boundary, then reports only `rotation complete: f3dc0e336620abc6`. Candidate values and locations remain outside chat, traces, and repository evidence. Do not publish, continue acquisition, or mutate GitHub state.
+- **Current Primary Blocker:** T-070's advertised Git findings are fully reconciled: two groups are synthetic fixtures and all 36 results in `f3dc0e336620abc6` are Git child-object IDs misclassified by the detector. No credential rotation is required. GitHub-surface, manual disposition, runtime, contribution, cutover, and canary gates remain incomplete.
+- **Next Primary Action:** Create the next bounded F-017-S001 ticket through `ticket_create` for retained GitHub-hosted surfaces. Do not publish or change visibility.
 
 ## Scope Decision
 
 The completed F-018 GoReleaser plan is archived. F-017-S001 resumes through small owner-operated standard-tool slices rather than a repository-embedded audit runtime:
 
-1. **T-070 — advertised Git surface:** freeze and hash the exact `refs/heads/main` plus `refs/tags/*` set returned by `git ls-remote --refs origin`, mirror those refs into an owner-only boundary, run exact pinned Gitleaks v8.30.1 and TruffleHog v3.95.9 offline, reconcile coverage/errors, and commit only a redacted report. Symbolic `HEAD` and annotated-tag peeled targets are derived coverage records, not independent scan roots; any other advertised namespace is an unresolved scope change.
+1. **T-070 — advertised Git surface (complete):** froze and hashed the exact `refs/heads/main` plus `refs/tags/*` set returned by `git ls-remote --refs origin`, mirrored those refs into an owner-only boundary, ran exact pinned Gitleaks v8.30.1 and TruffleHog v3.95.9 offline, reconciled coverage/findings, and committed only redacted evidence.
 2. **GitHub-hosted surfaces:** after T-070, create one bounded ticket for retained Releases/assets, Actions evidence, Wiki/Pages, repository metadata, and any proven applicable private surfaces. Inaccessible is unresolved, never clean.
 3. **Manual disposition:** after technical collection, create one bounded ticket for privacy, IP, provenance, notices, models/media, name searches, accepted gaps, owner attestation, and the final history choice.
 
@@ -86,4 +86,5 @@ T-070 changes only planning and redacted audit evidence while public release sta
 - Source `d04f642e7b07e14e211c99f40e14bdd4bccef60e` froze 302 canonical publication refs, 847 commits, and 12,002 reachable objects. The ref-manifest digest is `75a56fc716912416f189ba5aef07c49baada2976d2493df22fe14abc50be3720`; the reachable-object-manifest digest is `c2e081aacf509362d18e2598b70e2b812dd126bb47c8f3bfa78f8ce5915e6059`. Pre/post refs matched, visibility stayed private, Actions was quiescent, and no unexpected namespace appeared.
 - Exact Gitleaks v8.30.1 and TruffleHog v3.95.9 completed all four Git-history/raw-object lanes with zero accepted-scan errors or skips. Gitleaks reported seven Git-history and 19 raw-object occurrences whose locators reconcile exactly to resolved synthetic group `a2a292e31d652f22`.
 - TruffleHog reported five Git-history URI occurrences and 43 raw-object occurrences. Its URI results represent one distinct value and reconcile to local-MARS-confirmed synthetic group `e32927624f4a2cac`. The remaining 36 raw-object occurrences reduce mechanically to exactly four distinct values in opaque group `f3dc0e336620abc6`.
-- Bounded isolated local-MARS reviews could not establish that any of the four values in `f3dc0e336620abc6` is synthetic; all four remain real or unknown. Under the plausible-secret stop rule, T-070 remains in progress and no later audit slice may begin until the owner rotates or revokes all four and reports only `rotation complete: f3dc0e336620abc6`.
+- Conservative isolated local-MARS review left `f3dc0e336620abc6` unknown. Direct Git-plumbing reconciliation then proved all 36 records came from materialized reachable tree objects, each candidate was the exact SHA-1 child-object field of its source tree, each child resolved to a reachable blob, and the scanner raw field matched that object ID. All validation counts were 36/36 with zero format, source-type, corpus, tree-entry, child-object, or raw-field mismatches.
+- The four distinct values are non-secret content-addressed Git blob IDs rather than credential material. Group `f3dc0e336620abc6` is `resolved_scanner_false_positive_git_tree_object_ids`; no rotation is required. With the other two groups already resolved, T-070 has zero unresolved findings and passes its advertised-Git slice. Repository visibility remains private and F-017-S001 remains blocked on later slices.

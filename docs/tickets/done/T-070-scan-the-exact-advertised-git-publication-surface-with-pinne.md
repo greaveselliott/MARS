@@ -7,13 +7,13 @@ work_type: research
 bdd_scenarios: ["F-017-S001"]
 end_to_end_evidence: not_applicable
 evidence_links: ["docs/validation/reports/2026-07-22-advertised-git-publication-scan.md"]
-verified_by: "Security and QA GO on 2026-08-08 blocker checkpoint; completion pending owner rotation and final sign-offs"
+verified_by: "Security, QA, Release Manager, and Orchestrator GO on 2026-08-08 advertised-Git closure"
 owner: "security"
-last_attempt: "2026-08-08: a newly frozen four-lane rescan completed without scanner errors or skips; two prior groups resolved as synthetic, while opaque group f3dc0e336620abc6 reduced to four values that local MARS could not classify as synthetic."
-blocker: "plausible_secret_rotation_required: all four potentially real values in opaque group f3dc0e336620abc6 require owner rotation or revocation before T-070 or later audit slices resume."
+last_attempt: "2026-08-08: direct Git-plumbing reconciliation proved all 36 records in opaque group f3dc0e336620abc6 are child blob IDs from materialized reachable tree objects; all checks passed 36/36 with zero mismatches."
+blocker: "none"
 blocked_by: []
 trace_id: "not_applicable"
-next_action: "Owner rotates or revokes all four potentially real values outside the agent boundary, then reports only: rotation complete: f3dc0e336620abc6. Candidate values and locations must not enter chat, traces, or repository evidence."
+next_action: "Completed; Orchestrator creates the next bounded F-017-S001 GitHub-hosted-surface ticket through ticket_create."
 dedupe_key: "open-source:advertised-git-standard-scan"
 metadata:
   audit_mode: "owner-standard-tools"
@@ -75,5 +75,11 @@ No product code, generated target content, refs, Releases, settings, visibility,
 - Frozen source `d04f642e7b07e14e211c99f40e14bdd4bccef60e` contains 302 canonical publication refs, 847 reachable commits, and 12,002 reachable objects. Pre/post ref manifests match, visibility remains private, Actions remains quiescent, and no unexpected namespace appeared.
 - Exact Gitleaks v8.30.1 and TruffleHog v3.95.9 completed all four Git-history/raw-object lanes with zero accepted-scan errors or skips. Gitleaks' seven Git-history and 19 raw-object locations reconcile to owner-confirmed synthetic group `a2a292e31d652f22`.
 - TruffleHog's five Git-history URI occurrences and seven raw-object URI occurrences represent one distinct value and reconcile to local-MARS-confirmed synthetic group `e32927624f4a2cac`.
-- The remaining 36 raw-object occurrences reduce mechanically to exactly four distinct values under opaque group `f3dc0e336620abc6`. Bounded isolated local-MARS review returned unknown for all four; no value is accepted as synthetic.
-- The plausible-secret stop rule is active. T-070 remains in progress, no later audit slice may start, and no GitHub or publication mutation occurred. The owner must rotate or revoke all four values outside the agent boundary and report only `rotation complete: f3dc0e336620abc6` before a newly frozen four-lane rescan.
+- The remaining 36 raw-object occurrences reduce mechanically to exactly four distinct values under opaque group `f3dc0e336620abc6`. Conservative isolated local-MARS review returned unknown, so the group remained fail-closed pending direct inspection.
+
+## Direct Git-Object Disposition — 2026-08-08
+
+- All 36 scanner source files are byte-identical materializations of reachable Git tree objects, and every alleged value has the exact 40-character lowercase SHA-1 form.
+- For all 36 records, the value is the exact child-object field in the corresponding tree, resolves to an existing reachable blob, and equals the scanner raw field. Format, source-type, corpus, tree-entry, child-object, and raw-field mismatch counts are all zero.
+- The four distinct values are content-addressed Git blob IDs, not CircleCI credentials. Group `f3dc0e336620abc6` is `resolved_scanner_false_positive_git_tree_object_ids`; no rotation is required.
+- All finding groups are resolved, all four scanner lanes completed without errors/skips, no raw evidence escaped, and no GitHub or publication mutation occurred. T-070 passes; F-017-S001 and Primary Status remain blocked on later hosted-surface/manual-disposition gates.

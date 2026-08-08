@@ -5,7 +5,7 @@
 - Ticket: T-070
 - Scenario: F-017-S001
 - Source commit: `d04f642e7b07e14e211c99f40e14bdd4bccef60e`
-- Status: `plausible_secret_rotation_required`
+- Status: `passed_advertised_git_surface`
 - Primary Status: `primary_blocked`
 - Publication authority: denied
 
@@ -17,17 +17,17 @@
 
 **Primary Status:** `primary_blocked`
 
-**Current Primary Blocker:** Two finding groups are resolved as synthetic test stubs. Opaque group `f3dc0e336620abc6` contains 36 occurrences mechanically reduced to four distinct values; bounded local-MARS review could not establish that any of the four is synthetic, so all four require owner rotation or revocation.
+**Current Primary Blocker:** T-070 has no remaining finding blocker. F-017-S001 still requires GitHub-hosted content review, manual privacy/IP/provenance/name review, and owner disposition; runtime, release, contribution, cutover, and canary gates also remain incomplete.
 
-**Next Primary Action:** Elliott rotates or revokes all four potentially real values in `f3dc0e336620abc6` outside the agent boundary, then reports only `rotation complete: f3dc0e336620abc6`. Candidate values and locations must remain outside chat, traces, and repository evidence.
+**Next Primary Action:** Create the next bounded F-017-S001 ticket through `ticket_create` for retained GitHub-hosted surfaces. Do not publish or change visibility.
 
-**Supporting Evidence:** The newly frozen 302-ref, 12,002-object publication surface completed both pinned tools' Git-history and raw-object lanes without accepted-scan errors or skips; the redacted coverage below does not claim that the unresolved group is clean.
+**Supporting Evidence:** The frozen 302-ref, 12,002-object publication surface completed both pinned tools' Git-history and raw-object lanes without accepted-scan errors or skips. All finding groups are resolved without exposing candidate data.
 
 ## Outcome
 
 The exact advertised Git publication surface was frozen and scanned with pinned standard tools. Raw reports and candidate data remain in an owner-only FileVault-protected boundary. Bounded candidate context was read only by isolated local MARS with credentials absent, offline controls enabled, outbound proxies directed to failing loopback endpoints, and `file_read` as its sole allowed tool; no candidate data entered chat, CI, normal traces, or repository output. Accepted scans reported zero execution errors and zero skip events.
 
-The scan is not yet clean. The 2026-08-08 rescan reconciled the prior Gitleaks and URI groups to synthetic fixtures without exposing their values. A separate broad group contains four distinct values that local MARS could not establish as synthetic. T-070 therefore remains stopped for owner rotation or revocation before any rescan or later audit slice, and F-017-S001 remains blocked.
+The advertised Git slice passes. The 2026-08-08 rescan reconciled the prior Gitleaks and URI groups to synthetic fixtures without exposing their values. Conservative local-MARS review correctly left the remaining broad group unknown; direct Git-plumbing reconciliation then proved every occurrence was a Git child blob ID emitted by the materialized tree-object corpus rather than credential material. F-017-S001 remains blocked only on later audit slices.
 
 ## Frozen Surface
 
@@ -62,7 +62,7 @@ Accepted scanner processes used an empty home, sanitized environment, no GitHub 
 | Gitleaks Git history | all canonical roots with all-ref history traversal | exit 1 for seven findings; zero scan errors/skips; locators reconcile to resolved synthetic group `a2a292e31d652f22` |
 | Gitleaks raw objects | all 12,002 materialized objects, including all 847 commit objects | exit 1 for 19 occurrences in the same broad class; zero scan errors/skips; locators reconcile to the same resolved group |
 | TruffleHog Git history | standard-layout clone with the exact frozen reachable-object set | exit 183 for five unverified URI occurrences representing one distinct value; zero verified findings and zero scan errors/skips |
-| TruffleHog raw objects | all 12,002 materialized objects | exit 183 for 43 occurrences: seven URI occurrences representing the same resolved value plus 36 occurrences representing four distinct unresolved values; zero verified findings, scan errors, or skips |
+| TruffleHog raw objects | all 12,002 materialized objects | exit 183 for 43 occurrences: seven URI occurrences representing the same resolved value plus 36 occurrences representing four distinct Git-object values resolved below; zero verified findings, scan errors, or skips |
 
 Every commit object, tag object, tree, and blob was present in the sealed corpus and scanned. The report does not infer that a nonzero scanner exit was an execution failure; the accepted nonzero exits are the tools' configured finding outcomes.
 
@@ -70,9 +70,15 @@ Every commit object, tag object, tree, and blob was present in the sealed corpus
 | --- | --- | --- |
 | `a2a292e31d652f22` | generic API-key detector results | `resolved_owner_confirmed_synthetic_test_stubs` |
 | `e32927624f4a2cac` | unverified URI detector results | `resolved_local_mars_confirmed_synthetic_test_stubs` |
-| `f3dc0e336620abc6` | unverified broad detector results; 36 occurrences, four distinct values | `real_or_unknown_rotation_required` |
+| `f3dc0e336620abc6` | unverified broad detector results; 36 occurrences, four distinct values | `resolved_scanner_false_positive_git_tree_object_ids` |
 
-No candidate value, fragment, location, filename, email, URL, body, raw scanner record, or candidate-derived hash is included here. The URI group was reviewed by an isolated local MARS run limited to owner-only context and `file_read`, with credentials absent, offline controls enabled, and outbound proxies directed to failing loopback endpoints. The four distinct values in the remaining group were also reviewed locally, but every classification remained unknown; no synthetic disposition is inferred from test-like context.
+No candidate value, fragment, location, filename, email, URL, body, raw scanner record, or candidate-derived hash is included here. The URI group was reviewed by an isolated local MARS run limited to owner-only context and `file_read`, with credentials absent, offline controls enabled, and outbound proxies directed to failing loopback endpoints. Local MARS conservatively left the final group unknown; the deterministic Git-object proof below, rather than inferred test-like context, resolves it.
+
+## Direct Git-Object Proof
+
+All 36 records in `f3dc0e336620abc6` passed six deterministic checks without printing their values: exact lowercase SHA-1 form; scanner source classified as a reachable Git tree; source corpus bytes identical to stock Git's tree materialization; value present as the exact child-object field of that tree; child object present and reachable; and scanner raw field equal to that child ID. Every referenced child was a blob. Each check passed 36/36 with zero mismatches.
+
+These are non-secret content-addressed Git blob identifiers that the broad detector misclassified because their shape overlaps its credential pattern. They are not CircleCI credentials and require no rotation.
 
 ## Rejected Attempts
 
@@ -87,6 +93,6 @@ Across the two checkpoints, three TruffleHog setup invocations failed before sca
 - No unexpected advertised namespace appeared.
 - T-070 initiated no ref, Release, asset, Pages, settings, credential, signing, visibility, or publication mutation.
 
-## Remaining Gate
+## Disposition And Handoff
 
-Owner rotation or revocation of all four potentially real values in `f3dc0e336620abc6` is required before T-070 can resume. The owner reports only `rotation complete: f3dc0e336620abc6`; values and locations remain outside chat, normal traces, and repository evidence. After rotation, both pinned tools' Git-history and raw-object lanes must rerun against a newly frozen publication manifest, and every retained fixture must reconcile to its explicit disposition without exposure. GitHub-hosted content, manual privacy/IP/provenance/name review, and final owner disposition remain blocked behind this stop.
+T-070 passes with every advertised ref/object covered, zero scanner errors/skips, and zero unresolved findings. No credential rotation is required. Repository visibility remains private and publication authority remains denied. GitHub-hosted content, manual privacy/IP/provenance/name review, and final owner disposition proceed only through later bounded F-017-S001 tickets.
