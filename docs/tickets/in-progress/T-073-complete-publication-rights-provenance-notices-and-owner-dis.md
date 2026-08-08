@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S001"]
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/validation/reports/2026-08-08-github-hosted-publication-surface-audit.md", "docs/tickets/done/T-072-audit-every-github-hosted-publication-surface.md"]
+evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/validation/reports/2026-08-08-github-hosted-publication-surface-audit.md", "docs/validation/reports/2026-08-09-rights-media-and-name-review.md", "docs/tickets/done/T-072-audit-every-github-hosted-publication-surface.md"]
 verified_by: "pending repository owner, QA, Security, Release Manager, and Orchestrator"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-08: created through ticket_create after COO, CTO-weekly, and Security froze four bounded checkpoints"
-blocker: "none"
+last_attempt: "2026-08-09: checkpoint-A history, prompt, tool/automation, media, and official-register inventories completed; a directly overlapping live MARS Class 42 registration requires rename"
+blocker: "Owner must select a distinctive replacement name; prompt/AI/automation authority and the PNG also require explicit owner disposition."
 blocked_by: []
 trace_id: "launch-rights-provenance:2026-08-08"
-next_action: "Complete checkpoint A: authority, predecessor/AI, media, and current official-register name-search evidence; stop for rename or replacement if any retained item is unresolved."
+next_action: "Obtain the bounded owner disposition in the checkpoint-A report; select, screen, and apply one distinctive replacement name before resuming checkpoints B through D."
 dedupe_key: "open-source:rights-provenance-owner-disposition"
 metadata:
   classification: "mixed-unclear-until-disposition"
@@ -64,3 +64,19 @@ Run focused provenance/registry/license tests, deterministic two-run notice comp
 ## No-Go
 
 Any unresolved ownership, employment/client, predecessor, AI-term, trademark, media, model, binary, dependency, notice, or claim finding; any provisional notice; any unverifiable retained artifact; or any tag, release, GitHub-setting, visibility, or announcement mutation.
+
+## Checkpoint A Evidence — 2026-08-09
+
+The publication-root inventory is complete and recorded in
+`docs/validation/reports/2026-08-09-rights-media-and-name-review.md`. It proves
+the exact retained prompt, tool/automation-attribution, and media scope without treating Git
+metadata as ownership evidence. The eleven role headers are symbolic rather
+than immutable and the locally available predecessor snapshot does not support
+a textual-port claim. The sole PNG has no embedded or commit-level provenance.
+
+The official-register knockout search is materially adverse: live U.S.
+registration 8092258 covers AI agent-based analysis and process automation in
+Class 42. Checkpoint A remains open pending a distinctive replacement name and
+fresh screen plus the bounded owner authority, prompt/AI/automation, and media decisions.
+The repository remains private and no later checkpoint or publication action
+is authorized.

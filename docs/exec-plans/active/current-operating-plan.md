@@ -13,8 +13,8 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; T-080; T-081.
-**Current Failing Scenario:** F-017-S001 — authority, rights, privacy, IP, model/media/dependency provenance, name review, notices, claims, and owner disposition remain incomplete.
-**Walking Skeleton Slice:** Execute T-073's four committed checkpoints, resolve every rights/provenance/notice/name finding, and commit the owner's `preserve_audited_history` disposition.
+**Current Failing Scenario:** F-017-S001 — a live U.S. `MARS` registration directly overlaps AI-agent/process-automation software; authority, prompt/AI/automation/media, model/dependency provenance, notices, claims, and owner disposition also remain incomplete.
+**Walking Skeleton Slice:** Resolve T-073 checkpoint A through a distinctive replacement name, fresh official-register screen, and bounded owner authority/prompt/AI/automation/media decisions, then execute checkpoints B through D and commit `preserve_audited_history` only after every finding closes.
 **Learning Or MVP Outcome:** Establish whether every retained source, prompt, document, dependency, model, binary, and asset is authorized and notice-complete for publication.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** On 2026-08-08, T-072 passed with every hosted surface collected, confirmed empty, or not applicable and zero unresolved secret candidate. T-073 must complete rights, provenance, notices, name review, claims correction, and owner disposition. The two all-repository write-capable Apps remain explicit T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Complete T-073 checkpoint A for authority, predecessor/AI, media, and current official-register name-search evidence; keep the repository private and stop for rename or replacement if any retained item is unresolved.
+- **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. The name requires replacement and a fresh screen. Owner authority, the eleven role prompts, 157 Cursor-attributed commits, three `Engineer Bot` commits, and the sole PNG also require explicit disposition. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
+- **Next Primary Action:** Obtain the bounded checkpoint-A owner decisions, then select, screen, and apply one distinctive replacement name before T-073 checkpoints B through D; keep the repository private.
 
 ## Starting Baseline
 
@@ -43,7 +43,8 @@
 | T-070 clears the advertised Git surface | 12,002 reachable objects, four scanner lanes, zero errors, skips, or unresolved findings | 1.0 | Complete — T-072 reconciled publication refs |
 | gRPC v1.82.1 closes the called advisory | Source selects v1.82.1; local gates and exact run `31278506189` report zero called vulnerabilities | 1.0 | Complete — T-071 |
 | Current hosted-surface counts remain stable | T-072 acquisition, UI confirmation, and post-evidence run delta reconcile with zero scan error or unresolved secret candidate | 1.0 | Complete — T-072 |
-| Elliott's authority can be converted into a complete publication attestation | Owner stated authority; formal disposition is absent | 0.80 | T-073 committed owner attestation and provenance review |
+| Elliott's authority can be converted into a complete publication attestation | Owner stated authority; exact prompt/AI/automation/media and conflict clauses remain unsigned | 0.70 | T-073 committed owner attestation and provenance review |
+| The `MARS` product name is clear for launch | A live U.S. exact-word registration directly overlaps AI agent and process-automation services; UK/EU/WIPO also contain exact software marks | 0.10 | Select a distinctive replacement and pass fresh official-register screening in T-073 |
 | No reachable runtime P0/P1 remains after scheduled hardening | Existing webhook/dashboard evidence is partial | 0.60 | T-074 through T-076 and resumed T-058 |
 | Exact-tag Go/SumDB bootstrap is non-circular on clean macOS/Linux | Design is selected; fresh packaged lifecycle proof is absent | 0.65 | T-077 clean-HOME macOS/Linux lifecycle |
 | GoReleaser v2.17.1, Syft v1.50.0, and Cosign v3.0.6 can satisfy the producer gate | Official versions are selected; exact admission is pending | 0.80 | T-078 provenance, binary scan, and two-root proof |
@@ -134,6 +135,15 @@ authority/name/predecessor/AI/media evidence; machine-checked model and
 llama.cpp provenance; deterministic dependency notices and accurate product
 claims; then the owner-attested `preserve_audited_history` disposition with no
 deferred rights finding.
+
+Checkpoint A's machine inventory is recorded at publication root `1b870f8`.
+It found eleven symbolic prompt-source headers without a locally provable
+textual-port chain, 157 Cursor-attributed commits and three separate `Engineer
+Bot` commits requiring owner classification and attestation, one PNG without
+provenance metadata, and a materially overlapping live U.S. `MARS`
+registration in Class 42. The report is durable, but the checkpoint does not
+pass until the owner resolves those findings and selects a distinctive
+replacement name that passes fresh official-register screening.
 
 ## Completion Gates By Ticket
 
