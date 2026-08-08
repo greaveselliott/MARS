@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-05-04
 **Owner:** MARS maintainers
-**Related:** AD-098, AD-101, F-001
+**Related:** AD-098, AD-101, F-001, F-019
 **Mirrors:** Generated target `docs/design-docs/documentation-sync-architecture.md`
 
 ## Context
@@ -72,9 +72,10 @@ BDD, role behavior, generated target doctrine, release notes, and review.
 - The audit does not prove that documentation prose is semantically complete.
   It proves the metadata exists, references real docs, and includes required
   docs for the file's source prefix.
-- The audit does not parse every programming language. It covers the source
-  formats MARS currently owns: Go, HTML, CSS, JavaScript, YAML, and
-  GitHub workflow YAML.
+- The audit does not parse source syntax beyond near-top comment metadata. Its
+  built-in suffix set covers Go, HTML, CSS, JavaScript, TypeScript/TSX, YAML,
+  and GitHub workflow YAML; targets may replace the selected suffix set in
+  `.harness/manifest.yaml`.
 - The audit does not replace human or agent judgment. It narrows the checklist
   so judgment is pointed at the right docs.
 - The audit does not require every doc file to carry `MarsDocSync`; docs are the
@@ -115,7 +116,7 @@ docs:
 
 Language-specific rules:
 
-- Go, CSS, and JavaScript use block comments.
+- Go, CSS, JavaScript, TypeScript, and TSX use block comments.
 - YAML and workflows use `#` line comments.
 - HTML templates keep `<!DOCTYPE html>` first and place the metadata comment
   immediately after it.
@@ -144,17 +145,42 @@ architecture and feature surface. Cross-boundary files add extra docs directly
 in their metadata rather than forcing the whole package to carry unrelated
 requirements.
 
-Deployed app roots such as `src/`, `app/`, `pages/`, `public/`, `web/`, and
-`static/` are audited so target product files do not silently escape the
+Deployed roots such as `src/`, `app/`, `apps/`, `pages/`, `packages/`,
+`public/`, `web/`, `workers/`, `static/`, and `tests/` are audited so target
+product files do not silently escape the
 no-stale-docs rule. These roots do not inherit a foundation package baseline:
 their metadata must point to the local feature contracts or design docs that
 actually own the target product behavior.
+
+Targets may configure selection in `.harness/manifest.yaml`:
+
+```yaml
+docsync:
+  include_roots: [apps, packages, workers, tests]
+  include_extensions: [.ts, .tsx, .mts, .cts, .js, .jsx, .css, .yaml, .yml]
+  exclude_globs:
+    - "**/node_modules/**"
+    - "**/dist/**"
+    - "**/coverage/**"
+    - "**/.expo/**"
+    - "**/.react-router/**"
+    - "**/*.generated.*"
+```
+
+Each absent or empty field uses its built-in default; each non-empty field
+replaces only that field's default. Roots and globs must be repository-relative,
+extensions must be dot-prefixed, and invalid configuration fails before
+traversal. Safe built-in exclusions additionally cover `.git`, `build`, and
+`vendor` output. Symlinks are not followed or audited.
 
 ### 3. Audit Engine Layer
 
 `internal/docsync` is the deterministic audit engine. It:
 
-- walks audited foundation roots and deployed app roots;
+- resolves target-owned roots, extensions, and exclusions from the manifest,
+  falling back per field to safe TypeScript-monorepo-capable defaults;
+- validates containment and glob syntax before walking audited foundation and
+  deployed roots;
 - includes root-level source entries such as `main.go` or `index.html` in
   addition to conventional `cmd/`, `src/`, `app/`, `pages/`, `web/`, and
   static roots;
@@ -227,8 +253,9 @@ Initialized targets receive the same doctrine:
   model.
 - `docs/features/F-001-delivery-operating-model.md` includes the source-wide
   audit scenario.
-- deployed app roots are audited so static HTML, CSS, and JavaScript product
-  files must point at the local feature or design docs they implement.
+- generated manifests expose DocSync roots, extensions, and exclusions so
+  authored TypeScript/TSX, static, package, worker, and test files point to the
+  local feature or design docs they implement while generated output is skipped.
 - role allowlists include `docsync_audit` where documentation freshness must be
   checked.
 - knowledge routes send implementation and docs-sync tasks to the right docs.
@@ -248,6 +275,10 @@ source files touched by the change.
 The model applies to source code, templates, workflow definitions, generated
 source defaults, and tool definitions. It also applies when an agent moves code,
 splits packages, or renames files.
+
+Before selecting files, resolve and validate the repository's effective
+`docsync` manifest configuration. CLI, mirrored tool, file-write policy, and
+successful-disposition gates must use this same effective selection.
 
 ### Step 2: Read Each File's `MarsDocSync` Docs
 

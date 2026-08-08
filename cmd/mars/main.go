@@ -28,6 +28,7 @@ docs:
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-018-goreleaser-distribution.md
 - docs/features/F-012-self-improvement-loop.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 - docs/roles/ROLES.md
 */
 package main
@@ -251,7 +252,9 @@ func docsyncCmd() *cobra.Command {
 		Use:   "docsync",
 		Short: "Audit code-to-documentation metadata",
 		Long: `Audit source files for top-of-file MarsDocSync metadata and verify
-that associated documentation paths exist and match the universal code map.`,
+that associated documentation paths exist and match the universal code map.
+Target repositories may select safe source roots, extensions, and exclusions
+through the docsync section of .harness/manifest.yaml.`,
 	}
 	cmd.AddCommand(docsyncAuditCmd())
 	return cmd

@@ -5,12 +5,14 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package docsync
 
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -134,6 +136,154 @@ body { margin: 0; }
 	}
 	if !found {
 		t.Fatalf("missing src/game.js finding: %#v", report.Findings)
+	}
+}
+
+func TestAuditIncludesTypeScriptMonorepoDefaultsAndSkipsGeneratedOutput(t *testing.T) {
+	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, "docs/features/F-019-typescript-monorepo-docsync.md", "feature")
+	metadata := `/*
+MarsDocSync:
+docs:
+- docs/features/F-019-typescript-monorepo-docsync.md
+*/
+export const covered = true
+`
+	for _, rel := range []string{
+		"apps/web/src/page.tsx",
+		"packages/game/src/rules.ts",
+		"workers/app.ts",
+		"tests/integration/room.test.ts",
+	} {
+		writeDocSyncTestFile(t, dir, rel, metadata)
+	}
+	for _, rel := range []string{
+		"apps/web/node_modules/pkg/index.ts",
+		"apps/web/dist/index.js",
+		"apps/mobile/.expo/router.ts",
+		"apps/web/.react-router/types.ts",
+		"packages/game/src/schema.generated.ts",
+	} {
+		writeDocSyncTestFile(t, dir, rel, "export const generated = true\n")
+	}
+
+	report, err := Audit(Config{RepoRoot: dir})
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if !report.OK() {
+		t.Fatalf("unexpected findings: %#v", report.Findings)
+	}
+	if len(report.Files) != 4 {
+		t.Fatalf("expected four authored TypeScript files, got %#v", report.Files)
+	}
+}
+
+func TestAuditUsesManifestDocSyncOverridesPerField(t *testing.T) {
+	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, "docs/features/F-019-typescript-monorepo-docsync.md", "feature")
+	writeDocSyncTestFile(t, dir, ".harness/manifest.yaml", `name: test
+docsync:
+  include_roots: [modules]
+  include_extensions: [.ts]
+  exclude_globs: ["**/ignored/**"]
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+	writeDocSyncTestFile(t, dir, "modules/core/index.ts", `/* MarsDocSync: ["docs/features/F-019-typescript-monorepo-docsync.md"] */
+export const covered = true
+`)
+	writeDocSyncTestFile(t, dir, "modules/core/view.tsx", "export const notSelected = true\n")
+	writeDocSyncTestFile(t, dir, "modules/ignored/missing.ts", "export const ignored = true\n")
+	writeDocSyncTestFile(t, dir, "apps/web/missing.ts", "export const defaultRootWasReplaced = true\n")
+
+	report, err := Audit(Config{RepoRoot: dir})
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if !report.OK() || len(report.Files) != 1 || report.Files[0].Path != "modules/core/index.ts" {
+		t.Fatalf("unexpected override report: %#v", report)
+	}
+}
+
+func TestAuditFallsBackPerEmptyManifestField(t *testing.T) {
+	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, "docs/features/F-019-typescript-monorepo-docsync.md", "feature")
+	writeDocSyncTestFile(t, dir, ".harness/manifest.yaml", `name: test
+docsync:
+  exclude_globs: ["**/private/**"]
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+	writeDocSyncTestFile(t, dir, "apps/web/page.tsx", `/* MarsDocSync: ["docs/features/F-019-typescript-monorepo-docsync.md"] */
+export default function Page() { return null }
+`)
+	writeDocSyncTestFile(t, dir, "apps/private/page.tsx", "export default function Hidden() { return null }\n")
+
+	report, err := Audit(Config{RepoRoot: dir})
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if !report.OK() || len(report.Files) != 1 || report.Files[0].Path != "apps/web/page.tsx" {
+		t.Fatalf("unexpected per-field fallback report: %#v", report)
+	}
+}
+
+func TestAuditRejectsUnsafeOrMalformedManifestDocSyncConfiguration(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		contains string
+	}{
+		{name: "absolute root", config: "  include_roots: [/tmp/source]\n", contains: "must be repository-relative"},
+		{name: "parent root", config: "  include_roots: [../source]\n", contains: "escapes or selects the repository root"},
+		{name: "malformed extension", config: "  include_extensions: [ts]\n", contains: "dot-prefixed suffix"},
+		{name: "absolute glob", config: "  exclude_globs: [/tmp/**]\n", contains: "must be repository-relative"},
+		{name: "parent glob", config: "  exclude_globs: [../private/**]\n", contains: "contains parent traversal"},
+		{name: "unsupported glob", config: "  exclude_globs: ['apps/[ab]/**']\n", contains: "character classes are not supported"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeDocSyncTestFile(t, dir, ".harness/manifest.yaml", "name: test\ndocsync:\n"+tt.config+"roles:\n  engineer:\n    prompt: roles/engineer.md\n")
+			_, err := Audit(Config{RepoRoot: dir})
+			if err == nil || !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("expected error containing %q, got %v", tt.contains, err)
+			}
+		})
+	}
+}
+
+func TestRequiresMetadataUsesEffectiveManifestSelection(t *testing.T) {
+	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, ".harness/manifest.yaml", `name: test
+docsync:
+  include_roots: [modules]
+  include_extensions: [.tsx]
+  exclude_globs: ["**/generated/**"]
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+	for _, tc := range []struct {
+		path string
+		want bool
+	}{
+		{path: "modules/ui/card.tsx", want: true},
+		{path: "modules/ui/card.ts", want: false},
+		{path: "modules/generated/card.tsx", want: false},
+		{path: "apps/web/card.tsx", want: false},
+		{path: "root.tsx", want: true},
+	} {
+		got, err := RequiresMetadata(dir, tc.path)
+		if err != nil {
+			t.Fatalf("RequiresMetadata(%s): %v", tc.path, err)
+		}
+		if got != tc.want {
+			t.Fatalf("RequiresMetadata(%s) = %v, want %v", tc.path, got, tc.want)
+		}
 	}
 }
 

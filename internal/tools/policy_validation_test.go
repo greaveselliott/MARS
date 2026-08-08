@@ -7,6 +7,7 @@ docs:
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-007-guardrails-and-safety.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package tools
 
@@ -1026,7 +1027,7 @@ func TestEngineerFailingTestAllowsIntegrationTestRepairWrite(t *testing.T) {
 		},
 	}
 	ctx := WithSession(context.Background(), session)
-	raw := []byte(`{"path":"tests/integration/playfield.test.js","content":"import { describe, expect, test } from '@jest/globals';\n\ndescribe('playfield', () => {\n  test('renders', () => {\n    expect(true).toBe(true);\n  });\n});\n"}`)
+	raw := []byte(`{"path":"tests/integration/playfield.test.js","content":"/* MarsDocSync: [\"docs/features/F-001-product-walking-skeleton.md\"] */\nimport { describe, expect, test } from '@jest/globals';\n\ndescribe('playfield', () => {\n  test('renders', () => {\n    expect(true).toBe(true);\n  });\n});\n"}`)
 
 	if err := preToolPolicy(ctx, root, "file_write", raw); err != nil {
 		t.Fatalf("expected same-lane integration test repair write to be allowed, got %v", err)

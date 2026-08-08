@@ -10,6 +10,7 @@ docs:
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package tools
 
@@ -72,6 +73,29 @@ package release
 	res, err := handleDocSyncAudit(context.Background(), root, json.RawMessage(`{}`))
 	require.NoError(t, err)
 	require.Contains(t, res.Output, "docsync: checked")
+	require.Contains(t, res.Output, "Status: ok")
+}
+
+func TestDocSyncAudit_usesManifestTypeScriptSelection(t *testing.T) {
+	root := newWorkflowToolRoot(t)
+	writeWorkflowFile(t, root.Abs(), "docs/features/F-019-typescript-monorepo-docsync.md", "feature")
+	writeWorkflowFile(t, root.Abs(), ".harness/manifest.yaml", `name: test
+docsync:
+  include_roots: [modules]
+  include_extensions: [.ts]
+  exclude_globs: ["**/generated/**"]
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+	writeWorkflowFile(t, root.Abs(), "modules/core/index.ts", `/* MarsDocSync: ["docs/features/F-019-typescript-monorepo-docsync.md"] */
+export const covered = true
+`)
+	writeWorkflowFile(t, root.Abs(), "modules/generated/index.ts", "export const generated = true\n")
+
+	res, err := handleDocSyncAudit(context.Background(), root, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "docsync: checked 1 files, findings 0")
 	require.Contains(t, res.Output, "Status: ok")
 }
 

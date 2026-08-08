@@ -114,6 +114,7 @@ affected skills synchronized using
 | F-016 | [Foundation Orchestrator Planning Doctrine](F-016-foundation-provider-planning-doctrine.md) | passing | Source-only Orchestrator planning chain consumed by Claude, Codex, Copilot, Cursor, Windsurf, and other AI clients building the foundation harness |
 | F-017 | [Open-Source Publication](F-017-open-source-publication.md) | active | Ownership/audit clearance, secure defaults, signed public releases, fork-safe governance, and controlled cutover |
 | F-018 | [GoReleaser Distribution](F-018-goreleaser-distribution.md) | active | Deterministic archives, SBOMs, signed checksums, safe consumers, private rehearsal, and immutable cutover publication |
+| F-019 | [TypeScript Monorepo Documentation Sync](F-019-typescript-monorepo-docsync.md) | active | Configurable authored-source roots, extensions, exclusions, TypeScript/TSX defaults, and CLI/tool policy parity |
 
 ## Historical Feature Audit
 

@@ -24,7 +24,7 @@ mars tools run docsync_audit --repo . --args-json '{}'
 
 ## Metadata Shape
 
-Go, JavaScript, and CSS files use block comments:
+Go, JavaScript, TypeScript, TSX, and CSS files use block comments:
 
 ```go
 /*
@@ -48,7 +48,8 @@ list is short:
 `internal/docsync` audits both foundation roots and deployed app roots. In the
 foundation source checkout, prefix rules below define expected docs. In a
 deployed target repo, product code under common layouts such as `cmd/`,
-`internal/`, `pkg/`, `src/`, `app/`, `pages/`, `public/`, `web/`, and `static/`
+`internal/`, `pkg/`, `src/`, `app/`, `apps/`, `pages/`, `packages/`, `public/`,
+`web/`, `workers/`, `static/`, and `tests/`
 still needs valid metadata, and root-level source files such as `main.go` or
 `index.html` are included as audited source too. Deployed targets do not
 inherit this foundation package map; metadata must point to the target's local
@@ -56,6 +57,12 @@ feature contracts or design docs. The mirrored `file_write` policy rejects
 source/test writes that omit valid `MarsDocSync` metadata or point at a missing
 doc path, so generated target agents correct documentation routing before the
 source file exists in the worktree.
+
+Generated manifests expose `docsync.include_roots`,
+`docsync.include_extensions`, and `docsync.exclude_globs`. Empty or absent
+fields retain safe built-in defaults; non-empty fields replace that field's
+defaults. Repository-relative path validation and generated-output exclusions
+are part of the audit contract described in F-019.
 
 ## Package Map
 
@@ -71,7 +78,7 @@ source file exists in the worktree.
 | `internal/context/` | `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/dashboard/` | `docs/design-docs/dashboard.md`, `docs/design-docs/github-app-integration.md` | F-010, F-017 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
-| `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, this map | F-001 |
+| `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, this map | F-001, F-019 |
 | `internal/doctor/` | `docs/product-specs/product-surface.md`, `docs/design-docs/self-reflective-telemetry.md` | F-004, F-012 |
 | `internal/evolution/` | `docs/design-docs/self-improvement.md` | F-012 |
 | `internal/foundationtelemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
@@ -124,6 +131,9 @@ boundaries, add the additional docs directly in that file's metadata.
 
 Notable cross-boundary files:
 
+- `internal/bundle/bundle.go` and its focused tests expose the optional target
+  DocSync manifest selection, so their metadata also points to the
+  documentation-sync architecture and F-019.
 - `internal/scanner/init.go` and its tests generate target doctrine, role
   registries, tools guidance, release guidance, and F-001 operating-model
   feature docs, so their metadata lists those extra docs directly.
@@ -157,8 +167,10 @@ Notable cross-boundary files:
 - CLI changes also follow the tool/skill synchronization model in
   [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - If a source prefix moves, update this document, `internal/docsync`, and the
-  affected file metadata in the same change. If a deployed app-root prefix is
-  added or removed, update the audit roots and generated target doctrine too.
+  affected file metadata in the same change. If a built-in deployed root,
+  extension, or exclusion changes, update the audit defaults, generated
+  manifest, generated target doctrine, F-019, and tests in the same change.
+  Target-specific selection belongs in that target's manifest.
 - If a code change alters business behavior, update the referenced BDD feature
   contract before claiming the change is complete.
 - If a code change alters architecture, generated target behavior, CLI surface,

@@ -18,6 +18,7 @@ docs:
 - docs/features/F-017-open-source-publication.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package tools
 
@@ -558,7 +559,8 @@ Global command surface:
     Example: ["checks", "run", "--repo", ".", "--name", "unit", "--", "go", "test", "./..."]
 
   docsync audit
-    Audit source-file MarsDocSync metadata and associated documentation pointers.
+    Audit source-file MarsDocSync metadata and associated documentation pointers
+    using validated roots, extensions, and exclusions from .harness/manifest.yaml.
     Flags: --repo <path>, --json
     Example: ["docsync", "audit", "--repo", "."]
 

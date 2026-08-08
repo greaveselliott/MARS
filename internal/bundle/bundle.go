@@ -3,9 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/context-efficiency.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/role-customization.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 */
 package bundle
 
@@ -29,7 +31,41 @@ type Manifest struct {
 	Name              string                `yaml:"name"`
 	Description       string                `yaml:"description"`
 	OrchestrationMode string                `yaml:"orchestration_mode"`
+	DocSync           DocSyncConfig         `yaml:"docsync"`
 	Roles             map[string]RoleConfig `yaml:"roles"`
+}
+
+// DocSyncConfig selects authored source files for the documentation-sync
+// operating model. Empty fields use the built-in defaults in internal/docsync.
+type DocSyncConfig struct {
+	IncludeRoots      []string `yaml:"include_roots"`
+	IncludeExtensions []string `yaml:"include_extensions"`
+	ExcludeGlobs      []string `yaml:"exclude_globs"`
+}
+
+// LoadDocSyncConfig reads only the optional DocSync selection from a target
+// manifest. It does not require roles so audit configuration can be validated
+// independently before the full harness is loaded.
+func LoadDocSyncConfig(repoRoot string) (DocSyncConfig, bool, error) {
+	repoRoot = strings.TrimSpace(repoRoot)
+	if repoRoot == "" {
+		return DocSyncConfig{}, false, fmt.Errorf("bundle: repo root path is empty — pass --repo <path> to specify the target repository")
+	}
+	path := filepath.Join(repoRoot, harnessDir, manifestFile)
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return DocSyncConfig{}, false, nil
+	}
+	if err != nil {
+		return DocSyncConfig{}, false, fmt.Errorf("bundle: read %s: %w", path, err)
+	}
+	var manifest struct {
+		DocSync DocSyncConfig `yaml:"docsync"`
+	}
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
+		return DocSyncConfig{}, false, fmt.Errorf("bundle: parse %s: %w — check YAML syntax", path, err)
+	}
+	return manifest.DocSync, true, nil
 }
 
 // RoleConfig defines a single role's configuration within a bundle.

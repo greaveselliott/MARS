@@ -13,6 +13,7 @@ docs:
 - docs/product-specs/product-surface.md
 - docs/design-docs/harness-operating-model.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-019-typescript-monorepo-docsync.md
 -->
 <html lang="en">
   <head>
@@ -143,6 +144,11 @@ docs:
 description: Starter autonomous AI pipeline for my-project
 orchestration_mode: dispatch
 
+docsync:
+  include_roots: [apps, packages, workers, tests]
+  include_extensions: [.ts, .tsx, .mts, .cts, .js, .jsx, .css, .yaml, .yml]
+  exclude_globs: ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/.expo/**", "**/.react-router/**", "**/*.generated.*"]
+
 roles:
   engineer:
     prompt: roles/engineer.md
@@ -164,6 +170,7 @@ roles:
                 <tr><td><code>name</code></td><td>Yes</td><td>Stable bundle identifier used in logs, jobs, and generated context.</td></tr>
                 <tr><td><code>description</code></td><td>No</td><td>Human-readable description of the target harness.</td></tr>
                 <tr><td><code>orchestration_mode</code></td><td>No</td><td>Use <code>dispatch</code> for new targets. Empty and <code>legacy</code> are accepted for compatibility.</td></tr>
+                <tr><td><code>docsync</code></td><td>No</td><td>Select repository-relative authored-source roots, dot-prefixed extensions, and exclusion globs. Missing fields use safe TypeScript-monorepo-capable defaults; non-empty fields replace that field's default.</td></tr>
                 <tr><td><code>roles</code></td><td>Yes</td><td>Map of executable role keys. At least one role is required.</td></tr>
               </tbody>
             </table>
