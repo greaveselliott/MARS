@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-071 — restore the green vulnerability baseline with gRPC 1.82.1
+**Current Ticket:** none — T-071 complete; create T-072 only through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,9 +13,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 prerequisite — exact run 31267671856 calls GO-2026-6061.
-**Walking Skeleton Slice:** Upgrade only gRPC, prove focused and full gates, and require an exact green replacement run without changing release state.
-**Learning Or MVP Outcome:** Restore a trustworthy source baseline before spending authority on hosted-surface collection or launch controls.
+**Current Failing Scenario:** F-017-S001 — retained GitHub-hosted publication surfaces are not yet frozen, collected, scanned, and reconciled.
+**Walking Skeleton Slice:** Freeze hosted writes, collect every applicable GitHub surface with standard tools, scan offline, and commit only redacted counts, digests, classes, and exact cleanup manifests.
+**Learning Or MVP Outcome:** Establish whether the retained hosting-side publication surface is technically eligible for rights and owner disposition.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** Exact source-compatibility run `31267671856` calls GO-2026-6061 through `google.golang.org/grpc v1.82.0`. T-071 must upgrade to at least v1.82.1 and restore both supported Go lanes with zero called application vulnerabilities.
-- **Next Primary Action:** Complete T-071 without changing version, release, or visibility state, then create T-072 through `ticket_create`.
+- **Current Primary Blocker:** T-071 restored the green vulnerability baseline at `59ab946` and run `31278506189`. T-072 must still collect and reconcile every retained GitHub-hosted publication surface with zero scanner error, skip, or unresolved finding.
+- **Next Primary Action:** Create T-072 through `ticket_create`; do not start T-073 or mutate legacy assets before T-072 passes.
 
 ## Starting Baseline
 
@@ -41,7 +41,7 @@
 |---|---|---:|---|
 | The starting source is clean and synchronized at `d2db7c…` | Local HEAD and `origin/main` matched; worktree was clean | 1.0 | Re-fetch before the T-071 source commit |
 | T-070 clears the advertised Git surface | 12,002 reachable objects, four scanner lanes, zero errors, skips, or unresolved findings | 1.0 | T-072 rechecks publication-ref drift |
-| gRPC v1.82.1 closes the current called advisory | GO-2026-6061 names v1.82.1 as fixed; source selects v1.82.0 | 0.98 | T-071 local `govulncheck` and exact replacement CI |
+| gRPC v1.82.1 closes the called advisory | Source selects v1.82.1; local gates and exact run `31278506189` report zero called vulnerabilities | 1.0 | Complete — T-071 |
 | Current hosted-surface counts remain stable | Recorded private GitHub inventory | 0.90 | T-072 freeze and exact reconciliation |
 | Elliott's authority can be converted into a complete publication attestation | Owner stated authority; formal disposition is absent | 0.80 | T-073 committed owner attestation and provenance review |
 | No reachable runtime P0/P1 remains after scheduled hardening | Existing webhook/dashboard evidence is partial | 0.60 | T-074 through T-076 and resumed T-058 |
@@ -99,13 +99,20 @@ than recreated.
 No custom audit runtime, VM laboratory, exhaustive kernel fixture, or parallel
 source-ticket implementation is authorized.
 
-## Current Walking Skeleton — T-071
+## Completed Walking Skeleton — T-071
 
-Upgrade only the selected gRPC dependency, prove the offline Sigstore and MCP
-lifecycle seams, run the complete local source gate and four cross-builds, and
-require a green exact replacement source-compatibility run for Go 1.25.12,
-Go 1.26.5, and the expected below-minimum rejection. T-071 changes neither a
-public interface nor release state. F-017-S002 remains pending after it closes.
+Commit `59ab946` upgraded only the selected gRPC dependency. Focused normal and
+race suites, the complete local gate, DocSync, four cross-builds, zero called
+vulnerabilities, and exact run `31278506189` all pass. No public interface,
+version, release, or visibility state changed. F-017-S002 remains pending.
+
+## Next Walking Skeleton — T-072
+
+Freeze repository-hosted writes, collect all applicable Release, Actions,
+deployment, Pages/Wiki, issue/discussion, attachment, access, integration,
+package, and security metadata surfaces with standard tools, scan content
+offline, and reduce only redacted coverage and exact immutable-ID cleanup
+manifests. Inaccessible is unresolved; a plausible credential stops the ticket.
 
 ## Completion Gates By Ticket
 

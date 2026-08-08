@@ -116,6 +116,13 @@ do not inherit the MARS source floor and choose their own toolchain.
   discovery with exact Go 1.25.12 compatibility and retained release
   toolchain Go 1.26.5. The historical dependency disposition above remains
   unchanged evidence; generated targets still choose their own toolchain.
+- **2026-08-08 — exact gRPC v1.82.1 restored the called-vulnerability gate:**
+  T-071 changed only `go.mod` and `go.sum`, retaining the same gRPC module
+  requirements while closing GO-2026-6061. Exact run `31278506189` passed
+  Go 1.25.12, Go 1.26.5, and the intentional Go 1.25.11 rejection at commit
+  `59ab946`. Local and remote `govulncheck v1.6.0` report zero called
+  application vulnerabilities; two uncalled findings remain visible and are
+  not described as zero advisories.
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
   `cmd/mars` (test additions between runs) and packages landing on
