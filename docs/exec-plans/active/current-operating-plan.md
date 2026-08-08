@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** none — T-072 complete; create T-073 through `ticket_create`
+**Current Ticket:** T-073 — complete publication rights, provenance, notices, and owner disposition
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -14,7 +14,7 @@
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; T-080; T-081.
 **Current Failing Scenario:** F-017-S001 — authority, rights, privacy, IP, model/media/dependency provenance, name review, notices, claims, and owner disposition remain incomplete.
-**Walking Skeleton Slice:** Create T-073, resolve every rights/provenance/notice/name finding, and commit the owner's `preserve_audited_history` disposition.
+**Walking Skeleton Slice:** Execute T-073's four committed checkpoints, resolve every rights/provenance/notice/name finding, and commit the owner's `preserve_audited_history` disposition.
 **Learning Or MVP Outcome:** Establish whether every retained source, prompt, document, dependency, model, binary, and asset is authorized and notice-complete for publication.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** On 2026-08-08, T-072 passed with every hosted surface collected, confirmed empty, or not applicable and zero unresolved secret candidate. T-073 must complete rights, provenance, notices, name review, claims correction, and owner disposition. The two all-repository write-capable Apps remain explicit T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Commit and push T-072 closure, create T-073 only through `ticket_create`, and keep the repository private; do not mutate the App installations until their owning launch-control ticket.
+- **Next Primary Action:** Complete T-073 checkpoint A for authority, predecessor/AI, media, and current official-register name-search evidence; keep the repository private and stop for rename or replacement if any retained item is unresolved.
 
 ## Starting Baseline
 
@@ -128,11 +128,12 @@ finding remains a T-079/T-080 launch no-go and no hosted mutation was allowed.
 
 ## Next Walking Skeleton — T-073
 
-Create T-073 through `ticket_create`, then complete the owner attestation,
-predecessor and AI-assisted contribution mapping, media/model/llama.cpp and Go
-dependency provenance, current name searches, deterministic dependency
-notices, local-first/cloud/host-execution claims, and final
-`preserve_audited_history` disposition with no deferred rights finding.
+T-073 was created through `ticket_create` after bounded COO, CTO-weekly, and
+Security scope review. Complete its four independently reviewed checkpoints:
+authority/name/predecessor/AI/media evidence; machine-checked model and
+llama.cpp provenance; deterministic dependency notices and accurate product
+claims; then the owner-attested `preserve_audited_history` disposition with no
+deferred rights finding.
 
 ## Completion Gates By Ticket
 
