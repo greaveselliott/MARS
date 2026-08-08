@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-072 — audit every GitHub-hosted publication surface
+**Current Ticket:** none — T-072 complete; create T-073 through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,9 +13,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; T-080; T-081.
-**Current Failing Scenario:** F-017-S001 — retained GitHub-hosted publication surfaces are not yet frozen, collected, scanned, and reconciled.
-**Walking Skeleton Slice:** Freeze hosted writes, collect every applicable GitHub surface with standard tools, scan offline, and commit only redacted counts, digests, classes, and exact cleanup manifests.
-**Learning Or MVP Outcome:** Establish whether the retained hosting-side publication surface is technically eligible for rights and owner disposition.
+**Current Failing Scenario:** F-017-S001 — authority, rights, privacy, IP, model/media/dependency provenance, name review, notices, claims, and owner disposition remain incomplete.
+**Walking Skeleton Slice:** Create T-073, resolve every rights/provenance/notice/name finding, and commit the owner's `preserve_audited_history` disposition.
+**Learning Or MVP Outcome:** Establish whether every retained source, prompt, document, dependency, model, binary, and asset is authorized and notice-complete for publication.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-072 froze, acquired, and scanned every API-accessible hosted surface with zero scan error, skip, or unresolved candidate. GitHub Apps, Packages, Projects v2, and enabled-but-uninitialized Wiki state still require one owner-authenticated read-only confirmation.
-- **Next Primary Action:** Commit and push the redacted T-072 evidence checkpoint, complete the consolidated owner-authenticated review, acquire and scan any discovered content, then close T-072; do not start T-073 or mutate hosted objects before T-072 passes.
+- **Current Primary Blocker:** On 2026-08-08, T-072 passed with every hosted surface collected, confirmed empty, or not applicable and zero unresolved secret candidate. T-073 must complete rights, provenance, notices, name review, claims correction, and owner disposition. The two all-repository write-capable Apps remain explicit T-079/T-080 launch no-go findings.
+- **Next Primary Action:** Commit and push T-072 closure, create T-073 only through `ticket_create`, and keep the repository private; do not mutate the App installations until their owning launch-control ticket.
 
 ## Starting Baseline
 
@@ -32,7 +32,7 @@
 - `VERSION=0.68.49`; source fallback is `0.69.0-dev`.
 - T-070 passed the advertised-Git audit with zero unresolved findings. That evidence does not cover retained GitHub-hosted content or complete F-017-S001.
 - F-018-S001 through F-018-S003 passed as private producer, consumer, and rehearsal evidence only.
-- Reconciled T-072 snapshot: 301 tags, 57 Release objects, 500 legacy assets, 400 completed workflow runs, 77 deployments, one collaborator, and no current Actions artifacts or caches. Package absence remains unaccepted pending owner-authenticated confirmation.
+- Reconciled T-072 closure: 301 tags, 57 Release objects, 500 legacy assets, 401 completed workflow runs, 77 deployments, one collaborator, zero packages, zero linked projects, an uninitialized zero-page Wiki, and no current Actions artifacts or caches. Two installed Apps are all-repository and write-capable; scope reduction or removal remains a T-079/T-080 launch no-go.
 - Rulesets, branch protection, CodeQL, Dependabot alerts, secret scanning, and push protection are not yet enabled.
 
 ## Assumption Confidence Matrix
@@ -40,9 +40,9 @@
 | Assumption | Evidence | Confidence | Validation Required |
 |---|---|---:|---|
 | The launch plan started from clean synchronized source at `d2db7c…` | Local HEAD and `origin/main` matched; worktree was clean | 1.0 | Complete — historical activation fact |
-| T-070 clears the advertised Git surface | 12,002 reachable objects, four scanner lanes, zero errors, skips, or unresolved findings | 1.0 | T-072 rechecks publication-ref drift |
+| T-070 clears the advertised Git surface | 12,002 reachable objects, four scanner lanes, zero errors, skips, or unresolved findings | 1.0 | Complete — T-072 reconciled publication refs |
 | gRPC v1.82.1 closes the called advisory | Source selects v1.82.1; local gates and exact run `31278506189` report zero called vulnerabilities | 1.0 | Complete — T-071 |
-| Current hosted-surface counts remain stable | T-072 start/end freeze facts match across refs and API-accessible hosted sets | 0.98 | Owner-confirm Apps, Packages, Projects v2, and Wiki, then close T-072 |
+| Current hosted-surface counts remain stable | T-072 acquisition, UI confirmation, and post-evidence run delta reconcile with zero scan error or unresolved secret candidate | 1.0 | Complete — T-072 |
 | Elliott's authority can be converted into a complete publication attestation | Owner stated authority; formal disposition is absent | 0.80 | T-073 committed owner attestation and provenance review |
 | No reachable runtime P0/P1 remains after scheduled hardening | Existing webhook/dashboard evidence is partial | 0.60 | T-074 through T-076 and resumed T-058 |
 | Exact-tag Go/SumDB bootstrap is non-circular on clean macOS/Linux | Design is selected; fresh packaged lifecycle proof is absent | 0.65 | T-077 clean-HOME macOS/Linux lifecycle |
@@ -106,25 +106,37 @@ race suites, the complete local gate, DocSync, four cross-builds, zero called
 vulnerabilities, and exact run `31278506189` all pass. No public interface,
 version, release, or visibility state changed. F-017-S002 remains pending.
 
-## Next Walking Skeleton — T-072
+## Completed Walking Skeleton — T-072
 
-Freeze repository-hosted writes, collect all applicable Release, Actions,
-deployment, Pages/Wiki, issue/discussion, attachment, access, integration,
-package, and security metadata surfaces with standard tools, scan content
-offline, and reduce only redacted coverage and exact immutable-ID cleanup
-manifests. Inaccessible is unresolved; a plausible credential stops the ticket.
+T-072 froze repository-hosted writes, collected every applicable Release,
+Actions, deployment, Pages/Wiki, issue/discussion, attachment, access,
+integration, package, and security metadata surface with standard tools,
+scanned content offline, and reduced only redacted coverage and exact
+immutable-ID cleanup manifests.
 
 Snapshot `T072-723d689d-3194-40c8-9d92-322b921149a3` completed the immutable
 inventory, payload acquisition, offline scan, finding classification, and exact
 cleanup-ID digest checkpoints for every API-accessible surface. The Release
 discrepancy reconciles to 57 objects and 500 assets. Scanner errors, skips, and
-unresolved candidates are zero. On 2026-08-08, closure requires one consolidated
+unresolved candidates are zero. On 2026-08-08, closure required one consolidated
 owner-authenticated read-only confirmation of Apps, Packages, Projects v2, and
-Wiki state; inaccessible remains unresolved and no hosted mutation is allowed.
+Wiki state. That confirmation found two write-capable all-repository Apps, zero
+packages, zero projects, and a zero-page Wiki. The evidence commit's one new
+successful workflow run was acquired and rescanned with zero findings or
+errors, producing a final exact 401-run cleanup set. T-072 passes; the App
+finding remains a T-079/T-080 launch no-go and no hosted mutation was allowed.
+
+## Next Walking Skeleton — T-073
+
+Create T-073 through `ticket_create`, then complete the owner attestation,
+predecessor and AI-assisted contribution mapping, media/model/llama.cpp and Go
+dependency provenance, current name searches, deterministic dependency
+notices, local-first/cloud/host-execution claims, and final
+`preserve_audited_history` disposition with no deferred rights finding.
 
 ## Completion Gates By Ticket
 
-- **T-072:** Every retained GitHub-hosted surface is collected, confirmed empty, or not applicable; scanners have zero errors, skips, and unresolved findings; exact cleanup IDs are frozen.
+- **T-072 — passed 2026-08-08:** Every retained GitHub-hosted surface is collected, confirmed empty, or not applicable; scanners have zero errors, skips, and unresolved secret candidates; exact cleanup IDs are frozen. Two installed-App access findings remain explicit T-079/T-080 launch no-go items.
 - **T-073:** Authority, predecessor/AI/media/model/llama.cpp/dependency provenance, name searches, notices, product claims, and `preserve_audited_history` disposition are complete with no deferred finding.
 - **T-074:** GitHub App callback and telemetry collection are literal-loopback, bounded, replay-safe, and fail closed.
 - **T-075:** All model/agent-controlled repository paths use one descriptor-relative no-follow interface; index-only and force-added secrets are scanned without reproducing values.
