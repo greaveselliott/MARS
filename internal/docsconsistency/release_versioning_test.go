@@ -38,7 +38,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 			rel: "CONTRIBUTING.md",
 			needles: []string{
 				"active execution plan",
-				"T-065 through T-067",
+				"T-071 through T-079",
 				"publication-disabled snapshot",
 				"Do not create or move a tag",
 			},

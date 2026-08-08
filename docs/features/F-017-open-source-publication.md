@@ -9,7 +9,7 @@
 
 MARS remains private until publication authority and every technical cutover gate are durable. The operator states ownership of the first-party project and name and has authorized the private rewrite and GoReleaser transition; that authorization does not itself complete privacy, IP, runtime, release, contribution, or cutover validation.
 
-The selected history strategy is a clean private reconstruction from `v0.68.49`. The private v0.93 exact-nine experiment was retired through T-064 and replaced with a source-only GoReleaser archive/checksum/SBOM/signature pipeline through T-068. T-070 resumes F-017-S001 by scanning only the exact advertised Git publication surface with pinned standard tools; later bounded tickets own GitHub-hosted content and manual owner disposition. Private audit-era refs and releases are retired before publication, without claiming that hosting-provider storage, external clones, or caches are physically recalled.
+The selected history strategy is a clean private reconstruction from `v0.68.49`. The private v0.93 experiment was retired through T-064 and replaced with a source-only GoReleaser archive/checksum/SBOM/signature pipeline through T-068. T-070 passed only the advertised-Git slice of F-017-S001. T-071 through T-081 now own the remaining vulnerability, GitHub-hosted, rights/provenance, runtime, anonymous distribution, contribution, private-release, cutover, and canary gates. Private audit-era refs and releases are retired before publication, without claiming that hosting-provider storage, external clones, or caches are physically recalled.
 
 Supporting private evidence cannot authorize visibility conversion. Visibility is a separately approved owner action only after F-017-S001 through F-017-S005 pass.
 
@@ -19,12 +19,14 @@ Supporting private evidence cannot authorize visibility conversion. Visibility i
 2. Reconstruct and validate the approved source tree in isolation through T-063.
 3. Use exact leases and an atomic remote ref transaction; unexpected remote drift is a no-go.
 4. Preserve unrelated owner work and retain no rollback ref, tag, branch, or bundle after successful verification.
-5. Run conventional history, secret, privacy, IP, provenance, and name checks against the replacement publication surface; inaccessible evidence remains unresolved rather than clean.
-6. Close reachable runtime and local-state P0 findings without reintroducing an embedded publication-audit runtime.
-7. Make official source and supported release access anonymous, signed, immutable, and attributable.
-8. Require fork-safe contribution controls and private vulnerability reporting.
-9. Rehearse the cutover privately and change visibility only through a separate approved owner action.
-10. Run logged-out smoke immediately after cutover and wait for a clean 48-hour canary before announcement.
+5. Restore a green called-vulnerability baseline through T-071, then freeze and audit every retained GitHub-hosted publication surface through T-072.
+6. Complete authority, rights, privacy, IP, model/media/dependency provenance, name review, final notices, and owner disposition through T-073.
+7. Close network, filesystem, execution, credential, state, log, and trace P0/P1 findings through T-074 through T-076; `isolated` remains unavailable and cannot claim containment without an enforceable adapter.
+8. Resume T-058 only against the installed current candidate and close its real-browser/offline-network lane.
+9. Make official source, setup, and release access anonymous; complete exact-tag bootstrap and signed immutable distribution through T-077 and T-078.
+10. Configure fork-safe contribution, governance, Pages, Issues, Discussions, private reporting, rulesets, and GitHub security controls through T-079.
+11. Privately publish and prove signed `v0.69.0` as a rollback bridge and signed `v0.69.1` as latest through T-080.
+12. Change visibility only through a separate approved owner action, run immediate logged-out/fork smoke, and wait for a clean 48-hour canary before the T-081 announcement.
 
 ## Scenario Schedule
 
@@ -57,13 +59,14 @@ And child environments, state permissions, logs, traces, and vulnerability gates
 
 ### F-017-S003: Anonymous, Immutable, Verifiable Release Lifecycle
 
-Given a supported release is built from an immutable release-note commit
-When pinned GoReleaser builds Darwin/Linux AMD64/ARM64 archives into a fresh output directory
+Given supported rollback-bridge and latest releases are built from their immutable release-note commits
+When pinned GoReleaser builds Darwin/Linux AMD64/ARM64 archives into fresh output directories
 Then each archive contains the binary, license, notices, third-party notices, and deterministic source metadata
 And SPDX SBOMs, SHA-256 checksums, and a keyless signature bind the published artifacts to the exact tag and commit
 And an unpublished draft is fresh-downloaded and compared before publication
 And missing, extra, duplicate, pending, mismatched, unsigned, unverifiable, canceled, or non-converging state never becomes a supported release
-And anonymous install, update, rollback, immutable-release verification, and provenance verification pass independently.
+And signed `v0.69.0` is retained only as the rollback bridge while signed `v0.69.1` is latest
+And anonymous install, update, rollback, immutable-release verification, and provenance verification pass independently across both releases.
 
 ### F-017-S004: Fork-Safe Contribution And Governance
 
@@ -82,13 +85,25 @@ And logged-out clone, build, install, update, vulnerability reporting, and fork-
 And integrations are re-enabled least-to-most privileged
 And announcement waits until the 48-hour canary remains clean.
 
+## Launch Public Interfaces
+
+- `setup` and official release access are anonymous-first; authentication is optional for rate limits, private forks, and custom repositories.
+- `auth github check` reports anonymous, authenticated, or unavailable without exposing credentials; `auth github clear-local` removes only MARS's legacy stored fallback.
+- `run`, `start`, and `serve` default to observer execution. Host execution requires explicit acknowledgement; `isolated` fails closed as unavailable until an enforceable adapter exists.
+- `shell_exec` is host-only, receives a sanitized environment, and reports the operating-system authority accurately.
+- Repository filesystem tools are descriptor-relative and no-follow; trace export is owner-only and redacted, while purge is dry-run-first.
+- Telemetry collection and GitHub App setup bind only to literal loopback with the documented authentication, state, request, and timeout boundaries.
+- The installer uses exact-tag Go/SumDB bootstrap into the signed updater; packaged operation remains Go-free.
+- Each supported release has exactly four archives, four SPDX SBOMs, `checksums.txt`, and `checksums.txt.sigstore.json`.
+- Contributions use fork PRs with DCO, CODEOWNERS, required fork-safe CI, and maintainer-only release authority.
+
 ## Evidence
 
 - **F-017-S001:** The proposed private publication surface is reconstructed. On 2026-08-08, T-070 froze 302 canonical publication refs at `d04f642` and scanned all 12,002 reachable objects with both exact pinned tools in Git-history and raw-object lanes without accepted-scan errors or skips. Gitleaks group `a2a292e31d652f22` and URI group `e32927624f4a2cac` are resolved as synthetic test stubs. Direct Git-plumbing reconciliation proved all 36 occurrences in `f3dc0e336620abc6` are SHA-1 child blob IDs emitted by materialized Git tree objects, not credentials; every record matched its source tree, reachable child blob, and raw scanner field with zero mismatches. T-070 passes with zero unresolved findings. GitHub-hosted content review, manual privacy/IP/provenance/name review, and committed owner disposition remain blocked subsequent slices. Local stashes, administrative refs, unreachable objects, and the unrelated Codex worktree are preserved non-publication exceptions rather than inputs to T-070.
-- **F-017-S002:** The retained baseline includes existing vulnerability, loopback, webhook, and dashboard hardening, but the complete runtime/filesystem/execution gate has not passed.
-- **F-017-S003:** T-064 through T-068 completed the private v0.93 retirement, GoReleaser producer/consumer contract, source compatibility, and unsigned rehearsal. Fresh packaged bootstrap, complete notices, acceptable producer-vulnerability disposition, signed public archives, anonymous install/update, publication, and rollback remain pending.
-- **F-017-S004:** Pending fork-safe CI, governance, reporting, and disposable hostile-fork rehearsal.
-- **F-017-S005:** Pending private rehearsal, separate visibility approval, logged-out smoke, recovery proof, and 48-hour canary.
+- **F-017-S002:** The retained baseline includes existing loopback, webhook, and dashboard hardening, but exact source-compatibility run `31267671856` is red on called GO-2026-6061. T-071 owns the immediate dependency correction; T-074 through T-076 and resumed T-058 own the remaining network/filesystem/execution/browser gate.
+- **F-017-S003:** T-064 through T-068 completed the private v0.93 retirement, GoReleaser producer/consumer contract, source compatibility, and unsigned rehearsal. T-077, T-078, and T-080 must complete anonymous bootstrap, final notices and producer disposition, exact-ten signed `v0.69.0`/`v0.69.1` assets, publication, update, and rollback.
+- **F-017-S004:** T-079 is pending fork-safe CI, DCO/CODEOWNERS, governance/support/reporting, GitHub security/settings, Pages/community surfaces, and disposable hostile-fork rehearsal.
+- **F-017-S005:** T-080 and T-081 are pending final private two-release rehearsal, role sign-offs, separate visibility approval, logged-out lifecycle/fork smoke, recovery proof, 48-hour canary, and announcement.
 
 No scenario is complete. Primary Status remains `primary_blocked`, repository visibility remains private, and no publication or announcement is authorized.
 
@@ -97,7 +112,8 @@ No scenario is complete. Primary Status remains `primary_blocked`, repository vi
 - Reintroducing a repository-embedded publication audit laboratory.
 - Treating the private rewrite as secret, privacy, IP, runtime, or cutover clearance.
 - Claiming physical deletion from hosting-provider storage or third-party caches.
-- Changing visibility, announcing the project, or publishing `v0.69.0` during T-064 through T-068.
+- Changing visibility or announcing the project before T-081's separately approved cutover and clean canary.
+- Publishing the launch releases before T-080 or treating `v0.69.0` as latest after `v0.69.1` exists.
 
 ## Descoped Scenarios
 

@@ -11,10 +11,10 @@ evidence_links:
 verified_by: "QA and Security source review PASS; Dogfood installed HTTP/SQLite lane PASS; real-browser DOM/network lane BLOCKED"
 owner: "engineer"
 last_attempt: "2026-07-12"
-blocker: "Installed v0.68.48 passes the clean-target HTTP/SQLite security matrix, but the mandatory in-app browser inventory is empty, so hostile-string DOM rendering and offline browser-network evidence remain unconfirmed."
-blocked_by: []
+blocker: "Source implementation and review pass, but the mandatory real-browser hostile-DOM and offline-network lane remains unconfirmed against an installed current candidate."
+blocked_by: [T-076]
 trace_id: "docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md"
-next_action: "Open an in-app browser surface and run the linked report's exact hostile-DOM and no-external-request replay against installed private v0.68.48; keep T-058 and F-010-S024 incomplete until it passes."
+next_action: "After T-076 closes, resume T-058 from backlog and run the linked report's hostile-DOM and no-external-request replay against the then-current installed candidate; keep F-010-S024 and F-017-S002 incomplete until it passes."
 dedupe_key: "open-source:dashboard-browser-control-security"
 metadata:
   classification: "foundation-owned,mirrored-doctrine"
@@ -210,10 +210,12 @@ Stop if any HTTP mutation is anonymous, any hostile Host/cross-origin request or
 
 ## Orchestrator Disposition — 2026-07-12
 
-T-058 remains in progress. The source implementation and reviewer gates pass,
-and the installed static-browser HTTP/SQLite security matrix now passes.
+T-058 remains in backlog with its source implementation and reviewer gates
+complete; the installed static-browser HTTP/SQLite security matrix also passes
+as historical supporting evidence.
 F-010-S024 cannot pass until an available in-app browser confirms hostile
 strings remain inert in the real DOM and the vendored dashboard renders with
 outbound networking disabled and zero external request attempts.
-`primary_blocked` remains unchanged, and no next implementation ticket may
-start while T-058 is current.
+Resume only after T-076 against the then-current installed candidate.
+`primary_blocked`, F-010-S024, and F-017-S002 remain unchanged until that replay
+passes.

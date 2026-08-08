@@ -99,12 +99,17 @@ runtime language.
   [foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
   and AD-284, or record the exact replay blocker. Stop wedged runs once
   diagnosed.
-- Follow the active F-018 plan before changing source release state. During
-  T-065 through T-068, validate and push bounded semantic checkpoints while
-  retaining the 0.68.49 version floor, run only the exact pinned
+- Follow the active launch plan and F-017/F-018 contracts before changing
+  source release state. During
+  T-071 through T-079, including resumed T-058 corrections, validate and push
+  bounded semantic checkpoints while retaining the 0.68.49 version floor, run
+  only the exact pinned
   publication-disabled snapshot, and do not tag, upload, sign, announce, or
-  publish. Record unresolved producer, consumer, signing, rehearsal, or
-  cutover gates as blockers.
+  publish. T-080 alone ends the freeze by publishing signed `v0.69.0` as the
+  rollback bridge and signed `v0.69.1` as latest; evidence-only T-081 closeout
+  retains `v0.69.1`, while a canary correction requires `v0.69.2`. Record
+  unresolved producer, consumer, signing, rehearsal, or cutover gates as
+  blockers.
 
 ## Stop Conditions
 

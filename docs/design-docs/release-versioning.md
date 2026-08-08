@@ -154,6 +154,16 @@ Generated target repositories do not inherit this Go-specific producer or
 source floor; each target chooses and documents its own release workflow and
 artifact contract.
 
+> **Launch-transition addendum — 2026-08-08.** T-071 through T-079,
+> including resumed T-058 corrections, retain `VERSION=0.68.49` and source
+> fallback `0.69.0-dev`; their validated checkpoints are pushed without
+> release notes, tags, signatures, upload, publication, or announcement.
+> T-080 alone ends the freeze by publishing signed `v0.69.0` as the rollback
+> bridge and signed `v0.69.1` as latest. Evidence-only T-081 settings/canary
+> closeout retains `v0.69.1`; a product, runtime, security, or public-contract
+> correction found during canary requires immutable `v0.69.2` and repetition
+> of the anonymous lifecycle and 48-hour canary.
+
 T-066 supplies the matching signed archive consumer: release-mode update
 authenticates the exact checksum bytes, release workflow identity, tag and full
 commit, platform/build metadata, archive digest and bounded structure before a
