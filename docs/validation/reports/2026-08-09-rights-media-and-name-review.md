@@ -20,9 +20,9 @@ community surfaces, and the 48-hour canary pass.
 **Current Primary Blocker:** T-073 checkpoint A found a live exact-word `MARS`
 registration in directly overlapping AI-agent/process-automation services;
 prompt/AI authority and sole-media provenance also require owner disposition.
-**Next Primary Action:** select a distinctive replacement name, complete a
-fresh official-register screen, then close the bounded prompt/AI/automation/media owner
-decisions without changing visibility.
+**Next Primary Action:** obtain a qualified trademark counsel's written
+disposition for retaining `MARS`, while completing the bounded
+prompt/AI/automation/media owner decisions without changing visibility.
 **Supporting Evidence:** the immutable publication-root, prompt, predecessor,
 AI-attribution, media, and official-register evidence recorded below.
 
@@ -35,8 +35,13 @@ States `MARS` registration covers AI agent-based analysis and process
 automation in Class 42, which materially overlaps this project's field.
 
 T-073 checkpoint A therefore does not pass. The repository remains private.
-The project name must be replaced and re-screened. No tag, Release, GitHub
-setting, visibility, or announcement mutation is authorized by this report.
+On 2026-08-09, the repository owner explicitly directed that the project retain
+the `MARS` name. That decision does not constitute clearance. A qualified
+trademark counsel's written disposition addressing the overlapping record,
+the intended software/services, and launch territories is now required before
+checkpoint A can pass. An adverse, inconclusive, or absent disposition remains
+a launch no-go. No tag, Release, GitHub setting, visibility, or announcement
+mutation is authorized by this report.
 Only owner-disposition-approved T-073 repository remediation may follow; tag,
 Release, GitHub-setting, visibility, and announcement mutation remain denied.
 
@@ -139,8 +144,10 @@ common-law, company-name, domain-name, or passing-off search.
 Finding `774b041b-e19b-42e1-85b9-41c233f82b70` is material and unresolved.
 Because the live U.S. registration directly overlaps the project's AI-agent
 and automation field, an owner-only assertion is not sufficient to record name
-clearance. The current launch contract requires a distinctive replacement name
-that passes the required searches before checkpoint A can complete.
+clearance. The owner has directed that the project retain `MARS`; checkpoint A
+therefore requires a qualified trademark counsel's written disposition for
+the intended use and launch territories. This is a rights gate, not a waiver:
+without an affirmative disposition the public launch remains prohibited.
 
 ## Required Owner Disposition
 
@@ -158,7 +165,8 @@ Checkpoint A can continue only after the repository owner records:
    outputs;
 4. the origin and rights basis for the exact PNG, or authorization to remove or
    replace it; and
-5. a distinctive replacement product and repository name for fresh screening.
+5. the qualified trademark counsel disposition required to retain `MARS`, or
+   an explicit `no_go` if that disposition cannot be obtained.
 
 The final `preserve_audited_history` decision remains unavailable until these
 findings and checkpoints B through D are complete.

@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/validation/reports/2026-08-08-github-hosted-publication-surface-audit.md", "docs/validation/reports/2026-08-09-rights-media-and-name-review.md", "docs/tickets/done/T-072-audit-every-github-hosted-publication-surface.md"]
 verified_by: "pending repository owner, QA, Security, Release Manager, and Orchestrator"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: checkpoint-A history, prompt, tool/automation, media, and official-register inventories completed; a directly overlapping live MARS Class 42 registration requires rename"
-blocker: "Owner must select a distinctive replacement name; prompt/AI/automation authority and the PNG also require explicit owner disposition."
+last_attempt: "2026-08-09: owner directed that MARS be retained; checkpoint A now requires qualified trademark counsel's written disposition for the directly overlapping Class 42 registration"
+blocker: "Qualified trademark disposition, prompt/AI/automation authority, and the PNG require explicit disposition before checkpoint A can pass."
 blocked_by: []
 trace_id: "launch-rights-provenance:2026-08-08"
-next_action: "Obtain the bounded owner disposition in the checkpoint-A report; select, screen, and apply one distinctive replacement name before resuming checkpoints B through D."
+next_action: "Proceed with checkpoint B machine provenance while the owner obtains the qualified trademark disposition and completes the bounded checkpoint-A attestation; do not close checkpoint A or publish."
 dedupe_key: "open-source:rights-provenance-owner-disposition"
 metadata:
   classification: "mixed-unclear-until-disposition"
@@ -38,7 +38,7 @@ Keep the repository private and retain VERSION 0.68.49 with source fallback 0.69
 
 ## Checkpoints
 
-1. Authority, name, predecessor, AI, and media: map first-party source/docs/prompts/assets, employment or client conflicts, the 11 predecessor Mars prompt ports, AI-assisted commits and applicable terms, and every media/branding file. Each port maps its predecessor full commit, source path/blob, retained path/blob, and normalized similarity evidence. Perform current UKIPO, USPTO, EUIPO/TMview, and WIPO searches. A material name conflict stops for rename; unverifiable media is replaced or removed. Commit and push this independently reviewed checkpoint.
+1. Authority, name, predecessor, AI, and media: map first-party source/docs/prompts/assets, employment or client conflicts, the 11 predecessor Mars prompt ports, AI-assisted commits and applicable terms, and every media/branding file. Each port maps its predecessor full commit, source path/blob, retained path/blob, and normalized similarity evidence. Perform current UKIPO, USPTO, EUIPO/TMview, and WIPO searches. A material name conflict is a launch no-go. The owner's 2026-08-09 decision to retain `MARS` requires qualified trademark counsel's written disposition; it does not waive the conflict. Unverifiable media is replaced or removed. Commit and push this independently reviewed checkpoint.
 2. Model, quantizer, llama.cpp, and vendored provenance: record full immutable model and quantizer revisions, artifact SHA-256, original-model license and terms, quantizer source/license, llama.cpp tag resolved to its full source commit plus checksums/license/notices/platform mapping, and htmx/Chart.js provenance for every retained or downloaded artifact. Abbreviated revisions and family-level citations do not pass. Replace, remove, or fail closed on any incomplete chain. Commit and push this independently reviewed checkpoint.
 3. Dependency notices and product claims: pin go-licenses v2.0.1, generate deterministic Go dependency notices, and add CI that rejects unknown, stale, GPL, AGPL, or SSPL classifications. Complete THIRD_PARTY_NOTICES and remove provisional wording. Correct every claim to local-first and explicitly document configured cloud/integration transmission, opt-in telemetry, and host execution with the current OS user's authority. Commit and push this independently reviewed checkpoint.
 4. Owner disposition: create one repository-safe rights/provenance report and owner attestation covering first-party authority, employment/client conflicts, predecessor ports, AI terms, third-party obligations, models, llama.cpp, media, name-search disposition, accepted evidence gaps, and history strategy. Accepted gaps are limited to already recorded non-content/provider limitations and can never substitute for ownership, license, provenance, model terms, predecessor, media, or trademark evidence. Every finding must be resolved by retain_authorized, retain_with_notice, replace, exclude_from_release, or remove_current_and_history; permission_required, clean_snapshot_required, or no_go cannot remain at completion. exclude_from_release is terminal only for an external artifact proven absent from public source, retained history, and Release assets whose exact terms still permit linking or downloading. replace and remove_current_and_history close only after executed, mechanically verified remediation; required history removal stops T-073 for separately authorized destructive rewrite. Commit preserve_audited_history only if every retained publishable surface is complete. Obtain repository-owner, QA, Security, Release Manager, and Orchestrator sign-offs and close F-017-S001.
@@ -76,7 +76,11 @@ a textual-port claim. The sole PNG has no embedded or commit-level provenance.
 
 The official-register knockout search is materially adverse: live U.S.
 registration 8092258 covers AI agent-based analysis and process automation in
-Class 42. Checkpoint A remains open pending a distinctive replacement name and
-fresh screen plus the bounded owner authority, prompt/AI/automation, and media decisions.
-The repository remains private and no later checkpoint or publication action
-is authorized.
+Class 42. On 2026-08-09, the repository owner directed that `MARS` be retained.
+Checkpoint A remains open pending qualified trademark counsel's written
+disposition plus the bounded owner authority, prompt/AI/automation, and media
+decisions. Checkpoints B and C may gather and remediate machine-verifiable
+provenance and notice evidence while those owner-only inputs are pending, but
+checkpoint D, publication, and visibility remain prohibited.
+The repository remains private; checkpoints B and C do not authorize
+checkpoint D, any later ticket, or any remote/publication action.
