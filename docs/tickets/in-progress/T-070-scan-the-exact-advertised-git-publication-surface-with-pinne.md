@@ -7,13 +7,13 @@ work_type: research
 bdd_scenarios: ["F-017-S001"]
 end_to_end_evidence: not_applicable
 evidence_links: ["docs/validation/reports/2026-07-22-advertised-git-publication-scan.md"]
-verified_by: "TBD"
+verified_by: "Security and QA GO on 2026-08-08 blocker checkpoint; completion pending owner rotation and final sign-offs"
 owner: "security"
-last_attempt: "2026-08-08: after reviewing the owner-only Gitleaks context, Elliott classified opaque group a2a292e31d652f22 as synthetic test stubs; the separate URI group remains unclassified."
-blocker: "owner_classification_required: opaque group e32927624f4a2cac must be classified through the owner-only review boundary before T-070 or later audit slices resume."
+last_attempt: "2026-08-08: a newly frozen four-lane rescan completed without scanner errors or skips; two prior groups resolved as synthetic, while opaque group f3dc0e336620abc6 reduced to four values that local MARS could not classify as synthetic."
+blocker: "plausible_secret_rotation_required: all four potentially real values in opaque group f3dc0e336620abc6 require owner rotation or revocation before T-070 or later audit slices resume."
 blocked_by: []
 trace_id: "not_applicable"
-next_action: "Owner reviews the URI-detector group locally and records only e32927624f4a2cac plus synthetic test stubs or real/unknown; rotate/revoke first if real/unknown, then rerun both pinned tools' Git-history and raw-object lanes."
+next_action: "Owner rotates or revokes all four potentially real values outside the agent boundary, then reports only: rotation complete: f3dc0e336620abc6. Candidate values and locations must not enter chat, traces, or repository evidence."
 dedupe_key: "open-source:advertised-git-standard-scan"
 metadata:
   audit_mode: "owner-standard-tools"
@@ -68,4 +68,12 @@ No product code, generated target content, refs, Releases, settings, visibility,
 - Exact Gitleaks v8.30.1 and TruffleHog v3.95.9 completed Git-history and raw-object lanes with zero accepted-scan errors or skip events. The raw-object corpus reconciles every blob, tree, commit, and annotated-tag object.
 - Gitleaks reported seven Git-history and 19 blob occurrences in one broad detector class. TruffleHog reported five Git-history and seven blob occurrences in one broad detector class, representing the same three distinct values across its two lanes. All Git-mode locations were mechanically test-like and no TruffleHog result was verified online.
 - On 2026-08-08, after reviewing the owner-only Gitleaks context, Elliott classified `a2a292e31d652f22` as synthetic test stubs. No rotation is required for that group.
-- `e32927624f4a2cac` remains unclassified because it belongs to the separate URI-detector context. T-070 remains blocked on that owner-only classification and, if real or uncertain, separately approved rotation/revocation before a complete four-lane rescan. No GitHub or publication mutation occurred.
+- `e32927624f4a2cac` was unresolved at this checkpoint. The 2026-08-08 checkpoint below supersedes that classification state; no GitHub or publication mutation occurred.
+
+## Advertised Git Rescan Checkpoint — 2026-08-08
+
+- Frozen source `d04f642e7b07e14e211c99f40e14bdd4bccef60e` contains 302 canonical publication refs, 847 reachable commits, and 12,002 reachable objects. Pre/post ref manifests match, visibility remains private, Actions remains quiescent, and no unexpected namespace appeared.
+- Exact Gitleaks v8.30.1 and TruffleHog v3.95.9 completed all four Git-history/raw-object lanes with zero accepted-scan errors or skips. Gitleaks' seven Git-history and 19 raw-object locations reconcile to owner-confirmed synthetic group `a2a292e31d652f22`.
+- TruffleHog's five Git-history URI occurrences and seven raw-object URI occurrences represent one distinct value and reconcile to local-MARS-confirmed synthetic group `e32927624f4a2cac`.
+- The remaining 36 raw-object occurrences reduce mechanically to exactly four distinct values under opaque group `f3dc0e336620abc6`. Bounded isolated local-MARS review returned unknown for all four; no value is accepted as synthetic.
+- The plausible-secret stop rule is active. T-070 remains in progress, no later audit slice may start, and no GitHub or publication mutation occurred. The owner must rotate or revoke all four values outside the agent boundary and report only `rotation complete: f3dc0e336620abc6` before a newly frozen four-lane rescan.

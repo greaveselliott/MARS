@@ -13,7 +13,7 @@
 **Success Evidence:** Both pinned scanners cover every object reachable from the frozen publication-ref manifest with zero errors, skips, unresolved findings, or raw-evidence leakage, while GitHub remains private and unchanged.
 **Falsification Evidence:** A ref drifts, a scanner or object is skipped, a plausible credential appears, raw evidence escapes the owner-only boundary, or the ticket mutates GitHub state.
 **Scenario Schedule:** T-070 advertised Git scan; then separately ticketed GitHub-hosted surface review; then manual privacy/IP/provenance/name review and owner disposition for F-017-S001.
-**Current Failing Scenario:** F-017-S001 — the URI-detector group remains unclassified and the current advertised Git publication candidate has not passed the required newly frozen four-lane rescan.
+**Current Failing Scenario:** F-017-S001 — the newly frozen four-lane rescan completed without coverage errors, but opaque group `f3dc0e336620abc6` contains four distinct potentially real values that require owner rotation or revocation.
 **Walking Skeleton Slice:** Freeze the canonical publication refs, scan their reachable objects offline, and commit only redacted coverage and disposition status.
 **Learning Or MVP Outcome:** Establish whether the retained Git history is technically eligible for later owner disposition before spending authority on broader hosted-surface acquisition.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Security, QA, Release Manager, and repository-owner disposition
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** Elliott classified the Gitleaks group `a2a292e31d652f22` as synthetic test stubs after owner-only review. The separate URI group `e32927624f4a2cac` remains unclassified; if it is real or uncertain, rotation or revocation is required before both pinned tools' Git-history and raw-object lanes rerun. GitHub-surface, manual disposition, runtime, contribution, cutover, and canary gates are also incomplete.
-- **Next Primary Action:** Elliott reviews `e32927624f4a2cac` inside the owner-only boundary and reports only whether it is synthetic test stubs or real/unknown. If real/unknown, rotate or revoke it before the four-lane rescan. Do not publish, continue acquisition, or mutate GitHub state.
+- **Current Primary Blocker:** The Gitleaks group `a2a292e31d652f22` and URI group `e32927624f4a2cac` are resolved as synthetic test stubs. The 2026-08-08 rescan found opaque group `f3dc0e336620abc6`: 36 occurrences mechanically reduce to four distinct values, and bounded local-MARS review returned unknown for all four. All four require owner rotation or revocation before rescan. GitHub-surface, manual disposition, runtime, contribution, cutover, and canary gates are also incomplete.
+- **Next Primary Action:** Elliott rotates or revokes all four potentially real values in `f3dc0e336620abc6` outside the agent boundary, then reports only `rotation complete: f3dc0e336620abc6`. Candidate values and locations remain outside chat, traces, and repository evidence. Do not publish, continue acquisition, or mutate GitHub state.
 
 ## Scope Decision
 
@@ -79,4 +79,11 @@ T-070 changes only planning and redacted audit evidence while public release sta
 - Source `375a3a30140c9248f10c19eb4ff8a66ba83b7522` froze 302 canonical publication refs, 844 commits, and 11,954 objects. The post-scan manifest matched, visibility stayed private, Actions was quiescent, and no unexpected namespace appeared.
 - Exact Gitleaks v8.30.1 and signed TruffleHog v3.95.9 completed Git-history plus raw-object lanes with zero accepted-scan errors or skip events.
 - After owner-only review, Elliott classified Gitleaks group `a2a292e31d652f22` as synthetic test stubs. No agent inspected or reproduced raw evidence.
-- URI group `e32927624f4a2cac` remains unclassified. T-070 and F-017-S001 are stopped on that classification, any required owner rotation/revocation, and a complete four-lane rescan; the next GitHub-hosted slice cannot start.
+- URI group `e32927624f4a2cac` was unresolved at this checkpoint. The later 2026-08-08 checkpoint below supersedes that classification state.
+
+## T-070 Rescan And Classification Checkpoint — 2026-08-08
+
+- Source `d04f642e7b07e14e211c99f40e14bdd4bccef60e` froze 302 canonical publication refs, 847 commits, and 12,002 reachable objects. The ref-manifest digest is `75a56fc716912416f189ba5aef07c49baada2976d2493df22fe14abc50be3720`; the reachable-object-manifest digest is `c2e081aacf509362d18e2598b70e2b812dd126bb47c8f3bfa78f8ce5915e6059`. Pre/post refs matched, visibility stayed private, Actions was quiescent, and no unexpected namespace appeared.
+- Exact Gitleaks v8.30.1 and TruffleHog v3.95.9 completed all four Git-history/raw-object lanes with zero accepted-scan errors or skips. Gitleaks reported seven Git-history and 19 raw-object occurrences whose locators reconcile exactly to resolved synthetic group `a2a292e31d652f22`.
+- TruffleHog reported five Git-history URI occurrences and 43 raw-object occurrences. Its URI results represent one distinct value and reconcile to local-MARS-confirmed synthetic group `e32927624f4a2cac`. The remaining 36 raw-object occurrences reduce mechanically to exactly four distinct values in opaque group `f3dc0e336620abc6`.
+- Bounded isolated local-MARS reviews could not establish that any of the four values in `f3dc0e336620abc6` is synthetic; all four remain real or unknown. Under the plausible-secret stop rule, T-070 remains in progress and no later audit slice may begin until the owner rotates or revokes all four and reports only `rotation complete: f3dc0e336620abc6`.
