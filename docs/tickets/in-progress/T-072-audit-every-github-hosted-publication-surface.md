@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S001"]
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/tickets/done/T-071-restore-the-green-vulnerability-baseline-with-grpc-1-82-1.md"]
+evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/validation/reports/2026-08-08-github-hosted-publication-surface-audit.md", "docs/tickets/done/T-071-restore-the-green-vulnerability-baseline-with-grpc-1-82-1.md"]
 verified_by: "TBD"
 owner: "security"
-last_attempt: "2026-08-08: preflight confirmed private visibility and FileVault; hosted counts remain hypotheses and the 56-Release pagination result conflicts with an addressable zero-asset v0.65.7 Release"
-blocker: "none"
+last_attempt: "2026-08-08: immutable hosted snapshot acquired and scanned with zero scan errors or unresolved candidates; four owner-authenticated UI/scope confirmations remain"
+blocker: "Owner-authenticated read-only confirmation is still required for GitHub Apps, Packages, Projects v2, and the enabled-but-uninitialized Wiki surface."
 blocked_by: []
 trace_id: "github-hosted-audit:2026-08-08-preflight"
-next_action: "Commit this ticket, wait for all Actions to become quiescent, freeze the exact hosted inventory, and acquire it read-only into the owner-only FileVault boundary."
+next_action: "Commit the redacted evidence checkpoint, then complete one consolidated owner-authenticated read-only review of GitHub Apps, Packages, Projects v2, and Wiki state; acquire and scan any discovered content before closure."
 dedupe_key: "open-source:github-hosted-publication-surface"
 metadata:
   classification: "evidence-only"
@@ -78,6 +78,28 @@ A plausible credential stops acquisition and scanning immediately without reprod
 - Exact owner-only legacy asset, workflow-run/artifact/cache, deployment, and Pages cleanup manifests are sealed and digest-bound for T-078.
 - Repository-safe evidence passes redaction, DocSync, QA, Security, Release Manager, and Orchestrator review.
 - F-017-S001 and Primary Status remain blocked on T-073 rights, provenance, notices, name review, and owner disposition.
+
+## Checkpoint Evidence — 2026-08-08
+
+Snapshot `T072-723d689d-3194-40c8-9d92-322b921149a3` froze and reconciled
+305 advertised refs, 57 Release objects, 500 exact asset payloads, five
+addressable workflows, 400 completed runs, 400 attempts, 1,728 jobs, zero
+artifacts/caches, 77 deployments, one environment, zero issues, and one pull
+request. Every Release asset matched its exact size and provider digest; all
+Actions log responses were valid ZIPs. The 56-versus-57 Release discrepancy is
+resolved by the direct-only zero-asset record.
+
+Pinned offline Gitleaks and TruffleHog lanes completed with zero scan errors,
+skips, timeouts, rejected inputs, or unresolved candidates. Provider-response,
+commit-identifier, dependency-test-filename, and already approved synthetic Git
+fixture matches were resolved mechanically without placing candidate values in
+the repository. Exact owner-only cleanup identifier lists are sealed and bound
+by count and digest in the redacted report.
+
+Four surfaces remain unresolved rather than clean: GitHub Apps, Packages,
+Projects v2, and enabled-but-uninitialized Wiki state require one consolidated
+owner-authenticated read-only confirmation. T-072 remains in progress and
+authorizes no hosted mutation.
 
 ## Non-Goals
 

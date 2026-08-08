@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-071 restored the green vulnerability baseline at `59ab946` and run `31278506189`. T-072 must still collect and reconcile every retained GitHub-hosted publication surface with zero scanner error, skip, or unresolved finding.
-- **Next Primary Action:** Commit and push the T-072 planning handoff, wait for Actions quiescence, then freeze and acquire the hosted surface read-only; do not start T-073 or mutate legacy assets before T-072 passes.
+- **Current Primary Blocker:** T-072 froze, acquired, and scanned every API-accessible hosted surface with zero scan error, skip, or unresolved candidate. GitHub Apps, Packages, Projects v2, and enabled-but-uninitialized Wiki state still require one owner-authenticated read-only confirmation.
+- **Next Primary Action:** Commit and push the redacted T-072 evidence checkpoint, complete the consolidated owner-authenticated review, acquire and scan any discovered content, then close T-072; do not start T-073 or mutate hosted objects before T-072 passes.
 
 ## Starting Baseline
 
@@ -32,7 +32,7 @@
 - `VERSION=0.68.49`; source fallback is `0.69.0-dev`.
 - T-070 passed the advertised-Git audit with zero unresolved findings. That evidence does not cover retained GitHub-hosted content or complete F-017-S001.
 - F-018-S001 through F-018-S003 passed as private producer, consumer, and rehearsal evidence only.
-- Recorded GitHub baseline: 302 tags, 56 Releases, 500 legacy assets, 392 workflow runs, 77 deployments, zero packages, one collaborator, and no current Actions artifacts or caches. T-072 must freeze and independently reconcile these counts before relying on them.
+- Reconciled T-072 snapshot: 301 tags, 57 Release objects, 500 legacy assets, 400 completed workflow runs, 77 deployments, one collaborator, and no current Actions artifacts or caches. Package absence remains unaccepted pending owner-authenticated confirmation.
 - Rulesets, branch protection, CodeQL, Dependabot alerts, secret scanning, and push protection are not yet enabled.
 
 ## Assumption Confidence Matrix
@@ -42,7 +42,7 @@
 | The launch plan started from clean synchronized source at `d2db7c…` | Local HEAD and `origin/main` matched; worktree was clean | 1.0 | Complete — historical activation fact |
 | T-070 clears the advertised Git surface | 12,002 reachable objects, four scanner lanes, zero errors, skips, or unresolved findings | 1.0 | T-072 rechecks publication-ref drift |
 | gRPC v1.82.1 closes the called advisory | Source selects v1.82.1; local gates and exact run `31278506189` report zero called vulnerabilities | 1.0 | Complete — T-071 |
-| Current hosted-surface counts remain stable | Recorded private GitHub inventory | 0.90 | T-072 freeze and exact reconciliation |
+| Current hosted-surface counts remain stable | T-072 start/end freeze facts match across refs and API-accessible hosted sets | 0.98 | Owner-confirm Apps, Packages, Projects v2, and Wiki, then close T-072 |
 | Elliott's authority can be converted into a complete publication attestation | Owner stated authority; formal disposition is absent | 0.80 | T-073 committed owner attestation and provenance review |
 | No reachable runtime P0/P1 remains after scheduled hardening | Existing webhook/dashboard evidence is partial | 0.60 | T-074 through T-076 and resumed T-058 |
 | Exact-tag Go/SumDB bootstrap is non-circular on clean macOS/Linux | Design is selected; fresh packaged lifecycle proof is absent | 0.65 | T-077 clean-HOME macOS/Linux lifecycle |
@@ -113,6 +113,14 @@ deployment, Pages/Wiki, issue/discussion, attachment, access, integration,
 package, and security metadata surfaces with standard tools, scan content
 offline, and reduce only redacted coverage and exact immutable-ID cleanup
 manifests. Inaccessible is unresolved; a plausible credential stops the ticket.
+
+Snapshot `T072-723d689d-3194-40c8-9d92-322b921149a3` completed the immutable
+inventory, payload acquisition, offline scan, finding classification, and exact
+cleanup-ID digest checkpoints for every API-accessible surface. The Release
+discrepancy reconciles to 57 objects and 500 assets. Scanner errors, skips, and
+unresolved candidates are zero. On 2026-08-08, closure requires one consolidated
+owner-authenticated read-only confirmation of Apps, Packages, Projects v2, and
+Wiki state; inaccessible remains unresolved and no hosted mutation is allowed.
 
 ## Completion Gates By Ticket
 
