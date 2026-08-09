@@ -136,6 +136,7 @@ func TestRecordSessionToolOutcomeReviewerGoBuildProcedureFailureDoesNotPoisonRev
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "temperature-json-cli"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "temperature-json-cli", "main.go"), []byte("package main\nfunc main() {}\n"), 0o644))
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
@@ -161,6 +162,7 @@ func TestRecordSessionToolOutcomeEngineerGoBuildProcedureFailureDoesNotPoisonRep
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "temperature-json-cli"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "temperature-json-cli", "main.go"), []byte("package main\nfunc main() {}\n"), 0o644))
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
@@ -184,7 +186,7 @@ func TestRecordSessionToolOutcomeEngineerGoBuildProcedureFailureDoesNotPoisonRep
 
 func TestRecordSessionToolOutcomeEngineerPythonValidationHelperProcedureFailureDoesNotPoisonRepairLane(t *testing.T) {
 	t.Parallel()
-	_, root := setupPolicyTicketRepo(t)
+	_, root := setupPolicyTicketGitRepo(t)
 	session := &Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
 	raw := json.RawMessage(`{"argv":["python3","-c","import html5lib; parser = html5lib.HTMLParser(); parser.parse('index.html')"]}`)
 
@@ -226,6 +228,7 @@ func TestRecordSessionToolOutcomeReviewerRootBuildProcedureFailureDoesNotPoisonR
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "temperature-json-cli"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "temperature-json-cli", "main.go"), []byte("package main\nfunc main() {}\n"), 0o644))
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
@@ -283,6 +286,7 @@ func TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane(t *testing.T)
 func TestRecordSessionToolOutcomeDependencySyncCountsAsTestBuildRepair(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	session := &Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}

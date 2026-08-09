@@ -32,7 +32,7 @@ func TestShellExecPolicyBlocksTicketRootMarkdown(t *testing.T) {
 
 func TestShellExecPolicyAllowsTicketLifecycleMove(t *testing.T) {
 	t.Parallel()
-	_, root := setupPolicyTicketRepo(t)
+	_, root := setupPolicyTicketGitRepo(t)
 
 	err := preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"git mv docs/tickets/backlog/T-001-existing.md docs/tickets/in-progress/"}`))
 	if err != nil {

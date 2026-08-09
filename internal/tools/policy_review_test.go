@@ -117,7 +117,7 @@ func TestReviewValidationFailureBlocksFurtherShellBeforeDisposition(t *testing.T
 
 func TestReviewValidationFailureAllowsExactExpectedExitCorrection(t *testing.T) {
 	t.Parallel()
-	_, root := setupPolicyTicketRepo(t)
+	_, root := setupPolicyTicketGitRepo(t)
 	failedArgs := shellExecArgs{Argv: []string{"/tmp/note-stats-validation"}}
 	session := Session{Role: "qa", ToolCounts: map[string]int{
 		validationCommandFailureKey:                                1,
@@ -158,6 +158,7 @@ func TestReviewShellExecPolicyBlocksMutatingSetupCommands(t *testing.T) {
 
 func TestReviewShellExecPolicyAllowsTrackedBackgroundKill(t *testing.T) {
 	dir := t.TempDir()
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	t.Cleanup(KillBackgroundProcs)
@@ -175,7 +176,7 @@ func TestReviewShellExecPolicyAllowsTrackedBackgroundKill(t *testing.T) {
 
 func TestReviewShellExecPolicyAllowsValidationCommands(t *testing.T) {
 	t.Parallel()
-	_, root := setupPolicyTicketRepo(t)
+	_, root := setupPolicyTicketGitRepo(t)
 	session := Session{Role: "qa", ToolCounts: map[string]int{
 		validationArtifactSessionKey("/tmp/note-stats-validation"): 1,
 	}}

@@ -20,6 +20,7 @@ func TestIntegration_fileWriteReadGrep(t *testing.T) {
 	require.NoError(t, err)
 	ex := NewExecutor(reg)
 	dir := t.TempDir()
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	allow := []string{"file_write", "file_read", "grep"}

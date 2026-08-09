@@ -377,7 +377,7 @@ package main
 
 func TestReviewHTTPProbeBeforeServerStartIsProcedureFailure(t *testing.T) {
 	t.Parallel()
-	_, root := setupPolicyTicketRepo(t)
+	_, root := setupPolicyTicketGitRepo(t)
 	session := &Session{Role: "qa", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
 	raw := json.RawMessage(`{"argv":["curl","-f","http://localhost:5173/"]}`)
 	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{
@@ -422,7 +422,7 @@ func TestEngineerRuntimeFailureBlocksRepeatedRuntimeProbeUntilEdit(t *testing.T)
 
 func TestEngineerRuntimeFailureAllowsExactRerunAfterEdit(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	failedArgs := shellExecArgs{Argv: []string{"go", "run", "./cmd/note-stats", "--text", ""}}
@@ -466,7 +466,7 @@ func TestExternalValidationArtifactMustBeRebuiltAfterRuntimeFailureEdit(t *testi
 
 func TestExternalValidationArtifactAllowsRerunAfterRuntimeFailureEditAndRebuild(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	failedArgs := shellExecArgs{Argv: []string{"/tmp/note-stats-validation", "--text", ""}}
 	session := Session{Role: "engineer", ToolCounts: map[string]int{
@@ -604,7 +604,7 @@ func TestEngineerRuntimeFailureBlocksExpectedExitRerun(t *testing.T) {
 
 func TestEngineerRuntimeFailureAllowsMissingArgumentExpectedExitCorrection(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	failedArgs := shellExecArgs{Argv: []string{"/tmp/note-stats-validation"}}
@@ -711,7 +711,7 @@ func TestEngineerPositiveRuntimeFailureBlocksImplementationCommit(t *testing.T) 
 
 func TestEngineerRuntimeFailureAllowsStaleValidationArtifactRebuild(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	failedArgs := shellExecArgs{Argv: []string{"/tmp/note-stats-validation", "--text", ""}}
 	session := Session{Role: "engineer", ToolCounts: map[string]int{
@@ -731,7 +731,7 @@ func TestEngineerRuntimeFailureAllowsStaleValidationArtifactRebuild(t *testing.T
 
 func TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	failedArgs := shellExecArgs{Argv: []string{"go", "test", "./cmd/note-stats/..."}}
@@ -807,7 +807,7 @@ func TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidati
 
 func TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	if err := os.MkdirAll(filepath.Join(dir, "cmd", "note-stats"), 0o755); err != nil {
@@ -858,7 +858,7 @@ func TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval(t *testing.T) {
 
 func TestEngineerFailingTestAllowsMissingGoModuleBootstrap(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "in-progress", "T-001-notes-api.md", "# T-001\n")
 
@@ -907,7 +907,7 @@ func TestEngineerFailingTestAllowsMissingGoModuleBootstrap(t *testing.T) {
 
 func TestEngineerFailingTestAllowsRemovalOfTestFileWrittenBeforeFailure(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
 	if err := os.MkdirAll(filepath.Join(dir, "cmd", "note-stats"), 0o755); err != nil {

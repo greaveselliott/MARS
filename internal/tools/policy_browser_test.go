@@ -132,10 +132,16 @@ func TestCTOTicketCreateBlocksPackageManagerEvidenceWhenBriefForbidsIt(t *testin
 
 func TestEngineerPostValidationAllowsMissingStaticSmokeAfterCommit(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-001-static-web.md", "# T-001\n")
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<main>Focus Timer</main>\n"), 0o644); err != nil {
 		t.Fatalf("write index: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "."); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "feat: implement static smoke"); err != nil {
+		t.Fatalf("git commit: %v", err)
 	}
 	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{
 		validationCommandSuccessKey: 1,
@@ -180,6 +186,7 @@ func TestDogfoodPostBuildRequiresReactProductSmokeBeforeMoreShell(t *testing.T) 
 	if err := os.WriteFile(filepath.Join(dir, "src", "App.jsx"), []byte(`export default function App(){return <main id="game">Score</main>}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -1805,7 +1812,7 @@ func TestRecordSessionToolOutcomeTreatsNodeCheckHTMLAsProcedureFailure(t *testin
 
 func TestRecordSessionToolOutcomeTreatsNodeEvalBrowserFrameworkGlobalAsProcedureFailure(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePhaserPackage(t, dir, true)
 	session := &Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
 	raw := json.RawMessage(`{"argv":["node","-e","const { GameScene } = require('./src/scenes/GameScene.js'); console.log('browser smoke: Phaser canvas #game new Phaser.Game');"]}`)

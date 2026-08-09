@@ -196,7 +196,7 @@ func TestTicketDoneMoveSourcesPreserveShellCommandPathCase(t *testing.T) {
 
 func TestShellExecPolicyAllowsFeatureTicketDoneMoveWithEvidence(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-001-ship.md", `---
 id: T-001
 work_type: feature
@@ -273,7 +273,7 @@ verified_by: engineer
 
 func TestShellExecPolicyAllowsFeatureTicketDoneMoveWithMultilineEvidence(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-001-ship.md", `---
 id: T-001
 work_type: feature
@@ -393,7 +393,7 @@ blocked_by: []
 
 func TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "in-progress", "T-002-remediate.md", `---
 id: T-002
 work_type: enabler
@@ -879,7 +879,7 @@ docs:
 
 func TestEngineerReworkPinBeatsUnrelatedTicketAvailability(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyTicket(t, dir, "backlog", "T-001-new-work.md", `---
 id: T-001
 title: New work
@@ -1106,7 +1106,7 @@ blocked_by: []
 
 func TestEngineerMustReopenDoneTicketBeforeProductMutation(t *testing.T) {
 	t.Parallel()
-	dir, root := setupPolicyTicketRepo(t)
+	dir, root := setupPolicyTicketGitRepo(t)
 	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "done", "T-001-ship.md", `---
 id: T-001
@@ -2097,12 +2097,23 @@ func main() {}
 }
 
 func setupPolicyTicketRepo(t *testing.T) (string, Root) {
+	return setupPolicyTicketRepoWithGit(t, false)
+}
+
+func setupPolicyTicketGitRepo(t *testing.T) (string, Root) {
+	return setupPolicyTicketRepoWithGit(t, true)
+}
+
+func setupPolicyTicketRepoWithGit(t *testing.T, withGit bool) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()
 	for _, status := range []string{"backlog", "in-progress", "in-review", "done"} {
 		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", status), 0o755); err != nil {
 			t.Fatalf("mkdir tickets: %v", err)
 		}
+	}
+	if withGit {
+		initGitRepo(t, dir)
 	}
 	root, err := NewRoot(dir)
 	if err != nil {
