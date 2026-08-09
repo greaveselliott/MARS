@@ -15,6 +15,8 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/childenv"
 )
 
 const gitStatusSchema = `{
@@ -469,6 +471,9 @@ func runGit(ctx context.Context, root Root, args ...string) (ToolResult, error) 
 	}
 	full := append([]string{"-C", root.Abs()}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...)
+	if err := childenv.Apply(cmd); err != nil {
+		return ToolResult{}, fmt.Errorf("git: %w", err)
+	}
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

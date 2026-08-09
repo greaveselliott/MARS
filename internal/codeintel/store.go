@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	_ "modernc.org/sqlite"
 )
 
@@ -1007,6 +1008,9 @@ func changedPaths(ctx context.Context, root, baseRef string) ([]string, error) {
 		cmd = exec.CommandContext(ctx, "git", "status", "--porcelain=v1", "-uall")
 	}
 	cmd.Dir = root
+	if err := childenv.Apply(cmd); err != nil {
+		return nil, fmt.Errorf("codeintel: changed paths child environment: %w", err)
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, nil

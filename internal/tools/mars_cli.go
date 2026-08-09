@@ -33,6 +33,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/childenv"
 )
 
 const marsCLISchema = `{
@@ -167,6 +169,9 @@ func runMarsCLI(ctx context.Context, root Root, args marsCLIArgs) (ToolResult, e
 
 	cmd := exec.CommandContext(runCtx, argv[0], argv[1:]...)
 	cmd.Dir = root.Abs()
+	if err := childenv.Apply(cmd); err != nil {
+		return ToolResult{}, fmt.Errorf("mars_cli: %w", err)
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)

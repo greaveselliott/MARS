@@ -19,7 +19,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/integrations"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPollAtlassianMCPMirrorsScopedIssueAndClosesSession(t *testing.T) {
@@ -141,6 +143,7 @@ func TestPollAtlassianMCPUsesBoardToolWhenAvailable(t *testing.T) {
 }
 
 func TestPollAtlassianMCPUsesStdioProxyWithoutStaticAuth(t *testing.T) {
+	t.Setenv(childenv.AllowlistVariable, "JIRA_STDIO_MCP_HELPER")
 	repoRoot := t.TempDir()
 	cfg := atlassianMCPConfig(repoRoot)
 	cfg.Ingestion.JIRA.MCP.Proxy.Enabled = true
@@ -169,6 +172,36 @@ func TestPollAtlassianMCPUsesStdioProxyWithoutStaticAuth(t *testing.T) {
 		if !strings.Contains(ticket, want) {
 			t.Fatalf("stdio mcp ticket missing %q:\n%s", want, ticket)
 		}
+	}
+}
+
+func TestProxyEnvironmentPreservesSanitizedParentAndRequiresOwnerAllowlist(t *testing.T) {
+	t.Setenv("B1_SAFE_PARENT", "safe")
+	t.Setenv("SAFE_PROXY_MODE", "inherited")
+	t.Setenv(childenv.AllowlistVariable, "")
+	lookup := func(name string) (string, bool) {
+		if name == "SAFE_PROXY_MODE" {
+			return "proxy-value", true
+		}
+		return "", false
+	}
+
+	env, err := proxyEnvironment([]string{"SAFE_PROXY_MODE"}, lookup)
+	require.Error(t, err)
+	require.Nil(t, env)
+	require.Contains(t, err.Error(), `"SAFE_PROXY_MODE"`)
+	require.Contains(t, err.Error(), childenv.AllowlistVariable)
+	require.NotContains(t, err.Error(), "proxy-value")
+	require.NotContains(t, err.Error(), "inherited")
+
+	t.Setenv(childenv.AllowlistVariable, "SAFE_PROXY_MODE")
+	env, err = proxyEnvironment([]string{"SAFE_PROXY_MODE"}, lookup)
+	require.NoError(t, err)
+	require.Contains(t, env, "B1_SAFE_PARENT=safe")
+	require.Contains(t, env, "SAFE_PROXY_MODE=proxy-value")
+	require.NotContains(t, env, "SAFE_PROXY_MODE=inherited")
+	for _, entry := range env {
+		require.NotContains(t, entry, childenv.AllowlistVariable+"=")
 	}
 }
 

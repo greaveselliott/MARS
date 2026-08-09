@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/childenv"
 )
 
 const dependencySyncSchema = `{
@@ -185,6 +187,10 @@ func RunDependencySync(ctx context.Context, root Root, args dependencySyncArgs) 
 
 	execCmd := exec.CommandContext(ctx, cmd.Manager, cmd.Args...)
 	execCmd.Dir = root.Abs()
+	if err := childenv.Apply(execCmd); err != nil {
+		report.Message = err.Error()
+		return report, fmt.Errorf("dependency_sync: %w", err)
+	}
 	var stdout, stderr bytes.Buffer
 	execCmd.Stdout = &stdout
 	execCmd.Stderr = &stderr

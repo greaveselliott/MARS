@@ -22,6 +22,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/childenv"
 )
 
 const (
@@ -417,6 +419,9 @@ func (s *Server) pollHealth(ctx context.Context, url string) error {
 func (s *Server) startCmdLocked() (*exec.Cmd, error) {
 	args := llamaServerArgs(s.cfg)
 	cmd := exec.Command(s.cfg.BinaryPath, args...)
+	if err := childenv.Apply(cmd); err != nil {
+		return nil, fmt.Errorf("inference server: %w", err)
+	}
 
 	logPath := s.logFilePath()
 	if logPath != "" {

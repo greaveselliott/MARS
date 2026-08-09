@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/safety"
 	"github.com/stretchr/testify/require"
 )
@@ -1119,6 +1120,31 @@ func TestShellExecBackgroundReturnsPIDForLongRunningProcess(t *testing.T) {
 	require.Contains(t, res.Output, "Started in background (PID")
 	require.Contains(t, res.Output, "After probes, stop this tracked PID")
 	require.Contains(t, res.Output, "Do not call shell_exec with empty argv or :")
+}
+
+func TestShellExecSanitizesForegroundAndBackgroundChildEnvironment(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("background child probe uses POSIX sh")
+	}
+	t.Setenv("B1_SAFE_PARENT", "safe")
+	t.Setenv("GITHUB_TOKEN", "poison")
+	t.Setenv(childenv.AllowlistVariable, "")
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	defer KillBackgroundProcs()
+
+	foreground, err := handleShellExec(context.Background(), root, []byte(`{"argv":["env"],"timeout_seconds":5}`))
+	require.NoError(t, err)
+	require.Contains(t, foreground.Output, "B1_SAFE_PARENT=safe")
+	require.NotContains(t, foreground.Output, "GITHUB_TOKEN=poison")
+	require.NotContains(t, foreground.Output, childenv.AllowlistVariable+"=")
+
+	background, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"env; sleep 5","background":true}`))
+	require.NoError(t, err)
+	require.Contains(t, background.Output, "B1_SAFE_PARENT=safe")
+	require.NotContains(t, background.Output, "GITHUB_TOKEN=poison")
+	require.NotContains(t, background.Output, childenv.AllowlistVariable+"=")
 }
 
 func TestShellExecBackgroundKeepsOutputDrainedAfterStartup(t *testing.T) {

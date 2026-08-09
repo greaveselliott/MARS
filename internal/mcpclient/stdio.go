@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/greaveselliott/mars/internal/childenv"
 )
 
 // StdioConfig describes an ephemeral MCP stdio subprocess.
@@ -49,7 +51,14 @@ func StartStdio(ctx context.Context, cfg StdioConfig) (*StdioClient, error) {
 	}
 	cmd := exec.CommandContext(ctx, command, cfg.Args...)
 	if len(cfg.Env) > 0 {
-		cmd.Env = cfg.Env
+		for _, entry := range cfg.Env {
+			if strings.HasPrefix(entry, childenv.AllowlistVariable+"=") {
+				continue
+			}
+			cmd.Env = append(cmd.Env, entry)
+		}
+	} else if err := childenv.Apply(cmd); err != nil {
+		return nil, fmt.Errorf("mcp stdio: %w", err)
 	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

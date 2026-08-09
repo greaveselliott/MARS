@@ -65,6 +65,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 48. F-005-S064 - Repeated policy blocks return actionable repair guidance to the active role.
 49. F-005-S065 - OpenAI-compatible tool-call batches receive all model-requested tool results before synthetic runtime messages.
 50. F-005-S066 - Execution profiles admit observer, acknowledged host, or unavailable isolated behavior before runtime effects.
+51. F-005-S067 - MARS-managed child processes receive a sanitized inherited environment without claiming process isolation.
 
 ## Scenarios
 
@@ -304,6 +305,22 @@ And when acknowledgement is present the profile preserves, but does not upgrade,
 Given the operator selects `--execution-profile isolated`
 When any of those five entry points admits execution
 Then it fails before state or subprocess creation because no enforceable isolation adapter exists
+
+### F-005-S067: Sanitized Managed Child Environments
+
+Given MARS starts a managed shell, CLI, dependency, Git, MCP, update, code-intelligence, or inference subprocess
+When it constructs the child environment
+Then ordinary inherited variables such as PATH, HOME, temporary-directory, locale, and required toolchain or cache settings remain available
+And credential-like names and MARS, GitHub, cloud/provider, authorization, SSH, token, secret, password, API-key, private-key, and credential variables are removed by default
+
+Given the owner sets environment-only `MARS_CHILD_ENV_ALLOWLIST` to comma- or whitespace-separated variable names
+When a managed child is started
+Then those exact parent variables may be restored, repository and model configuration cannot widen the list, and `MARS_CHILD_ENV_ALLOWLIST` itself never reaches the child
+And Jira proxy `env_passthrough` names require the same owner admission before their configured values are passed
+
+Given child environment filtering admits a subprocess
+When that subprocess executes in observer or acknowledged-host operation
+Then filtering remains name-based without inspecting values and does not claim process, filesystem, network, keychain, credential, or same-user containment
 
 ### F-005-S007: Mirrored Built-In Tools
 

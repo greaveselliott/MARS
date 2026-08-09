@@ -15,12 +15,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/integrations"
 	"github.com/greaveselliott/mars/internal/mcpclient"
 )
@@ -32,7 +32,7 @@ const (
 
 var mcpAllowedTools = map[string]bool{
 	"getAccessibleAtlassianResources": true,
-	mcpUserInfoToolName():       true,
+	mcpUserInfoToolName():             true,
 	atlassianMCPSearchTool:            true,
 	atlassianMCPGetTool:               true,
 	"getJiraBoardIssues":              true,
@@ -131,10 +131,14 @@ func pollAtlassianMCP(ctx context.Context, cfg PollConfig) ([]MirrorResult, erro
 func openAtlassianMCPSession(ctx context.Context, cfg PollConfig) (mcpclient.Session, func(), error) {
 	jiraCfg := cfg.Repository.Config.Ingestion.JIRA
 	if jiraCfg.MCP.Proxy.Enabled && mcpProxyTransport(jiraCfg.MCP.Proxy) == integrations.JIRAMCPProxyTransportStdio {
+		proxyEnv, err := proxyEnvironment(jiraCfg.MCP.Proxy.EnvPassthrough, cfg.EnvLookup)
+		if err != nil {
+			return nil, nil, err
+		}
 		client, err := mcpclient.StartStdio(ctx, mcpclient.StdioConfig{
 			Command: jiraCfg.MCP.Proxy.Command,
 			Args:    jiraCfg.MCP.Proxy.Args,
-			Env:     proxyEnvironment(jiraCfg.MCP.Proxy.EnvPassthrough, cfg.EnvLookup),
+			Env:     proxyEnv,
 		})
 		if err != nil {
 			return nil, nil, err
@@ -207,7 +211,11 @@ func startMCPProxyProcess(ctx context.Context, proxy integrations.JIRAMCPProxyCo
 		return nil, fmt.Errorf("jira: atlassian mcp proxy command is required when proxy.enabled is true")
 	}
 	cmd := exec.CommandContext(ctx, proxy.Command, proxy.Args...)
-	cmd.Env = proxyEnvironment(proxy.EnvPassthrough, lookup)
+	proxyEnv, err := proxyEnvironment(proxy.EnvPassthrough, lookup)
+	if err != nil {
+		return nil, err
+	}
+	cmd.Env = proxyEnv
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("jira: start atlassian mcp proxy: %w", err)
 	}
@@ -231,19 +239,37 @@ func startMCPProxyProcess(ctx context.Context, proxy integrations.JIRAMCPProxyCo
 	}, nil
 }
 
-func proxyEnvironment(names []string, lookup func(string) (string, bool)) []string {
-	env := []string{}
-	for _, name := range []string{"PATH", "HOME", "TMPDIR"} {
-		if value := os.Getenv(name); value != "" {
-			env = append(env, name+"="+value)
-		}
+func proxyEnvironment(names []string, lookup func(string) (string, bool)) ([]string, error) {
+	env, err := childenv.Current()
+	if err != nil {
+		return nil, fmt.Errorf("jira: atlassian mcp proxy child environment: %w", err)
 	}
 	for _, name := range names {
+		name = strings.TrimSpace(name)
+		env = removeEnvironmentEntry(env, name)
+		allowed, err := childenv.OwnerAllows(name)
+		if err != nil {
+			return nil, fmt.Errorf("jira: atlassian mcp proxy child environment: %w", err)
+		}
+		if !allowed {
+			return nil, fmt.Errorf("jira: atlassian mcp proxy environment variable %q is configured for passthrough but is not owner-authorized; add %s to %s in the MARS parent environment", name, name, childenv.AllowlistVariable)
+		}
 		if value, ok := lookup(name); ok {
 			env = append(env, name+"="+value)
 		}
 	}
-	return env
+	return env, nil
+}
+
+func removeEnvironmentEntry(env []string, name string) []string {
+	prefix := name + "="
+	out := env[:0]
+	for _, entry := range env {
+		if !strings.HasPrefix(entry, prefix) {
+			out = append(out, entry)
+		}
+	}
+	return out
 }
 
 func atlassianMCPAuthorization(auth integrations.JIRAAuthConfig, lookup func(string) (string, bool)) (string, error) {

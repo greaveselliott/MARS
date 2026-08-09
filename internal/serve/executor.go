@@ -35,6 +35,7 @@ import (
 
 	"github.com/greaveselliott/mars/internal/agent"
 	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/codeintel"
 	harctx "github.com/greaveselliott/mars/internal/context"
 	"github.com/greaveselliott/mars/internal/dashboard"
@@ -874,6 +875,9 @@ func commitRuntimeLearningsIfOnlyDirty(ctx context.Context, repoPath, role strin
 func runGitCommand(ctx context.Context, repoPath string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = repoPath
+	if err := childenv.Apply(cmd); err != nil {
+		return "", fmt.Errorf("git %v: %w", args, err)
+	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("%v: %w\n%s", args, err, strings.TrimSpace(string(out)))

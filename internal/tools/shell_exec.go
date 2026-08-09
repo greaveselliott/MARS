@@ -22,6 +22,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/childenv"
 )
 
 const shellExecSchema = `{
@@ -593,7 +595,10 @@ func execForeground(ctx context.Context, root Root, args shellExecArgs) (ToolRes
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(ts)*time.Second)
 	defer cancel()
 
-	cmd := buildCmd(runCtx, root, args)
+	cmd, err := buildCmd(runCtx, root, args)
+	if err != nil {
+		return ToolResult{}, fmt.Errorf("shell_exec: %w", err)
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.WaitDelay = 2 * time.Second
 	cmd.Cancel = func() error {
@@ -604,7 +609,7 @@ func execForeground(ctx context.Context, root Root, args shellExecArgs) (ToolRes
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
+	err = cmd.Run()
 	exit := 0
 	if err != nil {
 		if errors.Is(runCtx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
@@ -638,7 +643,10 @@ func execForeground(ctx context.Context, root Root, args shellExecArgs) (ToolRes
 const bgCaptureWindow = 2 * time.Second
 
 func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
-	cmd := buildCmd(context.Background(), root, args)
+	cmd, err := buildCmd(context.Background(), root, args)
+	if err != nil {
+		return ToolResult{}, fmt.Errorf("shell_exec: %w", err)
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	stdoutRead, stdoutWrite, err := os.Pipe()
@@ -744,7 +752,7 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	}, nil
 }
 
-func buildCmd(ctx context.Context, root Root, args shellExecArgs) *exec.Cmd {
+func buildCmd(ctx context.Context, root Root, args shellExecArgs) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
 	if len(args.Argv) > 0 {
 		cmd = exec.CommandContext(ctx, args.Argv[0], args.Argv[1:]...)
@@ -752,7 +760,10 @@ func buildCmd(ctx context.Context, root Root, args shellExecArgs) *exec.Cmd {
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", args.ShellCommand)
 	}
 	cmd.Dir = root.Abs()
-	return cmd
+	if err := childenv.Apply(cmd); err != nil {
+		return nil, err
+	}
+	return cmd, nil
 }
 
 func capString(s string, max int) (string, bool) {

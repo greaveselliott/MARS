@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/config"
 )
 
@@ -301,6 +302,9 @@ func DefaultGHAuthToken(ctx context.Context) (string, error) {
 	}
 	defer cancel()
 	cmd := exec.CommandContext(cmdCtx, "gh", "auth", "token")
+	if err := childenv.Apply(cmd); err != nil {
+		return "", fmt.Errorf("gh auth token: %w", err)
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err

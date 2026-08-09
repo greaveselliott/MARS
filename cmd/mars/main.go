@@ -57,6 +57,7 @@ import (
 	"github.com/greaveselliott/mars/internal/agent"
 	"github.com/greaveselliott/mars/internal/buildinfo"
 	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/codeintel"
 	"github.com/greaveselliott/mars/internal/config"
 	ctx "github.com/greaveselliott/mars/internal/context"
@@ -341,6 +342,9 @@ func gitChangedPaths(repoRoot string) (map[string]bool, error) {
 	}
 	cmd := exec.Command("git", "status", "--porcelain=v1", "-z")
 	cmd.Dir = repoRoot
+	if err := childenv.Apply(cmd); err != nil {
+		return nil, fmt.Errorf("git status in %s: %w", repoRoot, err)
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -427,6 +431,9 @@ func commitGeneratedHarnessBaseline(repoRoot string, preInitChanges map[string]b
 func runStartGit(repoRoot string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repoRoot
+	if err := childenv.Apply(cmd); err != nil {
+		return fmt.Errorf("git %s in %s: %w", strings.Join(args, " "), repoRoot, err)
+	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git %s in %s failed: %w\n%s", strings.Join(args, " "), repoRoot, err, strings.TrimSpace(string(out)))

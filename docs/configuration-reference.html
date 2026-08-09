@@ -161,6 +161,28 @@ mars start --repo /path/to/repo \
             Acknowledgement does not upgrade role trust. <code>isolated</code>
             fails before runtime state until MARS has an enforceable adapter.
           </p>
+          <h3>Managed child environments</h3>
+          <p>
+            MARS-managed shell, CLI, dependency, Git, MCP, update, and inference
+            subprocesses inherit ordinary variables such as <code>PATH</code>,
+            <code>HOME</code>, temporary-directory, locale, and toolchain/cache
+            settings. Credential-like names and MARS, GitHub, cloud/provider,
+            authorization, SSH, token, secret, password, API-key, private-key,
+            and credential variables are removed by default.
+          </p>
+          <pre><code>MARS_CHILD_ENV_ALLOWLIST=SSH_AUTH_SOCK,JIRA_API_TOKEN \
+  mars serve --execution-profile host --acknowledge-host-execution</code></pre>
+          <p>
+            <code>MARS_CHILD_ENV_ALLOWLIST</code> is an environment-only,
+            comma- or whitespace-separated owner control. It can restore only
+            explicitly named parent variables, cannot be set by repository or
+            model configuration, and is never propagated to a child. Jira
+            <code>env_passthrough</code> names must also appear in this owner
+            allowlist. Filtering is name-based and does not inspect values;
+            subprocesses still run with the current OS user's authority, so
+            this boundary reduces ambient credential exposure but is not
+            isolation, a secret vault, or containment.
+          </p>
         </section>
 
         <section class="doc-section" id="code-intel-config">

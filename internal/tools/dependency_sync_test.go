@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,6 +64,35 @@ func TestDependencySyncUsesFrozenNpmInstallWhenLockfileExists(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(dir, "npm-args.txt"))
 	require.NoError(t, err)
 	require.Equal(t, "ci\n", string(data))
+}
+
+func TestDependencySyncChildPreservesToolchainEnvironmentAndDropsCredentials(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake shell executable uses POSIX sh")
+	}
+	dir, root := setupWorkspaceHygieneRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"demo"}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package-lock.json"), []byte(`{"lockfileVersion":3}`+"\n"), 0o644))
+	runTestGit(t, dir, "add", ".gitignore", "package.json", "package-lock.json")
+	runTestGit(t, dir, "commit", "-m", "node project")
+
+	logPath := filepath.Join(t.TempDir(), "dependency-env.txt")
+	bin := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(bin, "npm"), []byte("#!/bin/sh\nenv > \"$B1_DEPENDENCY_ENV_LOG\"\n"), 0o755))
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("GOCACHE", "/safe/go-cache")
+	t.Setenv("B1_DEPENDENCY_ENV_LOG", logPath)
+	t.Setenv("GITHUB_TOKEN", "poison")
+	t.Setenv(childenv.AllowlistVariable, "")
+
+	_, err := RunDependencySync(context.Background(), root, dependencySyncArgs{Action: "install", PackageManager: "npm"})
+	require.NoError(t, err)
+	child := string(mustReadFile(t, logPath))
+	require.Contains(t, child, "PATH="+bin)
+	require.Contains(t, child, "GOCACHE=/safe/go-cache")
+	require.NotContains(t, child, "GITHUB_TOKEN=poison")
+	require.NotContains(t, child, childenv.AllowlistVariable+"=")
 }
 
 func TestDependencySyncRequiresReasonWhenFrozenFalse(t *testing.T) {

@@ -15,6 +15,7 @@ github.com/greaveselliott/mars/cmd/mars 51
 github.com/greaveselliott/mars/internal/agent 70
 github.com/greaveselliott/mars/internal/buildinfo notest
 github.com/greaveselliott/mars/internal/bundle 57
+github.com/greaveselliott/mars/internal/childenv 70
 github.com/greaveselliott/mars/internal/codeintel 68
 github.com/greaveselliott/mars/internal/config 64
 github.com/greaveselliott/mars/internal/context 70

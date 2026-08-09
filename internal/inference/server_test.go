@@ -17,10 +17,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/stretchr/testify/require"
 )
@@ -110,6 +112,31 @@ func TestServer_startMissingBinaryMarksFailed(t *testing.T) {
 	err := s.Start(context.Background())
 	require.Error(t, err)
 	require.Equal(t, StateFailed, s.State())
+}
+
+func TestServerManagedChildPreservesOrdinaryEnvironmentAndDropsCredentials(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake llama-server executable uses POSIX sh")
+	}
+	home := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "inference-env.txt")
+	bin := filepath.Join(t.TempDir(), "llama-server")
+	require.NoError(t, os.WriteFile(bin, []byte("#!/bin/sh\nenv > \"$B1_INFERENCE_ENV_LOG\"\n"), 0o755))
+	t.Setenv("HOME", home)
+	t.Setenv("B1_INFERENCE_ENV_LOG", logPath)
+	t.Setenv("GOCACHE", "/safe/go-cache")
+	t.Setenv("GITHUB_TOKEN", "poison")
+	t.Setenv(childenv.AllowlistVariable, "")
+
+	s := NewServer(ServerConfig{BinaryPath: bin, ModelPath: "/models/test.gguf", Port: 28080})
+	cmd, err := s.startCmdLocked()
+	require.NoError(t, err)
+	require.NoError(t, cmd.Wait())
+	child, err := os.ReadFile(logPath)
+	require.NoError(t, err)
+	require.Contains(t, string(child), "GOCACHE=/safe/go-cache")
+	require.NotContains(t, string(child), "GITHUB_TOKEN=poison")
+	require.NotContains(t, string(child), childenv.AllowlistVariable+"=")
 }
 
 func TestServer_restartBackoffAndContextLength(t *testing.T) {

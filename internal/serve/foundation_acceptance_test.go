@@ -24,6 +24,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/codeintel"
 	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/inference"
@@ -483,6 +484,7 @@ func writeFoundationFakeMarsBinary(t *testing.T) (string, string) {
 	bin := filepath.Join(dir, "mars")
 	logPath := filepath.Join(dir, "cli.log")
 	t.Setenv("MARS_FAKE_CLI_LOG", logPath)
+	t.Setenv(childenv.AllowlistVariable, "MARS_FAKE_CLI_LOG")
 	script := `#!/bin/sh
 printf 'args:' >> "$MARS_FAKE_CLI_LOG"
 for arg in "$@"; do

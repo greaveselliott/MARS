@@ -22,6 +22,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/greaveselliott/mars/internal/childenv"
 	"github.com/greaveselliott/mars/internal/githubauth"
 	"github.com/greaveselliott/mars/internal/shellpath"
 )
@@ -172,7 +173,9 @@ func runSource(ctx context.Context, cfg Config, plan Plan) (Plan, error) {
 	}
 
 	cmd := exec.CommandContext(ctx, plan.Command[0], plan.Command[1:]...)
-	cmd.Env = append(os.Environ(), "GOBIN="+plan.InstallDir)
+	if err := childenv.ApplyWith(cmd, "GOBIN="+plan.InstallDir); err != nil {
+		return Plan{}, fmt.Errorf("update tool: child environment: %w", err)
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return Plan{}, fmt.Errorf("update tool: %s failed with GOBIN=%s: %w\n%s\nIf this is a permission error, rerun with an install dir you own or install from the source checkout with `make install`",
