@@ -11,9 +11,10 @@ package jira
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -90,12 +91,12 @@ func mirrorIssue(ctx context.Context, repo Repository, issue Issue) (MirrorResul
 		return result, fmt.Errorf("jira: open repository: %w", err)
 	}
 
-	existing, err := findTicketByJiraKey(repo.Path, issue.Key)
+	existing, err := findTicketByJiraKey(root, issue.Key)
 	if err != nil {
 		return result, err
 	}
 	if existing == "" {
-		rel, err := createMirroredTicket(root, repo.Path, issue)
+		rel, err := createMirroredTicket(root, issue)
 		if err != nil {
 			return result, err
 		}
@@ -193,13 +194,13 @@ func repoMatches(configured string, repo Repository) bool {
 	return false
 }
 
-func findTicketByJiraKey(repoRoot, jiraKey string) (string, error) {
+func findTicketByJiraKey(root *repofs.Root, jiraKey string) (string, error) {
 	var matches []string
 	for _, status := range []string{"backlog", "in-progress", "in-review", "done"} {
-		dir := filepath.Join(repoRoot, "docs", "tickets", status)
-		entries, err := os.ReadDir(dir)
+		dir := filepath.ToSlash(filepath.Join("docs", "tickets", status))
+		entries, err := fs.ReadDir(root, dir)
 		if err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
 			return "", fmt.Errorf("jira: read ticket dir %s: %w", dir, err)
@@ -208,14 +209,13 @@ func findTicketByJiraKey(repoRoot, jiraKey string) (string, error) {
 			if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" || entry.Name() == "README.md" {
 				continue
 			}
-			path := filepath.Join(dir, entry.Name())
-			frontmatter, err := readFrontmatter(path)
+			rel := filepath.ToSlash(filepath.Join(dir, entry.Name()))
+			frontmatter, err := readFrontmatter(root, rel)
 			if err != nil {
 				return "", err
 			}
 			if strings.Trim(frontmatter["jira_key"], `"'`) == jiraKey {
-				rel, _ := filepath.Rel(repoRoot, path)
-				matches = append(matches, filepath.ToSlash(rel))
+				matches = append(matches, rel)
 			}
 		}
 	}
@@ -229,8 +229,8 @@ func findTicketByJiraKey(repoRoot, jiraKey string) (string, error) {
 	return matches[0], nil
 }
 
-func createMirroredTicket(root *repofs.Root, repoRoot string, issue Issue) (string, error) {
-	id, err := nextTicketID(repoRoot)
+func createMirroredTicket(root *repofs.Root, issue Issue) (string, error) {
+	id, err := nextTicketID(root)
 	if err != nil {
 		return "", err
 	}
@@ -307,29 +307,33 @@ func reconcileMirroredTicket(root *repofs.Root, rel string, issue Issue) (string
 	return filepath.ToSlash(rel), nil
 }
 
-func nextTicketID(repoRoot string) (string, error) {
+func nextTicketID(root *repofs.Root) (string, error) {
 	next := 1
-	root := filepath.Join(repoRoot, "docs", "tickets")
-	if err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	err := fs.WalkDir(root, "docs/tickets", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
 			return err
 		}
-		if d.IsDir() || filepath.Ext(d.Name()) != ".md" {
+		if d.IsDir() || filepath.Ext(d.Name()) != ".md" || d.Name() == "README.md" {
 			return nil
 		}
 		match := ticketIDPattern.FindStringSubmatch(d.Name())
 		if len(match) != 2 {
 			return nil
 		}
+		file, err := root.OpenFile(filepath.FromSlash(path))
+		if err != nil {
+			return err
+		}
+		if err := file.Close(); err != nil {
+			return fmt.Errorf("close ticket ID candidate: %w", err)
+		}
 		n, _ := strconv.Atoi(match[1])
 		if n >= next {
 			next = n + 1
 		}
 		return nil
-	}); err != nil && !os.IsNotExist(err) {
+	})
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("jira: scan ticket IDs: %w", err)
 	}
 	return fmt.Sprintf("T-%03d", next), nil
@@ -538,8 +542,8 @@ func updateJiraSection(data []byte, issue Issue) []byte {
 	return []byte(text[:firstHeadingEnd+2] + insert + text[firstHeadingEnd+2:])
 }
 
-func readFrontmatter(path string) (map[string]string, error) {
-	data, err := os.ReadFile(path)
+func readFrontmatter(root *repofs.Root, path string) (map[string]string, error) {
+	data, err := root.ReadFile(filepath.FromSlash(path))
 	if err != nil {
 		return nil, fmt.Errorf("jira: read frontmatter %s: %w", path, err)
 	}
