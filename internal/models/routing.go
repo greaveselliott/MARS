@@ -8,13 +8,16 @@ docs:
 package models
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 const (
@@ -402,9 +405,12 @@ func ResolveProviderRoute(repoRoot string, route ProviderRoute) (ProviderRoute, 
 		return ProviderRoute{}, fmt.Errorf("models: --api-key-env is required for provider %s", route.Provider)
 	}
 	if route.APIKeyEnv != "" {
-		value, ok := LookupCredential(repoRoot, route.APIKeyEnv)
+		value, ok, err := LookupCredential(repoRoot, route.APIKeyEnv)
+		if err != nil {
+			return ProviderRoute{}, fmt.Errorf("models: read credential env %s: %w", route.APIKeyEnv, err)
+		}
 		if !ok {
-			return ProviderRoute{}, fmt.Errorf("models: credential env %s is not set — export %s=<secret> or run `mars models credentials write-local-env --repo %s --api-key-env %s --yes --json` after exporting it", route.APIKeyEnv, route.APIKeyEnv, repoRoot, route.APIKeyEnv)
+			return ProviderRoute{}, fmt.Errorf("models: credential env %s is not set — export %s=<secret> or run `mars models credentials write-local-env --repo <path> --api-key-env %s --yes --json` with the same --repo path after exporting it", route.APIKeyEnv, route.APIKeyEnv, route.APIKeyEnv)
 		}
 		route.APIKey = value
 	}
@@ -427,17 +433,27 @@ func normalizeRouting(value string) string {
 }
 
 // LookupCredential reads an env var first, then .harness/.env.local.
-func LookupCredential(repoRoot, envName string) (string, bool) {
+func LookupCredential(repoRoot, envName string) (string, bool, error) {
 	envName = strings.TrimSpace(envName)
 	if envName == "" {
-		return "", false
+		return "", false, nil
 	}
 	if value := os.Getenv(envName); strings.TrimSpace(value) != "" {
-		return value, true
+		return value, true, nil
 	}
-	values := readLocalEnv(filepath.Join(strings.TrimSpace(repoRoot), ".harness", ".env.local"))
+	if strings.TrimSpace(repoRoot) == "" {
+		return "", false, fmt.Errorf("models credentials: repository root is required for local credential fallback")
+	}
+	root, err := openModelRepository(repoRoot, "models credentials")
+	if err != nil {
+		return "", false, err
+	}
+	values, err := readLocalEnv(root, ".harness/.env.local")
+	if err != nil {
+		return "", false, err
+	}
 	value := strings.TrimSpace(values[envName])
-	return value, value != ""
+	return value, value != "", nil
 }
 
 // WriteLocalCredential reads envName from the process environment and writes it
@@ -455,26 +471,36 @@ func WriteLocalCredential(repoRoot, envName string) (string, string, error) {
 	if value == "" {
 		return "", "", fmt.Errorf("models credentials: environment variable %s is not set — export %s=<secret> and retry", envName, envName)
 	}
-	harnessDir := filepath.Join(repoRoot, ".harness")
-	if info, err := os.Stat(harnessDir); err != nil || !info.IsDir() {
-		return "", "", fmt.Errorf("models credentials: %s is missing — run `mars init --repo %s` first", harnessDir, repoRoot)
+	root, err := openModelRepository(repoRoot, "models credentials")
+	if err != nil {
+		return "", "", err
 	}
-	localPath := filepath.Join(harnessDir, ".env.local")
-	examplePath := filepath.Join(harnessDir, ".env.example")
+	if err := requireModelHarness(root, "models credentials"); err != nil {
+		return "", "", err
+	}
+	const localRel = ".harness/.env.local"
+	const exampleRel = ".harness/.env.example"
 
-	localValues := readLocalEnv(localPath)
+	localValues, err := readLocalEnv(root, localRel)
+	if err != nil {
+		return "", "", err
+	}
+	exampleValues, err := readLocalEnv(root, exampleRel)
+	if err != nil {
+		return "", "", err
+	}
 	localValues[envName] = value
-	if err := writeEnvFile(localPath, localValues, 0o600); err != nil {
+	if err := writeEnvFile(root, localRel, localValues, 0o600, false); err != nil {
 		return "", "", err
 	}
-	exampleValues := readLocalEnv(examplePath)
-	if _, ok := exampleValues[envName]; !ok {
-		exampleValues[envName] = ""
+	for key := range exampleValues {
+		exampleValues[key] = ""
 	}
-	if err := writeEnvFile(examplePath, exampleValues, 0o644); err != nil {
+	exampleValues[envName] = ""
+	if err := writeEnvFile(root, exampleRel, exampleValues, 0o644, true); err != nil {
 		return "", "", err
 	}
-	return localPath, examplePath, nil
+	return filepath.Join(root.Abs(), filepath.FromSlash(localRel)), filepath.Join(root.Abs(), filepath.FromSlash(exampleRel)), nil
 }
 
 // EnsureEnvExample records a credential env var name without writing a value.
@@ -484,45 +510,53 @@ func EnsureEnvExample(repoRoot, envName string) (string, error) {
 	if repoRoot == "" || envName == "" {
 		return "", nil
 	}
-	harnessDir := filepath.Join(repoRoot, ".harness")
-	if info, err := os.Stat(harnessDir); err != nil || !info.IsDir() {
-		return "", fmt.Errorf("models credentials: %s is missing — run `mars init --repo %s` first", harnessDir, repoRoot)
-	}
-	examplePath := filepath.Join(harnessDir, ".env.example")
-	exampleValues := readLocalEnv(examplePath)
-	if _, ok := exampleValues[envName]; !ok {
-		exampleValues[envName] = ""
-	}
-	if err := writeEnvFile(examplePath, exampleValues, 0o644); err != nil {
+	root, err := openModelRepository(repoRoot, "models credentials")
+	if err != nil {
 		return "", err
 	}
-	return examplePath, nil
+	if err := requireModelHarness(root, "models credentials"); err != nil {
+		return "", err
+	}
+	const exampleRel = ".harness/.env.example"
+	exampleValues, err := readLocalEnv(root, exampleRel)
+	if err != nil {
+		return "", err
+	}
+	for key := range exampleValues {
+		exampleValues[key] = ""
+	}
+	exampleValues[envName] = ""
+	if err := writeEnvFile(root, exampleRel, exampleValues, 0o644, true); err != nil {
+		return "", err
+	}
+	return filepath.Join(root.Abs(), filepath.FromSlash(exampleRel)), nil
 }
 
-func readLocalEnv(path string) map[string]string {
+func readLocalEnv(root *repofs.Root, rel string) (map[string]string, error) {
 	values := map[string]string{}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return values
+	data, err := root.ReadFile(rel)
+	if errors.Is(err, fs.ErrNotExist) {
+		return values, nil
 	}
-	for _, line := range strings.Split(string(data), "\n") {
+	if err != nil {
+		return nil, fmt.Errorf("models credentials: read %s: %w", rel, err)
+	}
+	for lineNumber, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
+		key = strings.TrimSpace(key)
+		if !ok || key == "" {
+			return nil, fmt.Errorf("models credentials: parse %s line %d: expected KEY=VALUE", rel, lineNumber+1)
 		}
-		values[strings.TrimSpace(key)] = strings.Trim(strings.TrimSpace(value), `"'`)
+		values[key] = strings.Trim(strings.TrimSpace(value), `"'`)
 	}
-	return values
+	return values, nil
 }
 
-func writeEnvFile(path string, values map[string]string, perm os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("models credentials: create %s: %w", filepath.Dir(path), err)
-	}
+func writeEnvFile(root *repofs.Root, rel string, values map[string]string, perm os.FileMode, preserveExistingMode bool) error {
 	keys := make([]string, 0, len(values))
 	for key := range values {
 		if strings.TrimSpace(key) != "" {
@@ -537,8 +571,8 @@ func writeEnvFile(path string, values map[string]string, perm os.FileMode) error
 		b.WriteString(values[key])
 		b.WriteString("\n")
 	}
-	if err := os.WriteFile(path, []byte(b.String()), perm); err != nil {
-		return fmt.Errorf("models credentials: write %s: %w", path, err)
+	if err := writeModelRepositoryFile(root, rel, []byte(b.String()), perm, preserveExistingMode); err != nil {
+		return fmt.Errorf("models credentials: write %s: %w", rel, err)
 	}
 	return nil
 }

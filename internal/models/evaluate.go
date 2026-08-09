@@ -304,8 +304,14 @@ func Evaluate(ctx context.Context, cfg Config) (Report, error) {
 	}
 	apiKey := strings.TrimSpace(cfg.APIKey)
 	if apiKey == "" && strings.TrimSpace(cfg.APIKeyEnv) != "" {
-		var ok bool
-		apiKey, ok = LookupCredential(repoRoot, cfg.APIKeyEnv)
+		var (
+			ok  bool
+			err error
+		)
+		apiKey, ok, err = LookupCredential(repoRoot, cfg.APIKeyEnv)
+		if err != nil {
+			return Report{}, fmt.Errorf("models evaluate: read credential env %s: %w", cfg.APIKeyEnv, err)
+		}
 		if !ok {
 			return Report{}, fmt.Errorf("models evaluate: credential env %s is not set — export %s=<secret> and retry", cfg.APIKeyEnv, cfg.APIKeyEnv)
 		}

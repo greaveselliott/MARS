@@ -8,12 +8,15 @@ docs:
 package models
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/repofs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,13 +60,15 @@ func SetModelOverride(repoRoot, tier, role string, override ModelOverride) (stri
 		return "", err
 	}
 
-	harnessDir := filepath.Join(repoRoot, ".harness")
-	if info, err := os.Stat(harnessDir); err != nil || !info.IsDir() {
-		return "", fmt.Errorf("models override: %s is missing — run `mars init --repo %s` first", harnessDir, repoRoot)
+	root, err := openModelRepository(repoRoot, "models override")
+	if err != nil {
+		return "", err
+	}
+	if err := requireModelHarness(root, "models override"); err != nil {
+		return "", err
 	}
 
-	path := filepath.Join(repoRoot, modelOverridesPath)
-	overrides, err := LoadModelOverrides(repoRoot)
+	overrides, err := loadModelOverrides(root)
 	if err != nil {
 		return "", err
 	}
@@ -86,10 +91,10 @@ func SetModelOverride(repoRoot, tier, role string, override ModelOverride) (stri
 	if err != nil {
 		return "", fmt.Errorf("models override: marshal overrides: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return "", fmt.Errorf("models override: write %s: %w", path, err)
+	if err := writeModelRepositoryFile(root, modelOverridesPath, data, 0o644, true); err != nil {
+		return "", fmt.Errorf("models override: write %s: %w", modelOverridesPath, err)
 	}
-	return path, nil
+	return filepath.Join(root.Abs(), modelOverridesPath), nil
 }
 
 // SetDefaultModelRouting writes the repo default model route used when no role
@@ -103,12 +108,14 @@ func SetDefaultModelRouting(repoRoot string, override ModelOverride) (string, er
 	if err != nil {
 		return "", err
 	}
-	harnessDir := filepath.Join(repoRoot, ".harness")
-	if info, err := os.Stat(harnessDir); err != nil || !info.IsDir() {
-		return "", fmt.Errorf("models routing: %s is missing — run `mars init --repo %s` first", harnessDir, repoRoot)
+	root, err := openModelRepository(repoRoot, "models routing")
+	if err != nil {
+		return "", err
 	}
-	path := filepath.Join(repoRoot, modelOverridesPath)
-	overrides, err := LoadModelOverrides(repoRoot)
+	if err := requireModelHarness(root, "models routing"); err != nil {
+		return "", err
+	}
+	overrides, err := loadModelOverrides(root)
 	if err != nil {
 		return "", err
 	}
@@ -118,30 +125,73 @@ func SetDefaultModelRouting(repoRoot string, override ModelOverride) (string, er
 	if err != nil {
 		return "", fmt.Errorf("models routing: marshal overrides: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return "", fmt.Errorf("models routing: write %s: %w", path, err)
+	if err := writeModelRepositoryFile(root, modelOverridesPath, data, 0o644, true); err != nil {
+		return "", fmt.Errorf("models routing: write %s: %w", modelOverridesPath, err)
 	}
-	return path, nil
+	return filepath.Join(root.Abs(), modelOverridesPath), nil
 }
 
 // LoadModelOverrides reads model overrides from a target repo. Missing file is empty state.
 func LoadModelOverrides(repoRoot string) (ModelOverrides, error) {
-	path := filepath.Join(strings.TrimSpace(repoRoot), modelOverridesPath)
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
+	repoRoot = strings.TrimSpace(repoRoot)
+	if repoRoot == "" {
+		return ModelOverrides{}, fmt.Errorf("models override: --repo is required")
+	}
+	root, err := openModelRepository(repoRoot, "models override")
+	if err != nil {
+		return ModelOverrides{}, err
+	}
+	return loadModelOverrides(root)
+}
+
+func loadModelOverrides(root *repofs.Root) (ModelOverrides, error) {
+	data, err := root.ReadFile(modelOverridesPath)
+	if errors.Is(err, fs.ErrNotExist) {
 		return ModelOverrides{Version: 1}, nil
 	}
 	if err != nil {
-		return ModelOverrides{}, fmt.Errorf("models override: read %s: %w", path, err)
+		return ModelOverrides{}, fmt.Errorf("models override: read %s: %w", modelOverridesPath, err)
 	}
 	var overrides ModelOverrides
 	if err := yaml.Unmarshal(data, &overrides); err != nil {
-		return ModelOverrides{}, fmt.Errorf("models override: parse %s: %w", path, err)
+		return ModelOverrides{}, fmt.Errorf("models override: parse %s: invalid YAML", modelOverridesPath)
 	}
 	if overrides.Version == 0 {
 		overrides.Version = 1
 	}
 	return overrides, nil
+}
+
+func openModelRepository(repoRoot, operation string) (*repofs.Root, error) {
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("%s: repository root is unavailable — choose an existing repository directory", operation)
+	}
+	return root, nil
+}
+
+func requireModelHarness(root *repofs.Root, operation string) error {
+	info, err := root.Stat(".harness")
+	if err != nil || !info.IsDir() {
+		return fmt.Errorf("%s: .harness is missing or unavailable — run `mars init --repo <path>` first using the same --repo path", operation)
+	}
+	return nil
+}
+
+func writeModelRepositoryFile(root *repofs.Root, rel string, data []byte, defaultMode os.FileMode, preserveExistingMode bool) error {
+	mode := defaultMode
+	info, err := root.Stat(rel)
+	if err == nil {
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("repository replacement target %s is not a regular file", rel)
+		}
+		if preserveExistingMode {
+			mode = info.Mode().Perm()
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return root.AtomicWrite(rel, data, mode)
 }
 
 // ResolveModelOverride returns the role override, then tier override, for a run.

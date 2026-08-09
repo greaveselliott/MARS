@@ -24,7 +24,12 @@ func TestSetAndResolveTierModelOverride(t *testing.T) {
 		Reason:   "benchmark candidate",
 	})
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join(repo, modelOverridesPath), path)
+	canonicalRepo, err := filepath.EvalSymlinks(repo)
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(canonicalRepo, modelOverridesPath), path)
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o644), info.Mode().Perm())
 
 	override, ok, err := ResolveModelOverride(repo, "qa", "fast")
 	require.NoError(t, err)
@@ -68,6 +73,41 @@ func TestSetModelOverrideValidatesScopeAndEndpoint(t *testing.T) {
 
 	_, err = SetModelOverride(repo, "fast", "", ModelOverride{Provider: ProviderOpenAICompatible, Model: "remote"})
 	require.ErrorContains(t, err, "--endpoint is required")
+}
+
+func TestModelOverrideRejectsSymlinkLeafWithoutOutsideMutation(t *testing.T) {
+	repo := harnessRepo(t)
+	outside := filepath.Join(t.TempDir(), "outside.yaml")
+	original := []byte("version: 2\ntiers: {}\n")
+	require.NoError(t, os.WriteFile(outside, original, 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(repo, modelOverridesPath)))
+
+	resolved, ok, err := ResolveModelOverride(repo, "qa", "fast")
+	require.Error(t, err)
+	require.False(t, ok)
+	require.Empty(t, resolved)
+	require.NotContains(t, err.Error(), outside)
+
+	path, err := SetModelOverride(repo, "fast", "", ModelOverride{Provider: ProviderOllama, Model: "qwen"})
+	require.Error(t, err)
+	require.Empty(t, path)
+	require.NotContains(t, err.Error(), outside)
+	data, readErr := os.ReadFile(outside)
+	require.NoError(t, readErr)
+	require.Equal(t, original, data)
+}
+
+func TestSetModelOverridePreservesExistingMode(t *testing.T) {
+	repo := harnessRepo(t)
+	path := filepath.Join(repo, modelOverridesPath)
+	require.NoError(t, os.WriteFile(path, []byte("version: 2\n"), 0o600))
+	require.NoError(t, os.Chmod(path, 0o600))
+
+	_, err := SetModelOverride(repo, "fast", "", ModelOverride{Provider: ProviderOllama, Model: "qwen"})
+	require.NoError(t, err)
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
 }
 
 func harnessRepo(t *testing.T) string {

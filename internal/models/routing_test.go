@@ -90,6 +90,130 @@ func TestWriteLocalCredentialWritesEnvLocalAndExample(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(exampleData), "ANTHROPIC_API_KEY=")
 	require.NotContains(t, string(exampleData), "secret-value")
+	exampleInfo, err := os.Stat(examplePath)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o644), exampleInfo.Mode().Perm())
+}
+
+func TestWriteLocalCredentialRejectsSymlinksWithoutReturningSecretOrMutatingOutside(t *testing.T) {
+	const secret = "credential-must-not-escape"
+
+	t.Run("harness parent", func(t *testing.T) {
+		repo := t.TempDir()
+		outsideDir := t.TempDir()
+		sentinel := filepath.Join(outsideDir, ".env.local")
+		require.NoError(t, os.WriteFile(sentinel, []byte("ORIGINAL=unchanged\n"), 0o600))
+		require.NoError(t, os.Symlink(outsideDir, filepath.Join(repo, ".harness")))
+		t.Setenv("MARS_TEST_API_KEY", secret)
+
+		localPath, examplePath, err := WriteLocalCredential(repo, "MARS_TEST_API_KEY")
+		require.Error(t, err)
+		require.Empty(t, localPath)
+		require.Empty(t, examplePath)
+		require.NotContains(t, err.Error(), secret)
+		require.NotContains(t, err.Error(), outsideDir)
+		data, readErr := os.ReadFile(sentinel)
+		require.NoError(t, readErr)
+		require.Equal(t, "ORIGINAL=unchanged\n", string(data))
+	})
+
+	t.Run("credential leaf", func(t *testing.T) {
+		repo := harnessRepo(t)
+		sentinel := filepath.Join(t.TempDir(), "outside.env")
+		require.NoError(t, os.WriteFile(sentinel, []byte("ORIGINAL=unchanged\n"), 0o600))
+		require.NoError(t, os.Symlink(sentinel, filepath.Join(repo, ".harness", ".env.local")))
+		t.Setenv("MARS_TEST_API_KEY", secret)
+
+		localPath, examplePath, err := WriteLocalCredential(repo, "MARS_TEST_API_KEY")
+		require.Error(t, err)
+		require.Empty(t, localPath)
+		require.Empty(t, examplePath)
+		require.NotContains(t, err.Error(), secret)
+		require.NotContains(t, err.Error(), sentinel)
+		data, readErr := os.ReadFile(sentinel)
+		require.NoError(t, readErr)
+		require.Equal(t, "ORIGINAL=unchanged\n", string(data))
+	})
+}
+
+func TestWriteLocalCredentialTightensModePreservesLocalKeysAndScrubsExampleValues(t *testing.T) {
+	repo := harnessRepo(t)
+	localPath := filepath.Join(repo, ".harness", ".env.local")
+	examplePath := filepath.Join(repo, ".harness", ".env.example")
+	require.NoError(t, os.WriteFile(localPath, []byte("OTHER_TOKEN=keep-me\n"), 0o644))
+	require.NoError(t, os.Chmod(localPath, 0o644))
+	require.NoError(t, os.WriteFile(examplePath, []byte("OTHER_TOKEN=remove-me\nOLD=also-remove\n"), 0o600))
+	require.NoError(t, os.Chmod(examplePath, 0o600))
+	t.Setenv("ANTHROPIC_API_KEY", "new-secret")
+
+	gotLocal, gotExample, err := WriteLocalCredential(repo, "ANTHROPIC_API_KEY")
+	require.NoError(t, err)
+	localInfo, err := os.Stat(gotLocal)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), localInfo.Mode().Perm())
+	localData, err := os.ReadFile(gotLocal)
+	require.NoError(t, err)
+	require.Contains(t, string(localData), "OTHER_TOKEN=keep-me")
+	require.Contains(t, string(localData), "ANTHROPIC_API_KEY=new-secret")
+
+	exampleInfo, err := os.Stat(gotExample)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), exampleInfo.Mode().Perm())
+	exampleData, err := os.ReadFile(gotExample)
+	require.NoError(t, err)
+	require.Equal(t, "ANTHROPIC_API_KEY=\nOLD=\nOTHER_TOKEN=\n", string(exampleData))
+}
+
+func TestEnsureEnvExampleRejectsSymlinkLeafWithoutOutsideMutation(t *testing.T) {
+	repo := harnessRepo(t)
+	sentinel := filepath.Join(t.TempDir(), "outside.env")
+	original := []byte("EXISTING=outside-value\n")
+	require.NoError(t, os.WriteFile(sentinel, original, 0o600))
+	require.NoError(t, os.Symlink(sentinel, filepath.Join(repo, ".harness", ".env.example")))
+
+	path, err := EnsureEnvExample(repo, "NEW_API_KEY")
+	require.Error(t, err)
+	require.Empty(t, path)
+	require.NotContains(t, err.Error(), sentinel)
+	require.NotContains(t, err.Error(), "outside-value")
+	data, readErr := os.ReadFile(sentinel)
+	require.NoError(t, readErr)
+	require.Equal(t, original, data)
+}
+
+func TestLookupCredentialReportsLocalParseFailure(t *testing.T) {
+	repo := harnessRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", ".env.local"), []byte("not-an-env-assignment\n"), 0o600))
+	t.Setenv("MARS_TEST_API_KEY", "")
+
+	value, found, err := LookupCredential(repo, "MARS_TEST_API_KEY")
+	require.ErrorContains(t, err, "parse .harness/.env.local")
+	require.Empty(t, value)
+	require.False(t, found)
+
+	_, err = ResolveProviderRoute(repo, ProviderRoute{
+		Routing:   RoutingCloud,
+		Provider:  ProviderOpenAI,
+		Model:     "model-under-test",
+		APIKeyEnv: "MARS_TEST_API_KEY",
+	})
+	require.ErrorContains(t, err, "read credential env MARS_TEST_API_KEY")
+	require.NotContains(t, err.Error(), "is not set")
+}
+
+func TestResolveProviderRouteMissingCredentialUsesPathRedactedRemediation(t *testing.T) {
+	repo := harnessRepo(t)
+	t.Setenv("MARS_TEST_API_KEY", "")
+
+	_, err := ResolveProviderRoute(repo, ProviderRoute{
+		Routing:   RoutingCloud,
+		Provider:  ProviderOpenAI,
+		Model:     "model-under-test",
+		APIKeyEnv: "MARS_TEST_API_KEY",
+	})
+	require.ErrorContains(t, err, "--repo <path>")
+	require.NotContains(t, err.Error(), repo)
+	require.NotContains(t, err.Error(), "--repo .")
 }
 
 func TestSelectableProvidersHaveOfficialDocsAndAdapterEvidence(t *testing.T) {

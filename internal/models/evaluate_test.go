@@ -55,6 +55,22 @@ func TestEvaluate_requiresEndpointAndModel(t *testing.T) {
 	require.ErrorContains(t, err, "--model is required")
 }
 
+func TestEvaluateReportsCredentialReadFailure(t *testing.T) {
+	repo := harnessRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", ".env.local"), []byte("not-an-env-assignment\n"), 0o600))
+	t.Setenv("MARS_TEST_API_KEY", "")
+
+	_, err := Evaluate(context.Background(), Config{
+		RepoRoot:  repo,
+		Endpoint:  "https://models.example.test/v1",
+		Model:     "model-under-test",
+		Provider:  ProviderOpenAI,
+		APIKeyEnv: "MARS_TEST_API_KEY",
+	})
+	require.ErrorContains(t, err, "read credential env MARS_TEST_API_KEY")
+	require.NotContains(t, err.Error(), "is not set")
+}
+
 func TestEvaluate_runsMechanicalCases(t *testing.T) {
 	var calls int
 	repoRoot := writeBenchmarkTicket(t, "MH-030")
