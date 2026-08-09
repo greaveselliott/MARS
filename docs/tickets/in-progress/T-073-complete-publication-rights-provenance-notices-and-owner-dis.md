@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/validation/reports/2026-08-08-github-hosted-publication-surface-audit.md", "docs/validation/reports/2026-08-09-rights-media-and-name-review.md", "docs/tickets/done/T-072-audit-every-github-hosted-publication-surface.md"]
 verified_by: "pending repository owner, QA, Security, Release Manager, and Orchestrator"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: owner directed that MARS be retained; checkpoint A now requires qualified trademark counsel's written disposition for the directly overlapping Class 42 registration"
-blocker: "Qualified trademark disposition, prompt/AI/automation authority, and the PNG require explicit disposition before checkpoint A can pass."
+last_attempt: "2026-08-09: browser/llama provenance, product claims, deterministic notices, truthful prompt lineage, and current-tree PNG removal are pushed and verified"
+blocker: "Qualified trademark disposition, owner authority over first-party/AI/automation and retained-history PNG material, and exact original-model/quantizer chains remain required."
 blocked_by: []
 trace_id: "launch-rights-provenance:2026-08-08"
-next_action: "Proceed with checkpoint B machine provenance while the owner obtains the qualified trademark disposition and completes the bounded checkpoint-A attestation; do not close checkpoint A or publish."
+next_action: "Resolve the six default model artifacts' exact original-model and quantizer chains, then complete the bounded owner and trademark dispositions; do not close T-073 or publish early."
 dedupe_key: "open-source:rights-provenance-owner-disposition"
 metadata:
   classification: "mixed-unclear-until-disposition"
@@ -84,3 +84,35 @@ provenance and notice evidence while those owner-only inputs are pending, but
 checkpoint D, publication, and visibility remain prohibited.
 The repository remains private; checkpoints B and C do not authorize
 checkpoint D, any later ticket, or any remote/publication action.
+
+## Checkpoint B/C And Current-Tree Remediation Evidence — 2026-08-09
+
+- `c7168c5f06b59c59d0a05f0cbd6966b897b0b3ee` binds the embedded htmx and
+  Chart.js versions, source commits, upstream artifacts, committed bytes, and
+  license files.
+- `f3df0a5520cd18e9d542086b501b1eec81abe5d7` binds llama.cpp `b8833` to its
+  full source commit, license/notice inputs, and four exact platform archives;
+  unsupported Linux acquisition remains disabled for T-077.
+- `2ffde8279327b1623784b66587330dc52e479a09` replaces universal local/no-
+  exfiltration claims with the reviewed local-first, configured-transmission,
+  telemetry-transport, and current-user host-execution boundaries.
+- `79d524b0b9ba8a27f3c907bed84ae77df572d6b8` pins the notice policy and exact
+  reviewed inputs. `dc0dbe087e93f1ee74eb6fa7d49f3f098ea6cd75`
+  generates the four-platform dependency notice union, consumes exactly three
+  reviewed overrides, and adds the non-mutating stale gate. The checked-in
+  notice SHA-256 is
+  `d18a021e0d32c342d733f1c3e59ad72da8893bbbc41ae5dda6dbcca980631739`;
+  GitHub run `31288019067` passes the notice job, Go 1.25.12, Go 1.26.5, and
+  the below-minimum rejection.
+- `a8d448f12d7cd75b376fe40801d89fcf2e07869e` replaces the eleven unsupported
+  symbolic prompt-source headers with verified introduction/comparison facts,
+  `textual_port_evidence: not_established`, and `owner_disposition: pending`.
+  `12faa47e8298d73fe492a47d6923b98cc6015c6e` removes the sole PNG and both
+  live references from current `main` in favor of browser-verified semantic
+  HTML/CSS.
+
+Checkpoint C's machine work is complete. Checkpoint B remains open only for
+the six default model/original/quantizer chains. Checkpoint A and D remain open
+for the owner authority/AI/automation/history-PNG attestation and qualified
+trademark disposition; none of the commits above clears retained history,
+changes visibility, or authorizes publication.

@@ -19,10 +19,12 @@ community surfaces, and the 48-hour canary pass.
 **Primary Status:** `primary_blocked`
 **Current Primary Blocker:** T-073 checkpoint A found a live exact-word `MARS`
 registration in directly overlapping AI-agent/process-automation services;
-prompt/AI authority and sole-media provenance also require owner disposition.
-**Next Primary Action:** obtain a qualified trademark counsel's written
-disposition for retaining `MARS`, while completing the bounded
-prompt/AI/automation/media owner decisions without changing visibility.
+owner authority over retained prompt/AI/automation and historical PNG material
+also remains unsigned, and six default model chains remain incomplete.
+**Next Primary Action:** resolve the six default model/original/quantizer
+chains while the owner obtains the qualified trademark disposition and
+completes the bounded authority/history attestation without changing
+visibility.
 **Supporting Evidence:** the immutable publication-root, prompt, predecessor,
 AI-attribution, media, and official-register evidence recorded below.
 
@@ -44,6 +46,32 @@ a launch no-go. No tag, Release, GitHub setting, visibility, or announcement
 mutation is authorized by this report.
 Only owner-disposition-approved T-073 repository remediation may follow; tag,
 Release, GitHub-setting, visibility, and announcement mutation remain denied.
+
+## Machine Remediation Progress
+
+Current-tree and machine-verifiable T-073 work completed on 2026-08-09:
+
+- `c7168c5` binds the two embedded browser assets and their licenses;
+  `f3df0a5` binds llama.cpp `b8833`, its source/license/notice records, and all
+  four platform archive identities while leaving unsupported Linux download
+  behavior disabled.
+- `2ffde82` corrects local-first, configured-transmission, telemetry, and host-
+  execution claims. `dc0dbe0` generates final deterministic Go/browser/
+  toolchain notices from the four supported release graphs and exactly three
+  reviewed overrides. `THIRD_PARTY_NOTICES` has SHA-256
+  `d18a021e0d32c342d733f1c3e59ad72da8893bbbc41ae5dda6dbcca980631739`;
+  exact GitHub run `31288019067` passes every source-compatibility lane.
+- `a8d448f` replaces all eleven symbolic prompt-source headers with the
+  mechanically verified introduction/comparison facts, explicitly records
+  that textual-port evidence was not established, and leaves owner
+  disposition pending. `12faa47` removes the sole PNG and both live references
+  from current `main` in favor of browser-verified semantic HTML/CSS.
+
+These changes close the machine portions of dependency notices, public claims,
+browser-asset provenance, llama.cpp provenance, prompt-lineage truth, and
+current-tree media removal. They do not establish owner authority, clear the
+historical PNG, resolve the six default model/original/quantizer chains, or
+clear the `MARS` name.
 
 ## Publication Scope
 
