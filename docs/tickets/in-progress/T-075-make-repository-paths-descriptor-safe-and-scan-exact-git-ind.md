@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f"]
-verified_by: "Checkpoint A: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
+evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22"]
+verified_by: "Checkpoints A and B: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint A passed and was pushed at f9993b5; Checkpoint B is current"
+last_attempt: "2026-08-09: Checkpoint B passed and was pushed at b3b5b98; Checkpoint C is current"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-repository-boundary:2026-08-09"
-next_action: "Implement and validate Checkpoint B only: shared exact Git-index secret scanning for CLI and pre-commit/tool policy."
+next_action: "Implement and validate Checkpoint C sub-checkpoint 1 only: migrate the named internal/tools repository writers through repofs."
 dedupe_key: "open-source:repository-path-and-index-secret-boundary"
 metadata:
   classification: "foundation-owned"
@@ -63,6 +63,17 @@ F-017-S002 remain incomplete.
 - Blob/read/unsupported-index failures remain blocked, never clean. Findings expose only repository-relative path, line, broad pattern, and [REDACTED], never candidate bytes or candidate-derived hashes.
 - Focused temp-Git tests cover staged/worktree mismatch, index-only content, force-added and tracked local env, rename, deletion reconciliation, ignored untracked local env, injected read failure, and value-free text/JSON/errors.
 - Commit and push this checkpoint.
+
+Checkpoint B passed at exact commit
+`b3b5b9808e001491da793e515cb71444655dbf22`. The shared CLI and tool-policy
+scanner reads raw stage-0 blobs with Git replacement objects disabled,
+reconciles rename destinations and deletion tombstones, scans tracked and
+force-added local credentials, rejects nested worktree roots, and covers
+present `assume-unchanged` and `skip-worktree` entries. Focused normal/race
+tests, vet, documentation-consistency, DocSync, the staged scan, and the real
+full-repository scan pass with zero findings. QA, Security, Release Manager,
+and the Orchestrator returned GO. This remains checkpoint evidence only;
+Checkpoint C, Checkpoint D, T-075, and F-017-S002 remain incomplete.
 
 ## Checkpoint C — Migrate Named Repository Surfaces
 
