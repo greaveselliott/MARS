@@ -309,7 +309,7 @@ mars telemetry send --repo /path/to/repo</code></pre>
               <pre><code>mars telemetry collect --storage sqlite --addr 127.0.0.1:9092 --db ~/.mars/db/foundation-telemetry/intake.db
 MARS_TELEMETRY_REPORTING=anonymous MARS_TELEMETRY_ENDPOINT=http://127.0.0.1:9092 mars telemetry send --repo /path/to/repo
 mars telemetry triage-foundation --repo /path/to/MARS --db ~/.mars/db/foundation-telemetry/intake.db --window-days 30</code></pre>
-              <p>The collector uses <code>~/.mars/db/foundation-telemetry/intake.db</code> when <code>--db</code> is omitted. Pass it explicitly when the same database will feed <code>triage-foundation</code>.</p>
+              <p>The collector uses <code>~/.mars/db/foundation-telemetry/intake.db</code> when <code>--db</code> is omitted. It accepts only a literal loopback IP, defaults to <code>127.0.0.1:9092</code>, and rejects DNS or remote binds before opening that database. Pass the database explicitly when the same file will feed <code>triage-foundation</code>.</p>
             </article>
           </div>
           <p>

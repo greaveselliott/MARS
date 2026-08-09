@@ -608,7 +608,7 @@ Global command surface:
   telemetry collect
     Run a local foundation telemetry collector.
     Flags: --addr <addr>, --storage sqlite, --db <path>
-    Example: ["telemetry", "collect", "--addr", ":9092", "--storage", "sqlite", "--db", "~/.mars/db/foundation-telemetry/intake.db"]
+    Example: ["telemetry", "collect", "--addr", "127.0.0.1:9092", "--storage", "sqlite", "--db", "~/.mars/db/foundation-telemetry/intake.db"]
 
   telemetry triage-foundation
     Create MARS source tickets from repeated anonymous collector patterns.

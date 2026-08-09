@@ -345,7 +345,7 @@ mars scores export --repo ~/my-project --window-days 30</code></pre>
                 <tr><td><code>mars telemetry preview</code></td><td>Prints the exact allowlisted aggregate payload for review.</td><td>No report sent.</td></tr>
                 <tr><td><code>mars telemetry export --anonymous</code></td><td>Enqueues a sanitized report in the local outbox.</td><td>No collector call by itself.</td></tr>
                 <tr><td><code>mars telemetry send</code></td><td>Sends pending reports only when reporting is configured as anonymous.</td><td>Calls configured collector.</td></tr>
-                <tr><td><code>mars telemetry collect</code></td><td>Runs a SQLite-backed collector.</td><td>Listens on the configured address; use a literal loopback address unless exposure is deliberate and protected.</td></tr>
+                <tr><td><code>mars telemetry collect</code></td><td>Runs a SQLite-backed collector.</td><td>Defaults to <code>127.0.0.1:9092</code> and rejects every non-loopback or DNS address before opening the collector database. Remote collection is unavailable.</td></tr>
                 <tr><td><code>mars telemetry triage-foundation</code></td><td>Creates MARS source tickets from repeated minimized collector patterns.</td><td>Reads collector DB only.</td></tr>
               </tbody>
             </table>

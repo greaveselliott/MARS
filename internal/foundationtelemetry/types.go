@@ -13,6 +13,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -168,6 +169,13 @@ func DecodeBatch(data []byte) (ReportBatch, error) {
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&batch); err != nil {
 		return ReportBatch{}, fmt.Errorf("foundation telemetry: decode batch: %w", err)
+	}
+	var trailing any
+	if err := dec.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return ReportBatch{}, fmt.Errorf("foundation telemetry: decode batch: multiple JSON values")
+		}
+		return ReportBatch{}, fmt.Errorf("foundation telemetry: decode batch: trailing data: %w", err)
 	}
 	if len(batch.Reports) == 0 {
 		return ReportBatch{}, fmt.Errorf("foundation telemetry: reports is required")

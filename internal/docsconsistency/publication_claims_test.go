@@ -128,7 +128,7 @@ func TestLivePublicationClaimsDescribeDataAndHostBoundaries(t *testing.T) {
 			"--addr 127.0.0.1:9092",
 		},
 		"docs/safety-quality-guide.html": {
-			"use a literal loopback address unless exposure is deliberate and protected",
+			"rejects every non-loopback or DNS address before opening the collector database",
 		},
 		"docs/tools-mcp-guide.html": {
 			"current operating-system user's full authority",

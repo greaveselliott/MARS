@@ -55,6 +55,8 @@ func TestMarsCLI_reference(t *testing.T) {
 	require.Contains(t, res.Output, "Anonymous loopback dashboard access is limited")
 	require.Contains(t, res.Output, "rich reads, SSE, and mutation require")
 	require.Contains(t, res.Output, "Default scoped starts fall back to ephemeral local control/dashboard ports")
+	require.Contains(t, res.Output, `["telemetry", "collect", "--addr", "127.0.0.1:9092"`)
+	require.NotContains(t, res.Output, `["telemetry", "collect", "--addr", ":9092"`)
 }
 
 func TestMarsCLI_repoShortcutAppendsRepoFlagForSyncedCommands(t *testing.T) {

@@ -157,7 +157,9 @@ func TestSQLiteStoreDedupesRepeatedPayloadsAndCountsDistinctReportKeys(t *testin
 		require.NoError(t, err)
 		req := httptest.NewRequest(http.MethodPost, ReportsPath, bytes.NewReader(data))
 		rec := httptest.NewRecorder()
-		Handler(store).ServeHTTP(rec, req)
+		req.Host = "127.0.0.1:9092"
+		req.Header.Set("Content-Type", "application/json")
+		Handler(store, "127.0.0.1:9092").ServeHTTP(rec, req)
 		require.Equal(t, http.StatusOK, rec.Code)
 	}
 
@@ -191,9 +193,11 @@ func TestHandlerAcceptsValidBatch(t *testing.T) {
 	data, err := json.Marshal(batch)
 	require.NoError(t, err)
 	req := httptest.NewRequest(http.MethodPost, ReportsPath, bytes.NewReader(data))
+	req.Host = "127.0.0.1:9092"
+	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
-	Handler(store).ServeHTTP(rec, req)
+	Handler(store, "127.0.0.1:9092").ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
 	patterns, err := store.PatternsSince(context.Background(), time.Now().UTC().Add(-48*time.Hour))

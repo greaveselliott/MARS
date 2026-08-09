@@ -98,7 +98,8 @@ Then the payload contains only allowlisted aggregate fields and excludes raw tra
 
 Given a foundation collector receives minimized aggregate report envelopes under the mode named `anonymous`
 When it validates and stores them
-Then local dogfood uses a SQLite intake database and future hosted operation can use a Postgres-compatible backend without changing the deployed-harness protocol
+Then the shipped collector defaults to `127.0.0.1:9092`, rejects DNS and non-loopback binds before database creation, requires the exact local Host and bounded JSON request contract, and stores accepted reports in SQLite
+And remote collector operation remains unavailable until a separately authenticated design exists
 
 Given repeated minimized signatures appear across distinct aggregate report keys or harness versions
 When foundation triage runs

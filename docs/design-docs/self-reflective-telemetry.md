@@ -142,16 +142,17 @@ Aggregate foundation telemetry is opt-in. The configuration mode remains named
 `anonymous`, but that name describes payload minimization rather than anonymous
 transport. A deployed harness sends only
 allowlisted aggregate envelopes to a configured collector endpoint. The collector
-owns the foundation telemetry database. For local dogfood, the collector stores
-reports in SQLite. For broader public operation, the same collector API can use
-a hosted Postgres-compatible backend such as Neon without changing the
-deployed-harness protocol.
+owns the foundation telemetry database. The shipped collector stores reports in
+SQLite, binds only to a literal loopback IP, and rejects DNS or remote binds
+before database creation. A future hosted collector may preserve the deployed
+harness protocol only after a separately authenticated remote design; the
+shipped command cannot be made remote by configuring a token or proxy header.
 
 The write path is:
 
 1. raw local telemetry: `~/.mars/db/{repo-name}/mars.db`
 2. local anonymous outbox: `telemetry_report_outbox` in the same repo DB
-3. collector intake: local SQLite for dogfood, hosted Postgres-compatible storage later
+3. collector intake: literal-loopback SQLite; authenticated hosted storage requires a later design
 4. foundation triage: repeated minimized patterns across distinct aggregate report keys or harness versions become MARS source work, not target repo intervention debt
 
 Remote reporting defaults to off, disabled reporting is healthy, and send

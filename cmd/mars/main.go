@@ -72,6 +72,7 @@ import (
 	"github.com/greaveselliott/mars/internal/llm"
 	"github.com/greaveselliott/mars/internal/mcpstdio"
 	"github.com/greaveselliott/mars/internal/models"
+	"github.com/greaveselliott/mars/internal/network"
 	"github.com/greaveselliott/mars/internal/qualityscore"
 	"github.com/greaveselliott/mars/internal/release"
 	"github.com/greaveselliott/mars/internal/safety"
@@ -3717,13 +3718,17 @@ func telemetryCollectCmd() *cobra.Command {
 		Use:   "collect",
 		Short: "Run a local anonymous foundation telemetry collector",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if strings.TrimSpace(addr) == "" {
-				addr = ":9092"
+			addr = strings.TrimSpace(addr)
+			if addr == "" {
+				addr = "127.0.0.1:9092"
 			}
 			switch strings.ToLower(strings.TrimSpace(storage)) {
 			case "", "sqlite":
 			default:
 				return fmt.Errorf("telemetry collect: storage %q is not implemented in v1; use sqlite", storage)
+			}
+			if err := network.ValidateLiteralLoopbackAddress("telemetry collector", addr); err != nil {
+				return err
 			}
 			if dbPath == "" {
 				home, _ := os.UserHomeDir()
@@ -3735,14 +3740,22 @@ func telemetryCollectCmd() *cobra.Command {
 			}
 			defer store.Close()
 
-			srv := &http.Server{Addr: addr, Handler: foundationtelemetry.Handler(store)}
+			srv := &http.Server{
+				Addr:              addr,
+				Handler:           foundationtelemetry.Handler(store, addr),
+				ReadHeaderTimeout: 5 * time.Second,
+				ReadTimeout:       15 * time.Second,
+				WriteTimeout:      15 * time.Second,
+				IdleTimeout:       30 * time.Second,
+				MaxHeaderBytes:    64 << 10,
+			}
 			go func() {
 				<-cmd.Context().Done()
 				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
 				_ = srv.Shutdown(shutdownCtx)
 			}()
-			fmt.Fprintf(cmd.OutOrStdout(), "Foundation telemetry collector listening on %s, db=%s\n", addr, dbPath)
+			fmt.Fprintf(cmd.OutOrStdout(), "Foundation telemetry collector listening on %s.\n", addr)
 			err = srv.ListenAndServe()
 			if errors.Is(err, http.ErrServerClosed) {
 				return nil
@@ -3750,7 +3763,7 @@ func telemetryCollectCmd() *cobra.Command {
 			return err
 		},
 	}
-	cmd.Flags().StringVar(&addr, "addr", ":9092", "Collector listen address")
+	cmd.Flags().StringVar(&addr, "addr", "127.0.0.1:9092", "Collector literal-loopback listen address")
 	cmd.Flags().StringVar(&storage, "storage", "sqlite", "Collector storage backend (v1: sqlite)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Collector SQLite database path")
 	return cmd

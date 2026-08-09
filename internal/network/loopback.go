@@ -12,6 +12,7 @@ package network
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -32,4 +33,24 @@ func ValidateLoopbackAddress(surface, addr string) error {
 		return nil
 	}
 	return fmt.Errorf("%s address %q is not loopback; bind MARS to 127.0.0.1 or [::1] and place any authenticated remote gateway or reverse proxy in front of it", surface, addr)
+}
+
+// ValidateLiteralLoopbackAddress accepts only a literal loopback IP and a
+// concrete TCP port. It deliberately rejects localhost and other DNS names for
+// entry points whose request Host must match the configured listener exactly.
+func ValidateLiteralLoopbackAddress(surface, addr string) error {
+	host, portText, err := net.SplitHostPort(strings.TrimSpace(addr))
+	if err != nil {
+		return literalLoopbackError(surface)
+	}
+	ip := net.ParseIP(strings.TrimSpace(host))
+	port, err := strconv.Atoi(portText)
+	if err != nil || port < 1 || port > 65535 || ip == nil || !ip.IsLoopback() {
+		return literalLoopbackError(surface)
+	}
+	return nil
+}
+
+func literalLoopbackError(surface string) error {
+	return fmt.Errorf("%s must use a literal loopback IP and TCP port such as 127.0.0.1:9092 or [::1]:9092", surface)
 }
