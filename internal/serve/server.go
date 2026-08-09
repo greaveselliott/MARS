@@ -180,7 +180,7 @@ func New(cfg Config) (*Server, error) {
 	}
 	cfg.WebhookAllowedActorIDs = normalizedActors
 	if cfg.DBPath == "" {
-		return nil, fmt.Errorf("serve: DBPath is required — set it to e.g. \"~/.mars/db/mars.db\"")
+		return nil, fmt.Errorf("serve: DBPath is required — set it to e.g. \"~/.mars-harness/db/mars.db\"")
 	}
 
 	db, err := sql.Open("sqlite", cfg.DBPath+"?_journal=WAL&_busy_timeout=5000")

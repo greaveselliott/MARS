@@ -2972,7 +2972,7 @@ not rewrite git history.`,
 	cmd.Flags().BoolVar(&apply, "apply", false, "Actually remove files and database artifacts; default is dry-run")
 	cmd.Flags().StringVar(&confirm, "confirm", "", "Required with --apply; must equal the target repo directory name")
 	cmd.Flags().BoolVar(&keepDB, "keep-db", false, "Remove repo files but leave the associated database untouched")
-	cmd.Flags().BoolVar(&deleteSharedDB, "delete-shared-db", false, "Allow deleting the legacy shared ~/.mars/db/mars.db database")
+	cmd.Flags().BoolVar(&deleteSharedDB, "delete-shared-db", false, "Allow deleting the legacy shared ~/.mars-harness/db/mars.db database")
 	return cmd
 }
 
@@ -4282,7 +4282,7 @@ func serveCmd() *cobra.Command {
 	cmd.Flags().StringVar(&webhookAddr, "addr", "", "Loopback address to listen on (default 127.0.0.1:<webhook_port>)")
 	cmd.Flags().Int64SliceVar(&webhookActorIDs, "webhook-actor-id", nil, "Trusted numeric GitHub actor ID; repeat for multiple actors (overrides env and YAML)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 2, "Number of concurrent agent workers")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-serve.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")

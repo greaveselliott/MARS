@@ -101,7 +101,7 @@ docs:
               <thead><tr><th>Mode</th><th>Use when</th><th>Default scope</th><th>Default database</th></tr></thead>
               <tbody>
                 <tr><td><code>mars start --repo /path/to/repo --execution-profile host --acknowledge-host-execution</code></td><td>You want one target repo initialized, registered, reconciled, and run with target mutation enabled.</td><td>Single target repo.</td><td><code>~/.mars/db/{repo-name}/mars.db</code>.</td></tr>
-                <tr><td><code>mars serve --execution-profile host --acknowledge-host-execution</code></td><td>You already registered repos and want a long-running mutating orchestrator that receives webhooks and cron triggers.</td><td>All repos in the configured DB.</td><td>Legacy shared DB <code>~/.mars/db/mars.db</code> unless <code>--db</code> is passed.</td></tr>
+                <tr><td><code>mars serve --execution-profile host --acknowledge-host-execution</code></td><td>You already registered repos and want a long-running mutating orchestrator that receives webhooks and cron triggers.</td><td>All repos in the configured DB.</td><td>Legacy shared DB <code>~/.mars-harness/db/mars.db</code> unless <code>--db</code> is passed.</td></tr>
                 <tr><td><code>mars run &lt;role&gt; --repo /path/to/repo</code></td><td>You need one manual role execution rather than the full orchestrator loop.</td><td>One role, one repo, one job.</td><td>Uses the selected repo and command options; not the dashboard loop.</td></tr>
               </tbody>
             </table>
@@ -116,7 +116,7 @@ mars start --repo ~/my-project --dashboard-addr 127.0.0.1:9090 --addr 127.0.0.1:
             <article data-doc-filter>
               <h3>Persistent daemon</h3>
               <pre><code>mars register --repo ~/my-project --remote owner/repo
-mars serve --addr 127.0.0.1:9091 --concurrency 2 --db ~/.mars/db/mars.db --execution-profile host --acknowledge-host-execution</code></pre>
+mars serve --addr 127.0.0.1:9091 --concurrency 2 --db ~/.mars-harness/db/mars.db --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use this when webhooks, schedules, and multiple registered repos should share one orchestrator.</p>
             </article>
           </div>
@@ -324,7 +324,7 @@ open http://localhost:9090</code></pre>
                 <tr><td><code>~/.mars/models/</code></td><td>User machine</td><td>Downloaded GGUF model files and local model cache.</td></tr>
                 <tr><td><code>~/.mars/bin/</code></td><td>User machine</td><td>Managed runtime binaries such as llama-server artifacts.</td></tr>
                 <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td>Scoped target runtime</td><td>Default queue, telemetry, trust, scoring, and registry state for <code>mars start</code>.</td></tr>
-                <tr><td><code>~/.mars/db/mars.db</code></td><td>Shared runtime</td><td>Legacy shared DB used by <code>mars serve</code> unless <code>--db</code> is explicit.</td></tr>
+                <tr><td><code>~/.mars-harness/db/mars.db</code></td><td>Shared runtime</td><td>Legacy shared DB used by <code>mars serve</code> unless <code>--db</code> is explicit.</td></tr>
                 <tr><td><code>~/.mars/traces/</code></td><td>User machine</td><td>Trace and log artifacts from role runs and runtime commands.</td></tr>
                 <tr><td><code>.harness/</code></td><td>Target repo</td><td>Repo-owned role, guardrail, skill, knowledge, manifest, and metadata files.</td></tr>
                 <tr><td><code>docs/</code>, <code>VERSION</code>, <code>CHANGELOG.md</code></td><td>Target repo</td><td>Durable operating model artifacts and release state.</td></tr>

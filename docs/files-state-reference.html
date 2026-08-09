@@ -276,7 +276,7 @@ mars doctor --repo /path/to/repo --json</code></pre>
               <thead><tr><th>Path</th><th>Used by</th><th>Contains</th><th>Cleanup behavior</th></tr></thead>
               <tbody>
                 <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td><code>start</code>, <code>register</code>, repo-scoped flows.</td><td>Queue, telemetry, repo registry, trust, scoring, trace summaries.</td><td><code>eject</code> removes this DB and <code>-shm</code>/<code>-wal</code> files unless <code>--keep-db</code>.</td></tr>
-                <tr><td><code>~/.mars/db/mars.db</code></td><td>Legacy shared <code>serve</code> default.</td><td>Multi-repo registry and runtime state.</td><td><code>eject</code> unregisters the repo but keeps the shared DB unless <code>--delete-shared-db</code>.</td></tr>
+                <tr><td><code>~/.mars-harness/db/mars.db</code></td><td>Legacy shared <code>serve</code> default.</td><td>Multi-repo registry and runtime state.</td><td><code>eject</code> unregisters the repo but keeps the shared DB unless <code>--delete-shared-db</code>.</td></tr>
                 <tr><td>Custom <code>--db</code></td><td>Any command with explicit override.</td><td>Whatever runtime state that command writes.</td><td>Keep outside source and target repos; remove intentionally.</td></tr>
               </tbody>
             </table>

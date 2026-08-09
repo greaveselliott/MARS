@@ -410,7 +410,7 @@ mars eject --repo /path/to/repo --apply --confirm repo --keep-db</code></pre>
                 <tr><td>Target harness files</td><td><code>/path/to/repo/.harness/</code></td><td>Target repo owner after init.</td></tr>
                 <tr><td>Target operating docs</td><td><code>/path/to/repo/AGENTS.md</code>, <code>docs/</code>, <code>VERSION</code>, <code>CHANGELOG.md</code></td><td>Target repo owner and agents.</td></tr>
                 <tr><td>Per-repo database</td><td><code>~/.mars/db/{repo}/mars.db</code></td><td>Local runtime; created by register/start paths.</td></tr>
-                <tr><td>Shared serve database</td><td><code>~/.mars/db/mars.db</code></td><td>Multi-repo orchestrator runtime.</td></tr>
+                <tr><td>Shared serve database</td><td><code>~/.mars-harness/db/mars.db</code></td><td>Multi-repo orchestrator runtime.</td></tr>
                 <tr><td>Logs and traces</td><td><code>~/.mars/traces/</code></td><td>Local operator evidence; copy into repo docs only deliberately.</td></tr>
                 <tr><td>Secret values</td><td>Environment variables or ignored <code>.harness/.env.local</code></td><td>Operator; never commit.</td></tr>
                 <tr><td>Model routing policy</td><td><code>.harness/model-overrides.yaml</code></td><td>Commit when policy should travel with the repo.</td></tr>

@@ -99,7 +99,7 @@ docs:
                 <tr><td><code>~/.mars/config.yaml</code></td><td>Machine</td><td>Local runtime preferences, setup state, installed paths, and private release auth fallback.</td><td>No</td></tr>
                 <tr><td><code>~/.mars/models/</code></td><td>Machine</td><td>Downloaded GGUF model files and local inference assets.</td><td>No</td></tr>
                 <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td>Machine per target</td><td>Default repo-scoped queue, telemetry, scoring, registry, and job state.</td><td>No</td></tr>
-                <tr><td><code>~/.mars/db/mars.db</code></td><td>Machine shared</td><td>Legacy shared default used by <code>mars serve</code> unless <code>--db</code> is set.</td><td>No</td></tr>
+                <tr><td><code>~/.mars-harness/db/mars.db</code></td><td>Machine shared</td><td>Legacy shared default used by <code>mars serve</code> unless <code>--db</code> is set.</td><td>No</td></tr>
                 <tr><td><code>~/.mars/traces/logs/</code></td><td>Machine</td><td>Verbose command logs for <code>run</code>, <code>start</code>, and <code>serve</code>.</td><td>No</td></tr>
                 <tr><td><code>.harness/manifest.yaml</code></td><td>Target repo</td><td>Executable roles, domains, modes, tools, triggers, models, trust, guardrails, and routes.</td><td>Yes</td></tr>
                 <tr><td><code>.harness/model-overrides.yaml</code></td><td>Target repo</td><td>Repo-owned model routing metadata. Stores env var names, not raw secrets.</td><td>Usually yes</td></tr>

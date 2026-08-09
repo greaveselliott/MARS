@@ -191,7 +191,7 @@ mars/
 Each repo gets its own SQLite database to prevent cross-project contamination:
 
 - **`start` and `register`**: default DB path is `~/.mars/db/{repo-name}/mars.db`
-- **`serve`**: uses the shared legacy path `~/.mars/db/mars.db` (designed for multi-repo orchestration)
+- **`serve`**: uses the shared legacy path `~/.mars-harness/db/mars.db` (designed for multi-repo orchestration)
 - **`doctor --repo`**: checks the per-repo database for the specified repository
 - **`--db` flag**: explicit override on any command, takes precedence over defaults
 

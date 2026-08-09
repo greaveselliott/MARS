@@ -135,7 +135,7 @@ After running the dogfood agent against `recruiter-workflow-portal`, the reposit
 
 ### Context
 
-When running `mars start --repo A` then `mars start --repo B`, both shared the same SQLite database at `~/.mars/db/mars.db`. This caused three contamination vectors:
+When running `mars start --repo A` then `mars start --repo B`, both shared the same SQLite database at `~/.mars-harness/db/mars.db`. This caused three contamination vectors:
 
 1. **Stale job pickup** — `Claim()` in `internal/queue/queue.go` grabs the oldest pending job across all repos, not scoped to the current repo. Pending/orphaned jobs from repo A could be claimed by a process started for repo B.
 2. **Cron schedules for wrong repos** — `Start()` in `internal/serve/server.go` calls `s.repos.List(ctx)` which loads every repo ever registered, then `registerCronSchedules(repos)` creates scheduled jobs for all of them.
@@ -145,7 +145,7 @@ The agent loop, LLM client, and learnings store were all correctly isolated per-
 
 ### Changes
 
-1. **Per-repo database path** — Default DB path changed from `~/.mars/db/mars.db` to `~/.mars/db/{repo-slug}/mars.db`, where `repo-slug` is `filepath.Base(absPath)`. Applied to `startCmd`, `registerCmd`, and `doctorCmd`. The `serveCmd` keeps the legacy shared path (for multi-repo orchestration) with an informational log.
+1. **Per-repo database path** — Default DB path changed from `~/.mars-harness/db/mars.db` to `~/.mars/db/{repo-slug}/mars.db`, where `repo-slug` is `filepath.Base(absPath)`. Applied to `startCmd`, `registerCmd`, and `doctorCmd`. The `serveCmd` keeps the legacy shared path (for multi-repo orchestration) with an informational log.
 
 2. **`defaultDBPath()` / `legacyDBPath()` helpers** — Centralised in `cmd/mars/main.go` to keep derivation DRY and consistent across commands.
 

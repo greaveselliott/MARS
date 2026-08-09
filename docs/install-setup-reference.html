@@ -309,7 +309,7 @@ mars models list --provider registry --json</code></pre>
                 <tr><td><code>~/.mars/bin/</code></td><td>Managed helper binaries such as llama-server.</td><td>No.</td></tr>
                 <tr><td><code>~/.mars/models/</code></td><td>Downloaded GGUF model artifacts.</td><td>No.</td></tr>
                 <tr><td><code>~/.mars/db/{repo}/mars.db</code></td><td>Per-target queue, telemetry, scores, and runtime state.</td><td>No.</td></tr>
-                <tr><td><code>~/.mars/db/mars.db</code></td><td>Shared multi-repo serve database.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars-harness/db/mars.db</code></td><td>Shared multi-repo serve database.</td><td>No.</td></tr>
                 <tr><td><code>~/.mars/traces/</code></td><td>Local command logs and traces.</td><td>No, unless sanitized into evidence deliberately.</td></tr>
                 <tr><td><code>.harness/.env.local</code></td><td>Ignored target-local provider credentials.</td><td>Never.</td></tr>
                 <tr><td><code>.harness/.env.example</code></td><td>Credential environment variable names only.</td><td>Yes.</td></tr>
