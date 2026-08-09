@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** None — T-074 is complete; T-075 has not yet been created
+**Current Ticket:** T-075 — make repository paths descriptor-safe and scan exact Git index blobs
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -14,7 +14,7 @@
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
 **Current Failing Scenario:** F-017-S002 — T-074 network entry points pass, while descriptor-safe repository filesystem and complete staged/index secret scanning remain pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** Create T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
+**Walking Skeleton Slice:** Deliver T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
 **Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Create T-075 through `ticket_create`, freeze its smallest descriptor-safe repository-filesystem and staged-secret-scanning contract, and commit the planning handoff before source work.
+- **Next Primary Action:** Implement and validate only T-075 Checkpoint A: a thin standard-library `os.Root` repository filesystem plus the direct file-tool migration, then commit and push it before further scope.
 
 ## Starting Baseline
 
@@ -188,6 +188,30 @@ Remote telemetry, a generalized HTTP framework, dashboard/webhook changes, and
 all T-075 through T-077 surfaces remained out of scope. T-074 is complete but
 does not close F-017-S002 by itself, and it grants no release, settings,
 visibility, or publication authority.
+
+## Next Walking Skeleton — T-075
+
+T-075 was created through `ticket_create` after bounded COO, CTO-weekly, QA,
+and Security scope review. Two reachable gaps define the ticket: universal
+file operations use lexical path checks before ordinary filesystem calls, so a
+hostile repository symlink can redirect reads or writes outside the selected
+repo; staged secret scanning enumerates index names but reads worktree bytes,
+so partially staged, index-only, renamed, tracked, or force-added secret bytes
+can pass falsely.
+
+Checkpoint A uses Go's standard-library `os.Root` as the descriptor-bound
+containment primitive and migrates only the direct file tools. Checkpoint B
+scans exact stage-0 Git index blobs and omits `.harness/.env.local` only when it
+is genuinely untracked and ignored. Checkpoint C mechanically migrates the
+finite named ticket/tool/persona, target lifecycle, credential/model,
+bundle/context, and release writer surfaces in independently green commits.
+Checkpoint D records one finite callsite inventory, proportionate tests,
+four-platform builds, installed clean-target smoke, and bounded role sign-off.
+
+No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
+arbitrary shell containment, global-state permission work, version, Release,
+settings, visibility, or publication mutation is authorized. T-075 cannot
+close F-017-S002 by itself.
 
 ## Completion Gates By Ticket
 
