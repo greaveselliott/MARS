@@ -477,6 +477,17 @@ func TestSessionInvalidationClosesSSEOnLogoutRestartAndExpiry(t *testing.T) {
 	}
 }
 
+func TestDashboardLogoutReloadsAnonymousPage(t *testing.T) {
+	body, err := content.ReadFile("static/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "request(\"/api/logout\", { method: \"POST\" })\n      .then(function () { window.location.reload(); })"
+	if !strings.Contains(string(body), want) {
+		t.Fatal("dashboard logout does not reload the current same-origin page after session invalidation")
+	}
+}
+
 func TestLoginSessionBootstrapAllowsMutationWithoutSecondSecret(t *testing.T) {
 	called := 0
 	d, err := New(Config{ControlSecret: testControlSecret, Controls: ControlCallbacks{Pause: func() { called++ }}})

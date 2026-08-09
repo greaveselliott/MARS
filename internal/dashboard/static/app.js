@@ -107,7 +107,7 @@ docs:
 
   function logoutDashboard() {
     request("/api/logout", { method: "POST" })
-      .then(function () { csrfToken = ""; if (eventSource) eventSource.close(); showAuthState(401); })
+      .then(function () { window.location.reload(); })
       .catch(function (err) { showAuthError(err); });
   }
 
