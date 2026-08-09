@@ -93,6 +93,19 @@ func TestDetectConventions_go(t *testing.T) {
 	require.Equal(t, "go build ./...", conv.BuildCommand)
 }
 
+func TestDetectConventions_doesNotFollowSymlinkInput(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "package.json")
+	require.NoError(t, os.WriteFile(outside, []byte(`{"scripts":{"test":"outside"}}`), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(root, "package.json")))
+
+	conv := DetectConventions(root)
+	require.Empty(t, conv.Language)
+	require.Empty(t, conv.TestCommand)
+	require.FileExists(t, outside)
+}
+
 func TestExtractFailureLesson(t *testing.T) {
 	t.Parallel()
 

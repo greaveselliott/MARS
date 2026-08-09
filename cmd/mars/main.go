@@ -2017,8 +2017,13 @@ func loadSourceFoundationRunProfile(repoRoot string) (*bundle.Manifest, bundle.R
 		},
 	}
 
-	promptPath := filepath.Join(repoRoot, "docs", "roles", "personas", "foundation-maintainer.md")
-	prompt, err := os.ReadFile(promptPath)
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("run: open source repository: %w", err)
+	}
+	promptRel := filepath.Join("docs", "roles", "personas", "foundation-maintainer.md")
+	promptPath := filepath.Join(root.Abs(), promptRel)
+	prompt, err := root.ReadFile(promptRel)
 	if err != nil {
 		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("run: read source-only foundation role packet %s: %w", promptPath, err)
 	}
@@ -2096,7 +2101,11 @@ func sourceFoundationKnowledgeRoutes() []bundle.KnowledgeRoute {
 }
 
 func isMarsSourceRepo(repoRoot string) bool {
-	goMod, err := os.ReadFile(filepath.Join(repoRoot, "go.mod"))
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return false
+	}
+	goMod, err := root.ReadFile("go.mod")
 	if err != nil || !goModDeclaresModule(string(goMod), "github.com/greaveselliott/mars") {
 		return false
 	}
@@ -2105,7 +2114,7 @@ func isMarsSourceRepo(repoRoot string) bool {
 		filepath.Join("internal", "scanner", "init.go"),
 		"AGENTS.md",
 	} {
-		if _, err := os.Stat(filepath.Join(repoRoot, rel)); err != nil {
+		if _, err := root.Stat(rel); err != nil {
 			return false
 		}
 	}

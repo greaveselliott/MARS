@@ -9,13 +9,16 @@ package tickets
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 const (
@@ -51,21 +54,25 @@ type Ticket struct {
 
 // List reads docs/tickets/{backlog,in-progress,in-review,done} from repoRoot.
 func List(repoRoot string) ([]Ticket, error) {
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("tickets: open repository: %w", err)
+	}
 	var out []Ticket
 	for _, status := range []string{StatusBacklog, StatusInProgress, StatusInReview, StatusDone} {
-		dir := filepath.Join(repoRoot, "docs", "tickets", status)
-		entries, err := os.ReadDir(dir)
+		dir := filepath.Join("docs", "tickets", status)
+		entries, err := readTicketDirectory(root, dir)
 		if err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			return nil, fmt.Errorf("tickets: read %s: %w", dir, err)
+			return nil, fmt.Errorf("tickets: read %s: %w", filepath.Join(root.Abs(), dir), err)
 		}
 		for _, entry := range entries {
 			if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" || entry.Name() == "README.md" {
 				continue
 			}
-			t, err := readTicket(filepath.Join(dir, entry.Name()), repoRoot, status, entry.Name())
+			t, err := readTicket(root, filepath.Join(dir, entry.Name()), status, entry.Name())
 			if err != nil {
 				return nil, err
 			}
@@ -193,13 +200,16 @@ func (t Ticket) LastActivityLabel() string {
 	return "unknown"
 }
 
-func readTicket(path, repoRoot, status, name string) (Ticket, error) {
-	info, err := os.Stat(path)
+func readTicket(root *repofs.Root, path, status, name string) (Ticket, error) {
+	displayPath := filepath.Join(root.Abs(), path)
+	info, err := root.Stat(path)
 	if err != nil {
-		return Ticket{}, fmt.Errorf("tickets: stat %s: %w", path, err)
+		return Ticket{}, fmt.Errorf("tickets: stat %s: %w", displayPath, err)
 	}
-	frontmatter := readFrontmatter(path)
-	rel, _ := filepath.Rel(repoRoot, path)
+	frontmatter, err := readFrontmatter(root, path)
+	if err != nil {
+		return Ticket{}, fmt.Errorf("tickets: read %s: %w", displayPath, err)
+	}
 	id := strings.TrimSpace(frontmatter["id"])
 	if id == "" {
 		id = IDFromName(name)
@@ -208,7 +218,7 @@ func readTicket(path, repoRoot, status, name string) (Ticket, error) {
 	return Ticket{
 		ID:            id,
 		Name:          name,
-		RelPath:       filepath.ToSlash(rel),
+		RelPath:       filepath.ToSlash(path),
 		Status:        status,
 		Title:         strings.Trim(strings.TrimSpace(frontmatter["title"]), `"'`),
 		Priority:      strings.Trim(strings.TrimSpace(frontmatter["priority"]), `"'`),
@@ -225,11 +235,11 @@ func readTicket(path, repoRoot, status, name string) (Ticket, error) {
 	}, nil
 }
 
-func readFrontmatter(path string) map[string]string {
+func readFrontmatter(root *repofs.Root, path string) (map[string]string, error) {
 	out := map[string]string{}
-	f, err := os.Open(path)
+	f, err := root.OpenFile(path)
 	if err != nil {
-		return out
+		return nil, err
 	}
 	defer f.Close()
 
@@ -253,7 +263,24 @@ func readFrontmatter(path string) map[string]string {
 		}
 		out[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}
-	return out
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func readTicketDirectory(root *repofs.Root, path string) ([]fs.DirEntry, error) {
+	directory, err := root.OpenFile(path)
+	if err != nil {
+		return nil, err
+	}
+	defer directory.Close()
+	entries, err := directory.ReadDir(-1)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	return entries, nil
 }
 
 func IDFromName(name string) string {

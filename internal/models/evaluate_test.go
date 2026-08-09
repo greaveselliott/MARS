@@ -241,6 +241,22 @@ func TestEvaluate_failedBenchmarkCasesRemainVisible(t *testing.T) {
 	require.Equal(t, "blocked", report.Promotion.Decision)
 }
 
+func TestFindBenchmarkTicketRejectsSymlinkLeaf(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	dir := filepath.Join(root, "docs", "tickets", "backlog")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	outside := filepath.Join(t.TempDir(), "T-900-outside.md")
+	require.NoError(t, os.WriteFile(outside, []byte("---\nid: T-900\n---\n"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "T-900-outside.md")))
+
+	path, body, err := findBenchmarkTicket(root)
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.Empty(t, path)
+	require.Empty(t, body)
+	require.FileExists(t, outside)
+}
+
 func writeBenchmarkTicket(t *testing.T, id string) string {
 	t.Helper()
 	root := t.TempDir()

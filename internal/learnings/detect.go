@@ -11,24 +11,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 // DetectConventions scans a repo root and returns detected conventions.
 func DetectConventions(repoRoot string) Conventions {
 	var conv Conventions
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		slog.Debug("learnings: repository conventions unavailable", "error", err)
+		return conv
+	}
 
-	conv.PackageManager = detectPackageManager(repoRoot)
-	conv.Language = detectLanguage(repoRoot)
-	conv.Framework = detectFramework(repoRoot)
+	conv.PackageManager = detectPackageManager(root)
+	conv.Language = detectLanguage(root)
+	conv.Framework = detectFramework(root)
 
-	scripts := detectScripts(repoRoot)
+	scripts := detectScripts(root)
 	conv.TestCommand = scripts["test"]
 	conv.LintCommand = scripts["lint"]
 	conv.BuildCommand = scripts["build"]
-	conv.StartCommand = detectStartCommand(repoRoot, conv.Framework, conv.Language, conv.PackageManager)
-	conv.DevPort = detectDevPort(conv.Framework, repoRoot)
+	conv.StartCommand = detectStartCommand(root, conv.Framework, conv.Language, conv.PackageManager)
+	conv.DevPort = detectDevPort(conv.Framework, root)
 
 	slog.Debug("learnings: detected conventions",
 		"repo", repoRoot,
@@ -45,9 +50,13 @@ func DetectConventions(repoRoot string) Conventions {
 // plus any detected project-specific ones.
 func DetectExcludes(repoRoot string) []string {
 	standard := []string{"node_modules", ".git", "dist", "vendor", "build", ".next", "__pycache__"}
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return standard[:3]
+	}
 	var result []string
 	for _, dir := range standard {
-		if info, err := os.Stat(filepath.Join(repoRoot, dir)); err == nil && info.IsDir() {
+		if info, err := root.Stat(dir); err == nil && info.IsDir() {
 			result = append(result, dir)
 		}
 	}
@@ -57,7 +66,7 @@ func DetectExcludes(repoRoot string) []string {
 	return result
 }
 
-func detectPackageManager(root string) string {
+func detectPackageManager(root *repofs.Root) string {
 	checks := []struct {
 		file    string
 		manager string
@@ -73,14 +82,14 @@ func detectPackageManager(root string) string {
 		{"requirements.txt", "pip"},
 	}
 	for _, c := range checks {
-		if fileExists(filepath.Join(root, c.file)) {
+		if fileExists(root, c.file) {
 			return c.manager
 		}
 	}
 	return ""
 }
 
-func detectLanguage(root string) string {
+func detectLanguage(root *repofs.Root) string {
 	checks := []struct {
 		file string
 		lang string
@@ -97,14 +106,14 @@ func detectLanguage(root string) string {
 		{"pom.xml", "java"},
 	}
 	for _, c := range checks {
-		if fileExists(filepath.Join(root, c.file)) {
+		if fileExists(root, c.file) {
 			return c.lang
 		}
 	}
 	return ""
 }
 
-func detectFramework(root string) string {
+func detectFramework(root *repofs.Root) string {
 	checks := []struct {
 		file      string
 		framework string
@@ -121,19 +130,18 @@ func detectFramework(root string) string {
 		{"astro.config.mjs", "astro"},
 	}
 	for _, c := range checks {
-		if fileExists(filepath.Join(root, c.file)) {
+		if fileExists(root, c.file) {
 			return c.framework
 		}
 	}
 	return ""
 }
 
-func detectScripts(root string) map[string]string {
+func detectScripts(root *repofs.Root) map[string]string {
 	result := map[string]string{}
 
-	pkgJSON := filepath.Join(root, "package.json")
-	if fileExists(pkgJSON) {
-		data, err := os.ReadFile(pkgJSON)
+	if fileExists(root, "package.json") {
+		data, err := root.ReadFile("package.json")
 		if err == nil {
 			var pkg struct {
 				Scripts map[string]string `json:"scripts"`
@@ -152,9 +160,8 @@ func detectScripts(root string) map[string]string {
 		}
 	}
 
-	makefile := filepath.Join(root, "Makefile")
-	if fileExists(makefile) {
-		data, _ := os.ReadFile(makefile)
+	if fileExists(root, "Makefile") {
+		data, _ := root.ReadFile("Makefile")
 		content := string(data)
 		for _, target := range []string{"test", "lint", "build"} {
 			if _, ok := result[target]; ok {
@@ -166,8 +173,7 @@ func detectScripts(root string) map[string]string {
 		}
 	}
 
-	gomod := filepath.Join(root, "go.mod")
-	if fileExists(gomod) {
+	if fileExists(root, "go.mod") {
 		if _, ok := result["test"]; !ok {
 			result["test"] = "go test ./..."
 		}
@@ -197,10 +203,9 @@ func containsSubstr(s, sub string) bool {
 	return false
 }
 
-func detectStartCommand(root, framework, language, pm string) string {
-	pkgJSON := filepath.Join(root, "package.json")
-	if fileExists(pkgJSON) {
-		data, err := os.ReadFile(pkgJSON)
+func detectStartCommand(root *repofs.Root, framework, language, pm string) string {
+	if fileExists(root, "package.json") {
+		data, err := root.ReadFile("package.json")
 		if err == nil {
 			var pkg struct {
 				Scripts map[string]string `json:"scripts"`
@@ -222,25 +227,25 @@ func detectStartCommand(root, framework, language, pm string) string {
 
 	switch language {
 	case "go":
-		if fileExists(filepath.Join(root, "cmd")) {
+		if fileExists(root, "cmd") {
 			return "go run ./cmd/..."
 		}
 		return "go run ."
 	case "python":
-		if fileExists(filepath.Join(root, "manage.py")) {
+		if fileExists(root, "manage.py") {
 			return "python manage.py runserver"
 		}
 		return "python -m http.server 8000"
 	}
 
-	if fileExists(filepath.Join(root, "index.html")) {
+	if fileExists(root, "index.html") {
 		return "python -m http.server 8080"
 	}
 
 	return ""
 }
 
-func detectDevPort(framework, root string) string {
+func detectDevPort(framework string, root *repofs.Root) string {
 	switch framework {
 	case "next.js":
 		return "3000"
@@ -258,17 +263,17 @@ func detectDevPort(framework, root string) string {
 		return "4321"
 	}
 
-	if fileExists(filepath.Join(root, "index.html")) {
+	if fileExists(root, "index.html") {
 		return "8080"
 	}
-	if fileExists(filepath.Join(root, "go.mod")) {
+	if fileExists(root, "go.mod") {
 		return "8080"
 	}
-	if fileExists(filepath.Join(root, "manage.py")) {
+	if fileExists(root, "manage.py") {
 		return "8000"
 	}
 
-	if fileExists(filepath.Join(root, "package.json")) {
+	if fileExists(root, "package.json") {
 		return "3000"
 	}
 
@@ -402,7 +407,7 @@ CMD ["%s"]
 `, port, conv.StartCommand)
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
+func fileExists(root *repofs.Root, path string) bool {
+	_, err := root.Stat(path)
 	return err == nil
 }

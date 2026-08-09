@@ -258,6 +258,34 @@ roles:
 	assert.Contains(t, err.Error(), "is empty")
 }
 
+func TestRepositoryRoleAndGuardrailReadsRejectSymlinkLeaves(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	outside := t.TempDir()
+	writeFixture(t, outside, "prompt.md", "outside prompt")
+	writeFixture(t, outside, "guardrails.yaml", "rules: []\n")
+	require.NoError(t, os.MkdirAll(filepath.Join(root, ".harness", "roles"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, ".harness", "guardrails"), 0o755))
+	require.NoError(t, os.Symlink(filepath.Join(outside, "prompt.md"), filepath.Join(root, ".harness", "roles", "fixer.md")))
+	require.NoError(t, os.Symlink(filepath.Join(outside, "guardrails.yaml"), filepath.Join(root, ".harness", "guardrails", "fixer.yaml")))
+
+	manifest := &Manifest{Roles: map[string]RoleConfig{
+		"fixer": {
+			Prompt:     "roles/fixer.md",
+			Guardrails: []string{"guardrails/fixer.yaml"},
+		},
+	}}
+
+	prompt, err := manifest.RolePrompt(root, "fixer")
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.Empty(t, prompt)
+	rules, err := manifest.LoadGuardrails(root, "fixer")
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.Empty(t, rules)
+	require.FileExists(t, filepath.Join(outside, "prompt.md"))
+	require.FileExists(t, filepath.Join(outside, "guardrails.yaml"))
+}
+
 func TestLoad_HarnessDirIsFile(t *testing.T) {
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, ".harness"), []byte("oops"), 0o644))

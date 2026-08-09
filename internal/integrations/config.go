@@ -9,11 +9,13 @@ docs:
 package integrations
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
+	"github.com/greaveselliott/mars/internal/repofs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -141,9 +143,13 @@ type DeliveryConfig struct {
 
 // Load reads optional repo integration configuration. Missing config is disabled state.
 func Load(repoRoot string) (Config, error) {
-	path := filepath.Join(strings.TrimSpace(repoRoot), integrationsPath)
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
+	root, err := repofs.Open(strings.TrimSpace(repoRoot))
+	if err != nil {
+		return Config{}, fmt.Errorf("integrations: open repository: %w", err)
+	}
+	path := filepath.Join(root.Abs(), integrationsPath)
+	data, err := root.ReadFile(integrationsPath)
+	if errors.Is(err, fs.ErrNotExist) {
 		return Defaults(), nil
 	}
 	if err != nil {

@@ -11,10 +11,15 @@ package bundle
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 // SkillDef is a skill loaded from .harness/skills/<name>/SKILL.md.
@@ -28,25 +33,41 @@ type SkillDef struct {
 // Each subdirectory containing a SKILL.md is treated as a skill.
 // Returns nil (not error) if the directory doesn't exist.
 func LoadSkills(repoRoot, roleScope string) ([]SkillDef, error) {
-	dir := filepath.Join(repoRoot, harnessDir, "skills")
-	entries, err := os.ReadDir(dir)
-	if os.IsNotExist(err) {
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("bundle: open repository: %w", err)
+	}
+	dir := filepath.Join(harnessDir, "skills")
+	directory, err := root.OpenFile(dir)
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("bundle: read skills directory: %w", err)
 	}
+	entries, err := directory.ReadDir(-1)
+	closeErr := directory.Close()
+	if err != nil {
+		return nil, fmt.Errorf("bundle: read skills directory: %w", err)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("bundle: close skills directory: %w", closeErr)
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 
 	roleScope = strings.TrimSpace(strings.ToLower(roleScope))
 	var skills []SkillDef
 
 	for _, entry := range entries {
+		if entry.Type()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("bundle: skill %q uses a symbolic link — replace it with a repository file", entry.Name())
+		}
 		if !entry.IsDir() {
 			continue
 		}
 		skillPath := filepath.Join(dir, entry.Name(), "SKILL.md")
-		data, err := os.ReadFile(skillPath)
-		if os.IsNotExist(err) {
+		data, err := root.ReadFile(skillPath)
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 		if err != nil {

@@ -112,3 +112,18 @@ Available to all.
 	require.NoError(t, err)
 	require.Len(t, skills, 1)
 }
+
+func TestLoadSkills_rejectsSymlinkLeaf(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	skillsDir := filepath.Join(root, ".harness", "skills", "outside")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	outside := filepath.Join(t.TempDir(), "SKILL.md")
+	require.NoError(t, os.WriteFile(outside, []byte("outside instructions"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(skillsDir, "SKILL.md")))
+
+	skills, err := LoadSkills(root, "engineer")
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.Empty(t, skills)
+	require.FileExists(t, outside)
+}

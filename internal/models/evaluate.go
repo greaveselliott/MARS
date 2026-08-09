@@ -10,15 +10,19 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 const (
@@ -554,21 +558,38 @@ func findBenchmarkTicket(repoRoot string) (string, string, error) {
 	if strings.TrimSpace(repoRoot) == "" {
 		return "", "", fmt.Errorf("repo-backed benchmark: repo root is required")
 	}
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return "", "", fmt.Errorf("repo-backed benchmark: open repository: %w", err)
+	}
 	for _, dir := range []string{
-		filepath.Join(repoRoot, "docs", "tickets", "in-progress"),
-		filepath.Join(repoRoot, "docs", "tickets", "backlog"),
-		filepath.Join(repoRoot, "docs", "tickets", "done"),
+		filepath.Join("docs", "tickets", "in-progress"),
+		filepath.Join("docs", "tickets", "backlog"),
+		filepath.Join("docs", "tickets", "done"),
 	} {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
+		directory, err := root.OpenFile(dir)
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
+		if err != nil {
+			return "", "", fmt.Errorf("repo-backed benchmark: read %s: %w", dir, err)
+		}
+		entries, readErr := directory.ReadDir(-1)
+		closeErr := directory.Close()
+		if readErr != nil {
+			return "", "", fmt.Errorf("repo-backed benchmark: read %s: %w", dir, readErr)
+		}
+		if closeErr != nil {
+			return "", "", fmt.Errorf("repo-backed benchmark: close %s: %w", dir, closeErr)
+		}
+		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 		for _, entry := range entries {
 			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 				continue
 			}
-			path := filepath.Join(dir, entry.Name())
-			data, err := os.ReadFile(path)
+			rel := filepath.Join(dir, entry.Name())
+			path := filepath.Join(root.Abs(), rel)
+			data, err := root.ReadFile(rel)
 			if err != nil {
 				return "", "", fmt.Errorf("repo-backed benchmark: read %s: %w", path, err)
 			}

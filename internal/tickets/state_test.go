@@ -10,6 +10,7 @@ package tickets
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -81,6 +82,24 @@ blocked_by: ["T-004"]
 	}
 	if len(stale) != 1 || stale[0].ID != "T-001" {
 		t.Fatalf("expected only T-001 stale, got %#v", stale)
+	}
+}
+
+func TestListRejectsSymlinkTicketLeaf(t *testing.T) {
+	t.Parallel()
+	dir := setupTicketRepo(t)
+	outside := filepath.Join(t.TempDir(), "T-900-outside.md")
+	if err := os.WriteFile(outside, []byte("---\nid: T-900\n---\n"), 0o644); err != nil {
+		t.Fatalf("write outside ticket: %v", err)
+	}
+	link := filepath.Join(dir, "docs", "tickets", StatusBacklog, "T-900-outside.md")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatalf("symlink ticket: %v", err)
+	}
+
+	tickets, err := List(dir)
+	if err == nil || !strings.Contains(err.Error(), "symbolic links are not allowed") {
+		t.Fatalf("expected symlink rejection, got tickets=%#v err=%v", tickets, err)
 	}
 }
 

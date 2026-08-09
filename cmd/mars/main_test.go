@@ -910,6 +910,37 @@ func TestRunCommandFoundationMaintainerDryRunUsesSourceProfileWithoutInit(t *tes
 	require.NoFileExists(t, filepath.Join(root, ".harness", "manifest.yaml"))
 }
 
+func TestSourceFoundationProfileRejectsSymlinkPrompt(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	promptDir := filepath.Join(root, "docs", "roles", "personas")
+	require.NoError(t, os.MkdirAll(promptDir, 0o755))
+	outside := filepath.Join(t.TempDir(), "foundation-maintainer.md")
+	require.NoError(t, os.WriteFile(outside, []byte("outside foundation instructions"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(promptDir, "foundation-maintainer.md")))
+
+	_, _, prompt, _, _, _, err := loadSourceFoundationRunProfile(root)
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.Empty(t, prompt)
+	require.FileExists(t, outside)
+}
+
+func TestMarsSourceAdmissionRejectsSymlinkMarker(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "cmd", "mars"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "internal", "scanner"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module github.com/greaveselliott/mars\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "internal", "scanner", "init.go"), []byte("package scanner\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte("# Agent guide\n"), 0o644))
+	outside := filepath.Join(t.TempDir(), "main.go")
+	require.NoError(t, os.WriteFile(outside, []byte("package main\n"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(root, "cmd", "mars", "main.go")))
+
+	require.False(t, isMarsSourceRepo(root))
+	require.FileExists(t, outside)
+}
+
 func TestRunCommandDryRunInjectsCodeGraphContextForGeneratedEngineer(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")

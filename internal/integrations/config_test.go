@@ -33,6 +33,19 @@ func TestLoad_missingConfigDefaultsDisabled(t *testing.T) {
 	require.Equal(t, JIRAProviderREST, cfg.Ingestion.JIRA.Provider)
 }
 
+func TestLoad_rejectsSymlinkConfig(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(root, ".harness"), 0o755))
+	outside := filepath.Join(t.TempDir(), "integrations.yaml")
+	require.NoError(t, os.WriteFile(outside, []byte("version: 1\nflow_profile: board-driven\n"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(root, integrationsPath)))
+
+	_, err := Load(root)
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.FileExists(t, outside)
+}
+
 func TestLoad_boardDrivenConfig(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()

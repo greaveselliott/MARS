@@ -10,13 +10,15 @@ docs:
 package bundle
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/greaveselliott/mars/internal/guardrails"
+	"github.com/greaveselliott/mars/internal/repofs"
 	"github.com/greaveselliott/mars/internal/trust"
 	"gopkg.in/yaml.v3"
 )
@@ -56,11 +58,15 @@ func Load(repoRoot string) (*Manifest, error) {
 	if repoRoot == "" {
 		return nil, fmt.Errorf("bundle: repo root path is empty — pass --repo <path> to specify the target repository")
 	}
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("bundle: open repository: %w", err)
+	}
 
-	dir := filepath.Join(repoRoot, harnessDir)
-	info, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("bundle: missing %s/ directory in %s — run `mars init` to create one", harnessDir, repoRoot)
+	dir := filepath.Join(root.Abs(), harnessDir)
+	info, err := root.Stat(harnessDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("bundle: missing %s/ directory in %s — run `mars init` to create one", harnessDir, root.Abs())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("bundle: stat %s: %w", dir, err)
@@ -70,8 +76,8 @@ func Load(repoRoot string) (*Manifest, error) {
 	}
 
 	path := filepath.Join(dir, manifestFile)
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
+	data, err := root.ReadFile(filepath.Join(harnessDir, manifestFile))
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("bundle: missing %s in %s — run `mars init` to scaffold the bundle", manifestFile, dir)
 	}
 	if err != nil {
@@ -175,9 +181,17 @@ func (m *Manifest) RolePrompt(repoRoot, roleName string) (string, error) {
 		return "", fmt.Errorf("bundle: role %q not found in manifest; available roles: %s", roleName, strings.Join(available, ", "))
 	}
 
-	promptPath := filepath.Join(repoRoot, harnessDir, role.Prompt)
-	data, err := os.ReadFile(promptPath)
-	if os.IsNotExist(err) {
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return "", fmt.Errorf("bundle: open repository: %w", err)
+	}
+	promptRel, err := resolveHarnessPath(role.Prompt)
+	if err != nil {
+		return "", err
+	}
+	promptPath := filepath.Join(root.Abs(), promptRel)
+	data, err := root.ReadFile(promptRel)
+	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("bundle: prompt file %q for role %q not found — create %s", role.Prompt, roleName, promptPath)
 	}
 	if err != nil {
@@ -202,18 +216,23 @@ func (m *Manifest) LoadGuardrails(repoRoot, roleName string) ([]guardrails.Rule,
 	if !ok {
 		return nil, fmt.Errorf("bundle: role %q not found in manifest", roleName)
 	}
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("bundle: open repository: %w", err)
+	}
 	var rules []guardrails.Rule
 	for _, ref := range role.Guardrails {
 		ref = strings.TrimSpace(ref)
 		if ref == "" {
 			continue
 		}
-		path, err := resolveHarnessPath(repoRoot, ref)
+		rel, err := resolveHarnessPath(ref)
 		if err != nil {
 			return nil, err
 		}
-		data, err := os.ReadFile(path)
-		if os.IsNotExist(err) {
+		path := filepath.Join(root.Abs(), rel)
+		data, err := root.ReadFile(rel)
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("bundle: guardrail file %q for role %q not found — create %s", ref, roleName, path)
 		}
 		if err != nil {
@@ -255,18 +274,23 @@ func (m *Manifest) LoadKnowledgeRoutes(repoRoot, roleName string) ([]KnowledgeRo
 	if !ok {
 		return nil, fmt.Errorf("bundle: role %q not found in manifest", roleName)
 	}
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("bundle: open repository: %w", err)
+	}
 	var routes []KnowledgeRoute
 	for _, ref := range role.Knowledge {
 		ref = strings.TrimSpace(ref)
 		if ref == "" {
 			continue
 		}
-		path, err := resolveHarnessPath(repoRoot, ref)
+		rel, err := resolveHarnessPath(ref)
 		if err != nil {
 			return nil, err
 		}
-		data, err := os.ReadFile(path)
-		if os.IsNotExist(err) {
+		path := filepath.Join(root.Abs(), rel)
+		data, err := root.ReadFile(rel)
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("bundle: knowledge file %q for role %q not found — create %s", ref, roleName, path)
 		}
 		if err != nil {
@@ -288,13 +312,13 @@ func (m *Manifest) LoadKnowledgeRoutes(repoRoot, roleName string) ([]KnowledgeRo
 	return routes, nil
 }
 
-func resolveHarnessPath(repoRoot, ref string) (string, error) {
+func resolveHarnessPath(ref string) (string, error) {
 	clean := filepath.Clean(ref)
 	if filepath.IsAbs(clean) {
 		return "", fmt.Errorf("bundle: reference %q must be relative to .harness/", ref)
 	}
-	path := filepath.Join(repoRoot, harnessDir, clean)
-	rel, err := filepath.Rel(filepath.Join(repoRoot, harnessDir), path)
+	path := filepath.Join(harnessDir, clean)
+	rel, err := filepath.Rel(harnessDir, path)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("bundle: reference %q escapes .harness/", ref)
 	}
