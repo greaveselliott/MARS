@@ -24,13 +24,71 @@ import (
 )
 
 const (
-	llamaCppPinnedTag  = "b8833"
-	llamaCppReleaseFmt = "https://github.com/ggml-org/llama.cpp/releases/download/%s/llama-%s-bin-%s.tar.gz"
+	llamaCppReleaseFmt = "https://github.com/ggml-org/llama.cpp/releases/download/%s/%s"
 )
 
-var llamaServerSHA256 = map[string]string{
-	"macos-arm64": "1b31955f312671a5842521e8fd3b85ef6633c2743d62021b325f0d7f93016423",
-	"macos-x64":   "33746603d6b9dc4546770d21f4c3049d7830abcdd7da03597dd4110f77ada7ee",
+type llamaCppDocument struct {
+	Name   string
+	URL    string
+	SHA256 string
+}
+
+type llamaCppPlatformArtifact struct {
+	ArchiveName string
+	SizeBytes   int64
+	SHA256      string
+	Enabled     bool
+}
+
+type llamaCppRelease struct {
+	Tag          string
+	SourceCommit string
+	License      llamaCppDocument
+	Notices      []llamaCppDocument
+	Platforms    map[string]llamaCppPlatformArtifact
+}
+
+var pinnedLlamaCppRelease = llamaCppRelease{
+	Tag:          "b8833",
+	SourceCommit: "45cac7ca703fb9085eae62b9121fca01d20177f6",
+	License: llamaCppDocument{
+		Name:   "MIT License",
+		URL:    "https://raw.githubusercontent.com/ggml-org/llama.cpp/45cac7ca703fb9085eae62b9121fca01d20177f6/LICENSE",
+		SHA256: "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+	},
+	Notices: []llamaCppDocument{
+		{
+			Name:   "nlohmann/json license notice",
+			URL:    "https://raw.githubusercontent.com/ggml-org/llama.cpp/45cac7ca703fb9085eae62b9121fca01d20177f6/licenses/LICENSE-jsonhpp",
+			SHA256: "c0d068392ea65358b798b8c165103560f06e9e3b38c4ab4e2d8810a7b931af86",
+		},
+	},
+	Platforms: map[string]llamaCppPlatformArtifact{
+		"macos-arm64": {
+			ArchiveName: "llama-b8833-bin-macos-arm64.tar.gz",
+			SizeBytes:   8_552_033,
+			SHA256:      "1b31955f312671a5842521e8fd3b85ef6633c2743d62021b325f0d7f93016423",
+			Enabled:     true,
+		},
+		"macos-x64": {
+			ArchiveName: "llama-b8833-bin-macos-x64.tar.gz",
+			SizeBytes:   8_576_524,
+			SHA256:      "33746603d6b9dc4546770d21f4c3049d7830abcdd7da03597dd4110f77ada7ee",
+			Enabled:     true,
+		},
+		"ubuntu-arm64": {
+			ArchiveName: "llama-b8833-bin-ubuntu-arm64.tar.gz",
+			SizeBytes:   10_962_028,
+			SHA256:      "e7ca8183587d0841dc16a868fa11f1e33c46032b47376c0ceda4160e4ddbbb2a",
+			Enabled:     false,
+		},
+		"ubuntu-x64": {
+			ArchiveName: "llama-b8833-bin-ubuntu-x64.tar.gz",
+			SizeBytes:   13_872_833,
+			SHA256:      "8262b45a82436aefd994f16461d99a02cd1ddf0bb343ef0153186a69229667c7",
+			Enabled:     false,
+		},
+	},
 }
 
 func installLlamaServerStep(baseDir string) Step {
@@ -56,24 +114,20 @@ func installLlamaServerStep(baseDir string) Step {
 			return true, nil
 		},
 		Execute: func() error {
-			if err := os.MkdirAll(binDir, 0o755); err != nil {
-				return fmt.Errorf("create bin dir: %w — check directory permissions", err)
-			}
-
 			platform, err := llamaPlatformKey()
 			if err != nil {
 				return err
 			}
-			expectedSHA := llamaServerSHA256[platform]
-			if expectedSHA == "" {
-				return fmt.Errorf("no pinned llama.cpp checksum for platform %s — install llama-server manually into ~/.mars/bin/llama-server or update the checksum table", platform)
+			artifact, err := prepareLlamaCppInstall(platform, binDir)
+			if err != nil {
+				return err
 			}
 
-			url := fmt.Sprintf(llamaCppReleaseFmt, llamaCppPinnedTag, llamaCppPinnedTag, platform)
+			url := fmt.Sprintf(llamaCppReleaseFmt, pinnedLlamaCppRelease.Tag, artifact.ArchiveName)
 			slog.Info("downloading llama-server", "url", url, "platform", platform)
 
 			tarPath := filepath.Join(binDir, "llama-server.tar.gz")
-			if err := downloadFile(tarPath, url, expectedSHA); err != nil {
+			if err := downloadFile(tarPath, url, artifact.SizeBytes, artifact.SHA256); err != nil {
 				return fmt.Errorf("download llama-server: %w — check network connectivity", err)
 			}
 			defer os.Remove(tarPath)
@@ -96,6 +150,28 @@ func installLlamaServerStep(baseDir string) Step {
 	}
 }
 
+func prepareLlamaCppInstall(platform, binDir string) (llamaCppPlatformArtifact, error) {
+	artifact, err := enabledLlamaCppArtifact(platform)
+	if err != nil {
+		return llamaCppPlatformArtifact{}, err
+	}
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		return llamaCppPlatformArtifact{}, fmt.Errorf("create bin dir: %w — check directory permissions", err)
+	}
+	return artifact, nil
+}
+
+func enabledLlamaCppArtifact(platform string) (llamaCppPlatformArtifact, error) {
+	artifact, ok := pinnedLlamaCppRelease.Platforms[platform]
+	if !ok {
+		return llamaCppPlatformArtifact{}, fmt.Errorf("no pinned llama.cpp artifact for platform %s — build llama.cpp from source and place llama-server in ~/.mars/bin/", platform)
+	}
+	if !artifact.Enabled {
+		return llamaCppPlatformArtifact{}, fmt.Errorf("pinned llama.cpp artifact for platform %s is recorded but installation is unavailable until T-077 delivers safe extraction — install llama-server manually into ~/.mars/bin/llama-server", platform)
+	}
+	return artifact, nil
+}
+
 func llamaPlatformKey() (string, error) {
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
@@ -111,7 +187,15 @@ func llamaPlatformKey() (string, error) {
 	}
 }
 
-func downloadFile(destPath, url, expectedSHA256 string) error {
+func downloadFile(destPath, url string, expectedSize int64, expectedSHA256 string) error {
+	return downloadFileWithClient(http.DefaultClient, destPath, url, expectedSize, expectedSHA256)
+}
+
+func downloadFileWithClient(client *http.Client, destPath, url string, expectedSize int64, expectedSHA256 string) error {
+	if expectedSize <= 0 {
+		return fmt.Errorf("invalid expected download size %d for %s", expectedSize, url)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTimeout)
 	defer cancel()
 
@@ -120,7 +204,7 @@ func downloadFile(destPath, url, expectedSHA256 string) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -129,20 +213,29 @@ func downloadFile(destPath, url, expectedSHA256 string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP %s from %s", resp.Status, url)
 	}
+	if resp.ContentLength >= 0 && resp.ContentLength != expectedSize {
+		return fmt.Errorf("size mismatch for %s: got %d bytes, want %d", url, resp.ContentLength, expectedSize)
+	}
 
 	out, err := os.Create(destPath)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
 	hasher := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(out, hasher), resp.Body); err != nil {
+	written, copyErr := io.Copy(io.MultiWriter(out, hasher), io.LimitReader(resp.Body, expectedSize+1))
+	closeErr := out.Close()
+	if copyErr != nil {
 		os.Remove(destPath)
-		return err
+		return copyErr
 	}
-	if err := out.Close(); err != nil {
-		return err
+	if closeErr != nil {
+		os.Remove(destPath)
+		return closeErr
+	}
+	if written != expectedSize {
+		os.Remove(destPath)
+		return fmt.Errorf("size mismatch for %s: got %d bytes, want %d", url, written, expectedSize)
 	}
 	sum := hex.EncodeToString(hasher.Sum(nil))
 	if !strings.EqualFold(sum, expectedSHA256) {

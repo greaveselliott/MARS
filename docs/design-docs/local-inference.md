@@ -20,6 +20,14 @@ The inference server runs **llama.cpp in a separate process** managed by the har
 
 The harness is responsible for **argv, env, working directory**, and capturing stderr for diagnostics when jobs fail for infra reasons.
 
+The setup package keeps one typed provenance record for the supported
+`llama.cpp` release: immutable source commit, the root license distributed in
+the release archives, the source tree's separate `jsonhpp` notice, and exact
+archive name, size, and SHA256 per platform. Only entries explicitly marked
+enabled may be installed. The Linux arm64/amd64 artifacts are recorded for the
+public bootstrap work but remain unavailable until the safe Linux installation
+path is delivered; their presence in the record is not an installation claim.
+
 ### AD-008: Model weights outside the repo
 
 Weights live under **`~/.mars/models/`** (not committed). Expected hashes are recorded in **`bundle.lock.json`** (e.g. SHA256 per artifact) so installs and upgrades can verify downloads and detect drift.

@@ -47,6 +47,8 @@ Given an agent needs a local model endpoint
 When the llama.cpp server is started or reused
 Then argv, base URL, state transitions, health checks, and shutdown are managed by the harness instead of embedding llama.cpp in the Go binary
 And multi-slot local servers preserve each slot's tier context window by scaling total server context with the requested parallel slot count
+And setup resolves llama.cpp only through an immutable release record that binds source, the archive license, separately declared source-tree notices, archive names, sizes, and checksums
+And an artifact recorded for provenance remains unavailable unless its platform entry is explicitly enabled
 
 ### F-003-S004: Manifest-Tier Routing
 
