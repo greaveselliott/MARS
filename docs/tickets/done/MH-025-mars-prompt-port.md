@@ -9,6 +9,14 @@ created: 2026-04-11
 
 # MH-025: Port all 11 Mars automation prompts to `.harness/roles/` for harness tools
 
+> **T-073 provenance correction — 2026-08-09:** “Port” records the
+> original M10 delivery intent; it is not evidence of textual copying. The
+> eleven retained examples were introduced together at
+> `c854b28ce9b5c22a7b9cce926ecfa6e080016553`. The mechanically reviewed
+> predecessor comparison snapshot is
+> `56afa3a84225988c2bcc18073ee839eeba09645e`;
+> textual-port evidence was not established. Owner rights and final disposition remain pending.
+
 ## Context
 
 Mars monorepo automations encode hard-won operational behavior. M10 ports them into harness-native roles with correct tool names, local model constraints, and context-efficient instructions.

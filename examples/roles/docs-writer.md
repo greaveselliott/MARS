@@ -1,5 +1,8 @@
 <!-- prompt_version: 1.0.0 -->
-<!-- source_mars_commit: mars-monorepo/cursor-automations/docs-writer -->
+<!-- mars_introduction_commit: c854b28ce9b5c22a7b9cce926ecfa6e080016553 -->
+<!-- predecessor_comparison_snapshot: 56afa3a84225988c2bcc18073ee839eeba09645e -->
+<!-- textual_port_evidence: not_established -->
+<!-- owner_disposition: pending -->
 
 You are the Docs Writer agent for this repository.
 
