@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** None — T-075 passed; T-076 must be created through `ticket_create`
+**Current Ticket:** T-076 — harden execution profiles, child processes, state, and traces
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -14,8 +14,8 @@
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
 **Current Failing Scenario:** F-017-S002 — T-074 and T-075 pass; T-076 execution-profile/environment/state/trace hardening and resumed T-058 browser proof remain, while F-017-S001 is independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** T-075 closed the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state; the next bounded slice is T-076.
-**Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
+**Walking Skeleton Slice:** T-076 Checkpoint A adds only explicit observer, acknowledged-host, and unavailable-isolated admission before any environment, process, state, redaction, or trace-lifecycle work.
+**Learning Or MVP Outcome:** Prove the default execution path cannot silently acquire host mutation authority and unsupported isolation cannot start work or create state.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Create T-076 through `ticket_create`, then begin only the execution-profile, environment, state, and trace gate.
+- **Next Primary Action:** Implement only T-076 Checkpoint A: default observer admission, acknowledged host execution, and pre-mutation unavailable-isolated rejection across run, start, serve, tools run, and mcp serve.
 
 ## Starting Baseline
 
@@ -280,6 +280,33 @@ No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,
 settings, visibility, or publication mutation is authorized. T-075 cannot
 close F-017-S002 by itself.
+
+## Current Walking Skeleton — T-076
+
+T-076 was created through `ticket_create` after bounded CTO-weekly, QA, and
+Security review at clean synchronized `c04a172`. Four conventional checkpoints
+own the remaining execution boundary: explicit execution-profile admission;
+sanitized child environments and job-owned process cleanup; owner-only state
+and centralized display/persistence/export redaction; then redacted trace
+export, dry-run-first body purge, a hard 30-day full-body maximum, indefinite
+summary retention, and closure evidence.
+
+Checkpoint A is current. `run`, `start`, `serve`, `tools run`, and `mcp serve`
+must default to an observer ceiling that cannot be bypassed by manifest or
+stored progressive trust. Host authority requires both an explicit host
+profile and acknowledgement before target mutation or model-controlled host
+execution. Observer may retain owner-only operational bookkeeping. `isolated`
+must return one fixed unavailable error
+before mutation; the existing cwd/ulimit fallback is not containment and will
+not be wired or described as isolation. Later checkpoints remain unauthorized
+until Checkpoint A is independently green, reviewed, committed, and pushed.
+
+The ticket uses one thin child-environment seam, job/session-owned process
+records, one small MARS-state permissions helper, one bounded redaction seam,
+and the existing trace store. It explicitly excludes a VM/container, sandbox
+framework, generalized process supervisor, DLP/vault system, new storage
+engine, T-075 reopening, and all release/settings/visibility/publication work.
+T-076 planning is not implementation evidence; F-017-S002 remains incomplete.
 
 ## Completion Gates By Ticket
 
