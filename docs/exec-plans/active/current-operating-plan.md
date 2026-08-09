@@ -14,8 +14,8 @@
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
 **Current Failing Scenario:** F-017-S002 — T-074 and T-075 pass; T-076 execution-profile/environment/state/trace hardening and resumed T-058 browser proof remain, while F-017-S001 is independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** T-076 Checkpoint A adds only explicit observer, acknowledged-host, and unavailable-isolated admission before any environment, process, state, redaction, or trace-lifecycle work.
-**Learning Or MVP Outcome:** Prove the default execution path cannot silently acquire host mutation authority and unsupported isolation cannot start work or create state.
+**Walking Skeleton Slice:** T-076 Checkpoint A passed at exact pushed commit `9191182601d79b996f1848a1e867e50b7d6eaf1c`; Checkpoint B sanitized child environments and job-owned process cleanup are the sole next slice before any state, redaction, or trace-lifecycle work.
+**Learning Or MVP Outcome:** Checkpoint A proves the default execution path cannot silently acquire host mutation authority, acknowledged host does not upgrade role trust, and unsupported isolation cannot start work or create state. Checkpoint B must prove model-controlled children receive a sanitized environment and cleanup reaches only job-owned process groups.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement only T-076 Checkpoint A: default observer admission, acknowledged host execution, and pre-mutation unavailable-isolated rejection across run, start, serve, tools run, and mcp serve.
+- **Next Primary Action:** Implement only T-076 Checkpoint B: sanitized model-controlled child environments, then job-owned process cleanup. Checkpoints C and D remain incomplete and are not current.
 
 ## Starting Baseline
 
@@ -291,22 +291,43 @@ and centralized display/persistence/export redaction; then redacted trace
 export, dry-run-first body purge, a hard 30-day full-body maximum, indefinite
 summary retention, and closure evidence.
 
-Checkpoint A is current. `run`, `start`, `serve`, `tools run`, and `mcp serve`
-must default to an observer ceiling that cannot be bypassed by manifest or
-stored progressive trust. Host authority requires both an explicit host
-profile and acknowledgement before target mutation or model-controlled host
-execution. Observer may retain owner-only operational bookkeeping. `isolated`
-must return one fixed unavailable error
-before mutation; the existing cwd/ulimit fallback is not containment and will
-not be wired or described as isolation. Later checkpoints remain unauthorized
-until Checkpoint A is independently green, reviewed, committed, and pushed.
+Checkpoint A is complete at exact pushed commit
+`9191182601d79b996f1848a1e867e50b7d6eaf1c`. `run`, `start`, `serve`,
+`tools run`, and `mcp serve` default to an observer ceiling that manifest and
+stored progressive trust cannot bypass. Host authority requires both an
+explicit host profile and acknowledgement, without upgrading requested role
+trust; unsupported `isolated` execution fails before state or subprocess work.
+Observer suppresses direct target-writing scan, Jira, remediation,
+intervention-debt, convention, hygiene, and learning paths while retaining
+owner-local bookkeeping. QA caught one final manual-run path that hard-coded
+contributor trust under acknowledged host; it was corrected before push to
+parse the manifest role trust with observer fallback, and a live-command
+regression proves the observer mutator rejection reaches the model without
+creating the requested file.
+
+The exact focused gates were
+`go test ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars ./internal/scanner ./internal/docsconsistency ./internal/docsync`,
+`go test -race ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars`,
+`go vet ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars ./internal/scanner`,
+`go run ./cmd/mars docsync audit --repo .` with 362 files checked and zero
+findings, and `git diff --check`. The caught trust delta then passed
+`go test ./cmd/mars -run '^TestRunHostAcknowledgementPreservesObserverRoleTrust$' -count=1`,
+full `go test ./cmd/mars`, `go test -race ./cmd/mars`, `go vet ./cmd/mars`, and
+`git diff --check`. QA, Security, Release Manager, and Orchestrator returned GO.
+
+Checkpoint B sanitized child environments and job-owned process cleanup are
+the sole next action. Checkpoints C and D, T-076, and F-017-S002 remain
+incomplete; resumed T-058 remains later in sequence.
 
 The ticket uses one thin child-environment seam, job/session-owned process
 records, one small MARS-state permissions helper, one bounded redaction seam,
 and the existing trace store. It explicitly excludes a VM/container, sandbox
 framework, generalized process supervisor, DLP/vault system, new storage
 engine, T-075 reopening, and all release/settings/visibility/publication work.
-T-076 planning is not implementation evidence; F-017-S002 remains incomplete.
+Checkpoint A changed no version, legal/rights or installed-App disposition,
+Release, settings, visibility, signing, publication, or announcement state.
+The repository remains private at `VERSION=0.68.49`, Primary Status remains
+`primary_blocked`, and F-017-S002 remains incomplete.
 
 ## Completion Gates By Ticket
 

@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: []
-verified_by: "pending QA, Security, Dogfood, Release Manager, and Orchestrator"
+evidence_links: ["commit:9191182601d79b996f1848a1e867e50b7d6eaf1c"]
+verified_by: "Checkpoint A: QA, Security, Release Manager, and Orchestrator GO; T-076 closure still requires Checkpoints B through D and Dogfood"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: bounded CTO, QA, and Security planning packets complete"
+last_attempt: "2026-08-09: Checkpoint A passed and was pushed at 9191182601d79b996f1848a1e867e50b7d6eaf1c"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-execution-boundary:2026-08-09"
-next_action: "Implement Checkpoint A only: explicit observer, host, and unavailable-isolated execution-profile admission."
+next_action: "Implement Checkpoint B only: sanitized child environments, then job-owned process cleanup."
 dedupe_key: "open-source:execution-profile-environment-state-trace"
 metadata:
   classification: "foundation-owned"
@@ -30,13 +30,16 @@ depends_on: [T-075]
 
 ## Context
 
-T-075 closed the descriptor-bound repository-path and exact Git-index secret-scanning gate. F-017-S002 remains current because run and server jobs can still reach host-capable tools without an independent execution-profile acknowledgement, agent-controlled children inherit the full parent environment, background processes are globally tracked, startup can kill unowned processes, MARS-owned state is sometimes group/world-readable, and traces/logs persist raw values indefinitely. These are reachable launch blockers. The repository remains private and the launch version freeze remains in force.
+T-075 closed the descriptor-bound repository-path and exact Git-index secret-scanning gate. Checkpoint A closed the independent execution-profile admission gap. F-017-S002 remains current because agent-controlled children inherit the full parent environment, background processes are globally tracked, startup can kill unowned processes, MARS-owned state is sometimes group/world-readable, and traces/logs persist raw values indefinitely. These are reachable launch blockers owned by Checkpoints B through D. The repository remains private and the launch version freeze remains in force.
 
 ## Outcome
 
 Make observer the non-mutating default, require explicit acknowledgement for same-user host execution, fail isolated mode closed until an enforceable adapter exists, sanitize model-controlled child environments, scope child cleanup to the owning job, enforce owner-only MARS state, redact tested credential forms at display/persistence/export boundaries, and provide redacted trace export plus dry-run-first body retention. Use small standard-library seams and existing stores; do not build a container, sandbox framework, process supervisor, secret-vault/DLP engine, or new storage system.
 
 ## Checkpoint A — Explicit Execution-Profile Admission
+
+**Status:** Complete at exact pushed commit
+`9191182601d79b996f1848a1e867e50b7d6eaf1c`.
 
 - Add one small observer|host|isolated execution-profile type and apply it consistently to run, start, serve, tools run, and mcp serve.
 - Default every entry point to observer. Observer is an independent ceiling over manifest and stored progressive trust: read-only tools remain available, while shell_exec and every already-classified mutating tool are unavailable even to contributor/autonomous roles.
@@ -46,7 +49,33 @@ Make observer the non-mutating default, require explicit acknowledgement for sam
 - State truthfully that acknowledged host commands run with the current OS user's filesystem, network, process, keychain, and credential authority; profile admission is not containment.
 - Commit and push this checkpoint before further runtime work.
 
+The implementation defaults `run`, `start`, `serve`, `tools run`, and
+`mcp serve` to observer, requires the independent host acknowledgement, rejects
+unsupported isolation before effects, and centrally blocks direct server target
+writers in observer while retaining owner-local bookkeeping. During final QA,
+the acknowledged-host manual-run path was found to hard-code contributor trust,
+which would have upgraded a manifest observer role. That regression was fixed
+before push by parsing the role's configured trust with an observer fallback;
+the focused live-command regression proves the model receives the observer
+mutator rejection and the requested target file is not created.
+
+Exact Checkpoint A gates passed:
+
+- `go test ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars ./internal/scanner ./internal/docsconsistency ./internal/docsync`
+- `go test -race ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars`
+- `go vet ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars ./internal/scanner`
+- `go run ./cmd/mars docsync audit --repo .` (`362` files checked, `0` findings)
+- `git diff --check`
+- Final trust-regression delta: `go test ./cmd/mars -run '^TestRunHostAcknowledgementPreservesObserverRoleTrust$' -count=1`, `go test ./cmd/mars`, `go test -race ./cmd/mars`, `go vet ./cmd/mars`, and `git diff --check`
+
+QA, Security, Release Manager, and Orchestrator returned GO for Checkpoint A.
+This evidence completes only Checkpoint A. It did not change `VERSION=0.68.49`,
+repository visibility, legal/rights or installed-App dispositions, settings,
+tags, Releases, signing, publication, or announcement authority.
+
 ## Checkpoint B — Sanitized Children And Job-Owned Processes
+
+**Status:** Current and incomplete; this is the sole next implementation action.
 
 Deliver two independently green semantic commits inside this checkpoint.
 
@@ -57,6 +86,8 @@ Prove that poisoned parent credentials and values are absent from foreground/bac
 
 ## Checkpoint C — Owner-Only State And Central Redaction
 
+**Status:** Incomplete and not current.
+
 Deliver two independently green semantic commits inside this checkpoint.
 
 1. Add one thin permissions helper for MARS-owned canonical and recognized legacy state. Canonical state directories are 0700; config, credential/token, database, WAL/SHM, command/inference log, and trace/export files are 0600. Tighten safe existing MARS-owned modes or fail actionably before agent execution. Canonicalize shared serve state to ~/.mars/db/mars.db; legacy state is an explicit migration/read decision, not the default. Do not chmod arbitrary operator-selected parent directories.
@@ -65,6 +96,8 @@ Deliver two independently green semantic commits inside this checkpoint.
 Prove exact modes under a permissive umask and after safe migration. Inject one synthetic credential form through assistant content, tool arguments, stdout/stderr, structured log attributes, and an error; it must be absent from every tested persisted JSONL/summary, log, CLI, dashboard, and export byte while ordinary text remains useful.
 
 ## Checkpoint D — Trace Export, Purge, Retention, And Closure
+
+**Status:** Incomplete and not current. T-076 and F-017-S002 remain incomplete.
 
 - Add mars traces export --repo <path> --output <path>. Export a deterministic redacted JSONL projection, require the output to be outside the target repository through the existing runtime-artifact path rule, create a new regular 0600 file exclusively, and reject in-repository, existing, or symlink outputs.
 - Add mars traces purge --repo <path> --older-than <duration>. It is preview-only unless --apply is supplied; preview reports counts without mutation.
