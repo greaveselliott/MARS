@@ -10,6 +10,7 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-013-board-driven-integrations.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -30,6 +31,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/hardware"
 	jiraintegration "github.com/greaveselliott/mars/internal/jira"
 	"github.com/greaveselliott/mars/internal/queue"
@@ -1216,6 +1218,35 @@ blocked_by: []
 	if count != 1 {
 		t.Fatalf("expected one janitor stale-ticket job, got %d", count)
 	}
+}
+
+func TestObserverProfileBlocksDirectScanAndJIRATargetWriters(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(repo, ".git"), 0o755))
+	require.NoError(t, scanner.Init(repo, false))
+	backlog := filepath.Join(repo, "docs", "tickets", "backlog")
+	before, err := os.ReadDir(backlog)
+	require.NoError(t, err)
+
+	srv, err := New(Config{
+		WebhookAddr:      "127.0.0.1:0",
+		DashboardAddr:    "127.0.0.1:0",
+		DBPath:           testDBPath(t),
+		ExecutionProfile: executionprofile.Observer,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	require.NoError(t, err)
+
+	err = srv.ScanRepo(ctx, repoID)
+	require.ErrorContains(t, err, "execution profile \"observer\" blocks scanner ticket generation")
+	_, err = srv.jiraRepositories(ctx)
+	require.ErrorContains(t, err, "execution profile \"observer\" blocks JIRA issue mirroring")
+	after, err := os.ReadDir(backlog)
+	require.NoError(t, err)
+	require.Equal(t, before, after)
 }
 
 func TestOrchestratorSurveyRoutesStaleTicketAndOwnership(t *testing.T) {

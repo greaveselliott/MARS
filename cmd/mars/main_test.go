@@ -30,12 +30,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -146,6 +149,8 @@ func TestToolsRunCommandDogfoodsToolCreate(t *testing.T) {
 		"tool_create",
 		"--repo", dir,
 		"--trust", "contributor",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
 		"--args-json", `{"name":"universal_probe","description":"Probe universal tool invocation.","fields":[{"name":"topic","type":"string","description":"Topic to inspect."}]}`,
 	})
 
@@ -163,14 +168,128 @@ func TestToolsRunObserverBlocksMutatingTool(t *testing.T) {
 	cmd.SetArgs([]string{
 		"file_write",
 		"--repo", dir,
-		"--trust", "observer",
+		"--trust", "contributor",
 		"--args-json", `{"path":"x.txt","content":"x"}`,
 	})
 
 	err := cmd.Execute()
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "observer cannot run mutating tool")
+	require.Contains(t, err.Error(), "execution profile observer")
 	require.NoFileExists(t, filepath.Join(dir, "x.txt"))
+}
+
+func TestToolsRunHostAcknowledgementDoesNotUpgradeTrust(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	cmd := toolsRunCmd()
+	cmd.SetArgs([]string{
+		"file_write",
+		"--repo", dir,
+		"--trust", "observer",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
+		"--args-json", `{"path":"x.txt","content":"x"}`,
+	})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "observer cannot run mutating tool")
+	require.NoFileExists(t, filepath.Join(dir, "x.txt"))
+}
+
+func TestRunHostAcknowledgementPreservesObserverRoleTrust(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	repoDir := t.TempDir()
+	writeToolRunRepoFile(t, repoDir, ".harness/manifest.yaml", `name: observer-run
+roles:
+  observer-role:
+    prompt: roles/observer.md
+    model: test
+    trust_level: observer
+    tools: [file_write]
+`)
+	writeToolRunRepoFile(t, repoDir, ".harness/roles/observer.md", "Remain read-only.\n")
+
+	var requests atomic.Int32
+	var sawObserverBlock atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if bytes.Contains(body, []byte("observer cannot run mutating tool")) {
+			sawObserverBlock.Store(true)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if requests.Add(1) == 1 {
+			_, _ = io.WriteString(w, `{"choices":[{"message":{"role":"assistant","tool_calls":[{"id":"call_1","type":"function","function":{"name":"file_write","arguments":"{\"path\":\"blocked.txt\",\"content\":\"blocked\"}"}}]},"finish_reason":"tool_calls"}]}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"choices":[{"message":{"role":"assistant","content":"done"},"finish_reason":"stop"}]}`)
+	}))
+	t.Cleanup(server.Close)
+
+	cmd := runCmd()
+	cmd.SetArgs([]string{
+		"observer-role",
+		"--repo", repoDir,
+		"--model-endpoint", server.URL,
+		"--log-file", filepath.Join(t.TempDir(), "run.log"),
+		"--code-intel", "false",
+		"--max-turns", "2",
+		"--no-init",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.True(t, sawObserverBlock.Load(), "model should receive the observer trust policy rejection")
+	require.NoFileExists(t, filepath.Join(repoDir, "blocked.txt"))
+}
+
+func TestAgentEntrypointsExposeExecutionProfileAdmission(t *testing.T) {
+	t.Parallel()
+	for name, cmd := range map[string]*cobra.Command{
+		"run":       runCmd(),
+		"start":     startCmd(),
+		"serve":     serveCmd(),
+		"tools run": toolsRunCmd(),
+		"mcp serve": mcpServeCmd(),
+	} {
+		profile := cmd.Flags().Lookup("execution-profile")
+		require.NotNil(t, profile, "%s missing --execution-profile", name)
+		require.Equal(t, "observer", profile.DefValue, "%s must default to observer", name)
+		require.NotNil(t, cmd.Flags().Lookup("acknowledge-host-execution"), "%s missing host acknowledgement", name)
+	}
+}
+
+func TestAgentEntrypointsRejectUnadmittedProfilesBeforeState(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	for _, tc := range []struct {
+		name string
+		new  func() *cobra.Command
+		args func(string) []string
+	}{
+		{name: "run", new: runCmd, args: func(repo string) []string { return []string{"engineer", "--repo", repo, "--dry-run"} }},
+		{name: "start", new: startCmd, args: func(repo string) []string { return []string{"--repo", repo, "--exit-after-seed"} }},
+		{name: "serve", new: serveCmd, args: func(string) []string { return nil }},
+		{name: "tools run", new: toolsRunCmd, args: func(repo string) []string { return []string{"git_status", "--repo", repo} }},
+		{name: "mcp serve", new: mcpServeCmd, args: func(repo string) []string { return []string{"--repo", repo} }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, profile := range []string{"isolated", "host"} {
+				repo := t.TempDir()
+				cmd := tc.new()
+				args := append(tc.args(repo), "--execution-profile", profile)
+				cmd.SetArgs(args)
+				err := cmd.Execute()
+				require.Error(t, err)
+				if profile == "isolated" {
+					require.ErrorContains(t, err, "no enforceable isolation adapter")
+				} else {
+					require.ErrorContains(t, err, "--acknowledge-host-execution")
+				}
+				require.NoDirExists(t, filepath.Join(repo, ".harness"))
+			}
+		})
+	}
 }
 
 func TestVersionEntrypointsPrintSameVersionLine(t *testing.T) {
@@ -245,6 +364,38 @@ func TestMCPServeCommand(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), `"tools"`)
 	require.Contains(t, out.String(), `"tool_create"`)
+}
+
+func TestMCPServeObserverProfileCapsContributorTrust(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	cmd := mcpServeCmd()
+	var out bytes.Buffer
+	cmd.SetIn(strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"file_write","arguments":{"path":"x.txt","content":"x"}}}` + "\n"))
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--repo", repo, "--trust", "contributor"})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "execution profile observer")
+	require.NoFileExists(t, filepath.Join(repo, "x.txt"))
+}
+
+func TestToolEntrypointsRejectInvalidTrustBeforeRepoAccess(t *testing.T) {
+	t.Parallel()
+	for name, cmd := range map[string]*cobra.Command{
+		"tools run": toolsRunCmd(),
+		"mcp serve": mcpServeCmd(),
+	} {
+		repo := filepath.Join(t.TempDir(), "missing")
+		args := []string{"--repo", repo, "--trust", "root"}
+		if name == "tools run" {
+			args = append([]string{"git_status"}, args...)
+		}
+		cmd.SetArgs(args)
+		err := cmd.Execute()
+		require.ErrorContains(t, err, "trust level \"root\" is invalid")
+		require.NoDirExists(t, repo)
+	}
 }
 
 func TestReleaseBackfillNotesCommandChecksAndWrites(t *testing.T) {
@@ -644,6 +795,8 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 		"--branch", "release/Main",
 		"--log-file", logPath,
 		"--model-endpoint", "http://127.0.0.1:9999/v1",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
 		"--exit-after-seed",
 	})
 
@@ -685,6 +838,8 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 		"--db", dbPath,
 		"--log-file", logPath,
 		"--model-endpoint", "http://127.0.0.1:9999/v1",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
 		"--exit-after-seed",
 	})
 	require.NoError(t, second.Execute())
@@ -812,7 +967,7 @@ func TestStartCommandRejectsRepoLocalDBPath(t *testing.T) {
 	t.Setenv("MARS_SKIP_START_CLEANUP", "1")
 
 	cmd := startCmd()
-	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath, "--exit-after-seed"})
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath, "--execution-profile", "host", "--acknowledge-host-execution", "--exit-after-seed"})
 
 	err := cmd.Execute()
 	require.Error(t, err)
@@ -849,7 +1004,7 @@ func TestStartCommandRejectsRepoLocalLogFile(t *testing.T) {
 	logPath := filepath.Join(repoDir, "start.log")
 
 	cmd := startCmd()
-	cmd.SetArgs([]string{"--repo", repoDir, "--log-file", logPath, "--exit-after-seed"})
+	cmd.SetArgs([]string{"--repo", repoDir, "--log-file", logPath, "--execution-profile", "host", "--acknowledge-host-execution", "--exit-after-seed"})
 
 	err := cmd.Execute()
 	require.Error(t, err)
@@ -863,7 +1018,7 @@ func TestRunCommandRejectsRepoLocalLogFile(t *testing.T) {
 	logPath := filepath.Join(repoDir, "run.log")
 
 	cmd := runCmd()
-	cmd.SetArgs([]string{"ceo", "--repo", repoDir, "--log-file", logPath, "--dry-run"})
+	cmd.SetArgs([]string{"ceo", "--repo", repoDir, "--log-file", logPath, "--dry-run", "--execution-profile", "host", "--acknowledge-host-execution"})
 
 	err := cmd.Execute()
 	require.Error(t, err)
@@ -882,6 +1037,55 @@ func TestRunCommandNoInitDryRunDoesNotWriteUninitializedTarget(t *testing.T) {
 
 	require.NoError(t, cmd.Execute())
 	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, logPath)
+}
+
+func TestRunObserverRejectsUninitializedTargetBeforeState(t *testing.T) {
+	repoDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "run.log")
+
+	cmd := runCmd()
+	cmd.SetArgs([]string{"engineer", "--repo", repoDir, "--log-file", logPath, "--dry-run"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "execution profile observer requires an initialized target")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, logPath)
+}
+
+func TestStartObserverRejectsUninitializedTargetBeforeState(t *testing.T) {
+	repoDir := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	logPath := filepath.Join(t.TempDir(), "start.log")
+
+	cmd := startCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath, "--log-file", logPath, "--exit-after-seed"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "execution profile observer requires an initialized target")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, dbPath)
+	require.NoFileExists(t, logPath)
+}
+
+func TestStartObserverRejectsForceBeforeState(t *testing.T) {
+	repoDir := t.TempDir()
+	require.NoError(t, scanner.Init(repoDir, false))
+	manifestPath := filepath.Join(repoDir, ".harness", "manifest.yaml")
+	before, err := os.ReadFile(manifestPath)
+	require.NoError(t, err)
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	logPath := filepath.Join(t.TempDir(), "start.log")
+
+	cmd := startCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath, "--log-file", logPath, "--force", "--exit-after-seed"})
+
+	err = cmd.Execute()
+	require.ErrorContains(t, err, "execution profile observer blocks --force")
+	after, readErr := os.ReadFile(manifestPath)
+	require.NoError(t, readErr)
+	require.Equal(t, before, after)
+	require.NoFileExists(t, dbPath)
 	require.NoFileExists(t, logPath)
 }
 
@@ -1161,7 +1365,7 @@ func TestRunCommandAutoInitCommitsGeneratedHarnessBaseline(t *testing.T) {
 	}
 	repoDir := t.TempDir()
 	cmd := runCmd()
-	cmd.SetArgs([]string{"ceo", "--repo", repoDir, "--dry-run"})
+	cmd.SetArgs([]string{"ceo", "--repo", repoDir, "--dry-run", "--execution-profile", "host", "--acknowledge-host-execution"})
 
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, runMainTestGit(t, repoDir, "log", "--oneline", "-1"), "chore(harness): initialize mars harness")

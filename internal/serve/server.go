@@ -44,6 +44,7 @@ import (
 	"github.com/greaveselliott/mars/internal/codeintel"
 	"github.com/greaveselliott/mars/internal/dashboard"
 	"github.com/greaveselliott/mars/internal/evolution"
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	gh "github.com/greaveselliott/mars/internal/github"
 	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/greaveselliott/mars/internal/inference"
@@ -99,6 +100,7 @@ type Config struct {
 	JobViews               ui.JobViewFactory
 	CodeIntelDisabled      bool
 	CodeIntelSource        string
+	ExecutionProfile       executionprofile.Profile
 }
 
 func (c Config) concurrency() int {
@@ -146,6 +148,20 @@ type Server struct {
 
 // New creates a Server wired with all subsystems.
 func New(cfg Config) (*Server, error) {
+	if cfg.ExecutionProfile == "" {
+		// Internal callers predate CLI execution-profile admission. Production
+		// entry points always pass an admitted profile explicitly.
+		cfg.ExecutionProfile = executionprofile.Host
+	} else {
+		profile, err := executionprofile.Parse(string(cfg.ExecutionProfile))
+		if err != nil {
+			return nil, fmt.Errorf("serve: %w", err)
+		}
+		if profile == executionprofile.Isolated {
+			return nil, fmt.Errorf("serve: execution profile %q is unavailable because MARS has no enforceable isolation adapter", profile)
+		}
+		cfg.ExecutionProfile = profile
+	}
 	if cfg.WebhookAddr == "" {
 		cfg.WebhookAddr = "127.0.0.1:9091"
 	}
@@ -310,6 +326,7 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	executor := NewExecutor(repoLookup, router, cfg.DBPath, traceStore, trustStore)
+	executor.SetExecutionProfile(cfg.ExecutionProfile)
 	executor.SetCodeIntel(codeintel.NewRuntime(!cfg.CodeIntelDisabled, cfg.CodeIntelSource))
 	if cfg.JobViews != nil {
 		executor.SetJobViewFactory(cfg.JobViews)
@@ -448,6 +465,17 @@ func New(cfg Config) (*Server, error) {
 	})
 
 	return s, nil
+}
+
+func (s *Server) requireTargetMutation(operation string) error {
+	if s == nil {
+		return fmt.Errorf("serve: cannot authorize %s on a nil server", operation)
+	}
+	profile := s.cfg.ExecutionProfile
+	if profile == "" {
+		profile = executionprofile.Host
+	}
+	return profile.RequireTargetMutation(operation)
 }
 
 // Start begins all subsystems. Blocks until the context is cancelled.
@@ -842,6 +870,9 @@ func (s *Server) Restart(ctx context.Context) error {
 // ScanRepo runs the scanner against a registered repo and enqueues
 // findings as tickets.
 func (s *Server) ScanRepo(ctx context.Context, repoID string) error {
+	if err := s.requireTargetMutation("scanner ticket generation"); err != nil {
+		return fmt.Errorf("scan: %w", err)
+	}
 	rec, err := s.repos.FindByID(ctx, repoID)
 	if err != nil {
 		return fmt.Errorf("scan: lookup repo %s: %w", repoID, err)
@@ -2848,6 +2879,9 @@ func (s *Server) integrationConfigForRepo(repo RepoRecord) integrations.Config {
 }
 
 func (s *Server) jiraRepositories(ctx context.Context) ([]jiraintegration.Repository, error) {
+	if err := s.requireTargetMutation("JIRA issue mirroring into target tickets"); err != nil {
+		return nil, err
+	}
 	repos, err := s.repos.List(ctx)
 	if err != nil {
 		return nil, err
@@ -2868,6 +2902,10 @@ func (s *Server) jiraRepositories(ctx context.Context) ([]jiraintegration.Reposi
 }
 
 func (s *Server) startJIRAPollers(ctx context.Context, repos []RepoRecord) {
+	if err := s.requireTargetMutation("JIRA polling and target ticket mirroring"); err != nil {
+		slog.Info("serve: jira pollers disabled by execution profile", "reason", err)
+		return
+	}
 	for _, repo := range repos {
 		integrationCfg := s.integrationConfigForRepo(repo)
 		if !integrationCfg.JIRAEnabled() {

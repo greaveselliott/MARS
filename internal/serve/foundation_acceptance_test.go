@@ -6,6 +6,7 @@ docs:
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -24,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/greaveselliott/mars/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/inference"
 	"github.com/greaveselliott/mars/internal/llm"
 	"github.com/greaveselliott/mars/internal/queue"
@@ -282,12 +284,14 @@ func TestFoundationAcceptanceMarsObserverProfileBlocksMutatingTools(t *testing.T
 		}),
 	)
 	srv, repoID, exec := setupFoundationServer(t, repo, fake.URL())
-	require.NoError(t, srv.trustStore.Set(ctx, "dogfood", repoID, trust.LevelObserver))
+	srv.cfg.ExecutionProfile = executionprofile.Observer
+	exec.SetExecutionProfile(executionprofile.Observer)
+	require.NoError(t, srv.trustStore.Set(ctx, "dogfood", repoID, trust.LevelAutonomous))
 	job := &queue.Job{ID: "job-mars-observer", RepoID: repoID, Role: "dogfood", Trigger: `{"type":"dogfood_matrix","profile":"mars-observer"}`}
 
 	require.NoError(t, exec.Execute(ctx, job))
 
-	require.Equal(t, 2, fake.RequestCount(), "observer trust should return the policy block to the model and allow a blocked disposition")
+	require.Equal(t, 2, fake.RequestCount(), "observer profile should cap autonomous trust, return the policy block, and allow a DB-backed disposition")
 	require.NoFileExists(t, filepath.Join(repo, "docs", "reports", "dogfood", "mars-observer.md"))
 	require.Equal(t, 0, countInterventionDebtTickets(t, repo), "observer-mode foundation policy blocks should not write target intervention debt")
 	disposition, err := srv.orgStore.GetDisposition(ctx, job.ID)
@@ -295,6 +299,11 @@ func TestFoundationAcceptanceMarsObserverProfileBlocksMutatingTools(t *testing.T
 	require.NotNil(t, disposition)
 	require.Equal(t, "blocked", disposition.Status)
 	require.Equal(t, "operator_review", disposition.NextNeed)
+	recordedTrace, err := srv.traceStore.GetLatestByJobID(ctx, job.ID)
+	require.NoError(t, err)
+	require.NotNil(t, recordedTrace)
+	require.Contains(t, recordedTrace.TurnsJSONL, "execution profile observer")
+	require.Empty(t, strings.TrimSpace(gitOutput(t, repo, "status", "--porcelain")), "observer profile must suppress convention, hygiene, learning, and intervention-debt target writes")
 }
 
 func setupFoundationTarget(t *testing.T, withTicket bool) string {

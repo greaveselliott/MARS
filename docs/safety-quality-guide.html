@@ -238,14 +238,16 @@ git commit</code></pre>
           <p>
             Trust controls what roles and external clients may do. Manual
             overrides are allowed, but they require a reason so the audit trail
-            explains why capability changed.
+            explains why capability changed. Execution profile is an independent
+            outer ceiling: mutation also requires acknowledged host execution,
+            and target trust cannot grant it.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Level</th><th>Meaning</th><th>User guidance</th></tr></thead>
               <tbody>
                 <tr><td><code>observer</code></td><td>Read-only or inspection-oriented access.</td><td>Default for external MCP clients and early target evaluation.</td></tr>
-                <tr><td><code>contributor</code></td><td>Can perform governed mutation through allowed tools.</td><td>Use for trusted roles or clients doing bounded repo work.</td></tr>
+                <tr><td><code>contributor</code></td><td>Can perform governed mutation through allowed tools only inside acknowledged-host execution.</td><td>Use for trusted roles or clients doing bounded repo work; trust alone does not grant host authority.</td></tr>
                 <tr><td><code>autonomous</code></td><td>Higher-trust autonomy earned through evidence and policy.</td><td>Reserve for roles with proven outcomes and explicit operating rules.</td></tr>
               </tbody>
             </table>

@@ -24,8 +24,8 @@ There are three related things:
 
 - **mars**: this source repo and the installed `mars` command.
 - **Deployed harness**: the `.harness/`, `AGENTS.md`, docs, tickets, and release
-  files that `mars init`, `start`, or `upgrade` writes into a target
-  repo.
+  files that `mars init`, acknowledged-host `start`, or `upgrade` writes into
+  a target repo.
 - **Target project**: the app or service MARS is building, testing, and
   managing. The harness operates on target projects; its agents do not treat
   this source repo as an ordinary target.
@@ -82,9 +82,9 @@ evidence-based adoption route.
 MARS is under active development. The supported first path today is a
 source checkout install, local setup, and a scoped target run.
 
-- **Ready default path**: install from source, run setup, run `doctor`, and use
-  `mars start --repo <target>` to scaffold, register, reconcile, and run
-  one target repository.
+- **Ready default path**: install from source, run setup, run `doctor`, then
+  deliberately initialize a target. Execution defaults to observer; scaffold
+  or autonomous target mutation requires acknowledged host mode.
 - **Supported cloud routing**: optional provider routes are supported for
   OpenAI, Anthropic, Gemini, Mistral, DeepSeek, and xAI through `api_key_env`
   credential indirection. Enabling one sends selected assembled context and
@@ -129,11 +129,13 @@ mars setup --skip-github
 mars doctor
 
 # Bootstrap and run a target repository.
-mars start --repo /path/to/target-repo
+mars start --repo /path/to/target-repo \
+  --execution-profile host \
+  --acknowledge-host-execution
 ```
 
-`start` initializes a missing target harness, registers the repo, reconciles
-existing lifecycle state, and runs the autonomous loop for that repo.
+Acknowledged-host `start` initializes a missing target harness, registers the
+repo, reconciles existing lifecycle state, and runs the autonomous loop.
 
 If you want to inspect before running agents:
 
@@ -166,6 +168,13 @@ removes the deployed harness files and the associated per-repo SQLite database.
 
 MARS is built around blast-radius containment:
 
+- `run`, `start`, `serve`, `tools run`, and `mcp serve` default to execution
+  profile `observer`. It independently caps role trust, blocks `shell_exec` and
+  all mutating tools, and requires initialized targets for ordinary `run` and
+  `start`. Host work requires `--execution-profile host
+  --acknowledge-host-execution`, has the current OS user's filesystem, network,
+  process, keychain, and credential authority, and is not containment.
+  `isolated` is unavailable until MARS has an enforceable adapter.
 - `run --dry-run` previews assembled role context without calling the model.
 - `doctor --repo <path> --json` checks target health and drift.
 - Each registered repo gets isolated SQLite state under
@@ -203,7 +212,7 @@ and [docs/roles/ROLES.md](docs/roles/ROLES.md).
 
 ```bash
 # Target lifecycle and execution
-mars start --repo /path/to/repo
+mars start --repo /path/to/repo --execution-profile host --acknowledge-host-execution
 mars run engineer --repo /path/to/repo --dry-run
 mars upgrade --repo /path/to/repo
 mars eject --repo /path/to/repo
@@ -220,7 +229,7 @@ mars mcp serve --repo /path/to/repo --trust observer
 
 # Multi-repo daemon path
 mars register --repo /path/to/repo --remote owner/repo
-mars serve --addr 127.0.0.1:9091 --concurrency 2
+mars serve --addr 127.0.0.1:9091 --concurrency 2 --execution-profile host --acknowledge-host-execution
 ```
 
 To enable browser controls, set a new random
@@ -228,8 +237,9 @@ To enable browser controls, set a new random
 before `start` or `serve`, then log in through the embedded dashboard. The
 secret is not a CLI/YAML/URL field and must not enter logs or generated files.
 
-Use `--trust contributor` for MCP only when the connected client should be able
-to call mutating tools.
+Use `--trust contributor --execution-profile host
+--acknowledge-host-execution` for MCP only when the connected client should be
+able to call mutating tools. Trust and execution profile are independent gates.
 
 ## Install, Update, And Release Notes
 

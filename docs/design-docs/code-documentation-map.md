@@ -74,6 +74,7 @@ source file exists in the worktree.
 | `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, this map | F-001 |
 | `internal/doctor/` | `docs/product-specs/product-surface.md`, `docs/design-docs/self-reflective-telemetry.md` | F-004, F-012 |
 | `internal/evolution/` | `docs/design-docs/self-improvement.md` | F-012 |
+| `internal/executionprofile/` | `docs/product-specs/product-surface.md`, `docs/design-docs/tools-glossary.md` | F-005, F-017 |
 | `internal/foundationtelemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/github/` | `docs/product-specs/product-surface.md`, `docs/design-docs/github-app-integration.md` | F-006, F-011, F-017 |
 | `internal/githubauth/` | `docs/design-docs/release-versioning.md`, `docs/product-specs/product-surface.md` | F-009 |

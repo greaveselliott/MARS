@@ -86,9 +86,10 @@ docs:
         <section class="doc-section">
           <div class="source-callout">
             <strong>Govern before extending:</strong>
-            MCP exposes MARS tools to local clients. Start with observer trust,
-            then use <a href="security-governance-guide.html#guardrails">guardrails and role allowlists</a>
-            before granting mutating tools.
+            MCP exposes MARS tools to local clients. Execution profile is the
+            outer gate: start with observer, then use
+            <a href="security-governance-guide.html#guardrails">trust, guardrails, and role allowlists</a>
+            before acknowledged-host mutation.
           </div>
         </section>
 
@@ -105,7 +106,7 @@ docs:
                 <tr><td>Discover tools</td><td><code>mars tools list --json</code></td><td>Print OpenAI-style tool definitions from the registered built-in registry.</td></tr>
                 <tr><td>Run one tool</td><td><code>mars tools run &lt;name&gt; --repo /path --args-json '{...}'</code></td><td>Execute a registered tool through the same executor and policy path as agents.</td></tr>
                 <tr><td>Expose MCP</td><td><code>mars mcp serve --repo /path --trust observer</code></td><td>Launch a stdio MCP server for local clients.</td></tr>
-                <tr><td>Role agent runs</td><td><code>mars run engineer --repo /path</code></td><td>Tools are filtered by the role manifest allowlist and trust policy.</td></tr>
+                <tr><td>Role agent runs</td><td><code>mars run engineer --repo /path</code></td><td>Tools are filtered by execution profile, then role trust, manifest allowlist, and policy.</td></tr>
                 <tr><td>Harness manifest</td><td><code>.harness/manifest.yaml</code></td><td>Target owners decide which tools each role may use.</td></tr>
               </tbody>
             </table>
@@ -160,8 +161,10 @@ docs:
               <pre><code>mars tools run record_decision \
   --repo ~/my-project \
   --trust contributor \
+  --execution-profile host \
+  --acknowledge-host-execution \
   --args-json '{"title":"Use local model override","decision":"Route engineer to repo-coder for validation."}'</code></pre>
-              <p>Observer trust blocks mutating tools. Use contributor only when the caller is allowed to change repo state.</p>
+              <p>Observer profile independently blocks mutating tools. Host execution has the current OS user's full authority and is not containment; contributor trust remains a separate gate.</p>
             </article>
             <article data-doc-filter>
               <h3>Limit output for external clients</h3>
@@ -191,13 +194,15 @@ docs:
               <p>Use observer by default. It can inspect, but mutating tools are blocked.</p>
             </article>
             <article data-doc-filter>
-              <h3>Contributor MCP server</h3>
+              <h3>Acknowledged-host contributor MCP server</h3>
               <pre><code>mars mcp serve \
   --repo ~/my-project \
   --trust contributor \
+  --execution-profile host \
+  --acknowledge-host-execution \
   --role mcp-client \
   --allowlist file_read,grep,mars_cli,git_status,record_decision</code></pre>
-              <p>Use contributor only for a trusted local client and keep the allowlist as narrow as possible.</p>
+              <p>Use acknowledged host plus contributor trust only for a trusted local client and keep the allowlist as narrow as possible. Host acknowledgement does not upgrade trust.</p>
             </article>
             <article data-doc-filter>
               <h3>Example client entry</h3>
@@ -224,19 +229,21 @@ docs:
         <section class="doc-section" id="trust">
           <h2>Trust And Allowlists</h2>
           <p>
-            MARS applies two separate gates: the tool must be exposed by the
-            allowlist, and the current trust level must permit the requested
-            action. Role runs also use the role's manifest allowlist.
+            MARS applies three separate gates: execution profile must admit the
+            authority, trust must permit the action, and the tool must be
+            exposed by the allowlist. Role runs also use the role's manifest
+            allowlist; target configuration cannot grant host authority.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Gate</th><th>Where it is set</th><th>How users should apply it</th></tr></thead>
               <tbody>
+                <tr><td>Execution profile</td><td><code>--execution-profile observer|host|isolated</code></td><td>Observer is the default and blocks every mutator. Host requires <code>--acknowledge-host-execution</code>; isolated is unavailable.</td></tr>
                 <tr><td>Role manifest allowlist</td><td><code>.harness/manifest.yaml</code></td><td>Give each role the smallest tool set that can do its job.</td></tr>
                 <tr><td>CLI run allowlist</td><td><code>mars tools run --allowlist</code></td><td>Defaults to the named tool. Use only when a tool call needs a specific set.</td></tr>
                 <tr><td>MCP allowlist</td><td><code>mars mcp serve --allowlist</code></td><td>Use a narrow list for external clients, especially with contributor trust.</td></tr>
                 <tr><td>Observer trust</td><td><code>--trust observer</code></td><td>Safe default for read-only inspection. Mutating tools are blocked.</td></tr>
-                <tr><td>Contributor trust</td><td><code>--trust contributor</code></td><td>Allows deliberate mutation through governed tools.</td></tr>
+                <tr><td>Contributor trust</td><td><code>--trust contributor</code></td><td>Permits governed mutation only inside acknowledged-host execution.</td></tr>
                 <tr><td>Autonomous trust</td><td>Role trust store and policy.</td><td>Reserved for roles that have earned more autonomy through evidence.</td></tr>
               </tbody>
             </table>
@@ -298,7 +305,7 @@ docs:
             </article>
             <article data-doc-filter>
               <h3>Use shell only when needed</h3>
-              <p><code>shell_exec</code> is for tests, builds, runtime probes, and subprocesses where no purpose-built tool fits. Treat every permitted command as host execution with the current operating-system user's full authority.</p>
+              <p><code>shell_exec</code> is host-only and is for tests, builds, runtime probes, and subprocesses where no purpose-built tool fits. Treat every permitted command as host execution with the current operating-system user's full authority.</p>
             </article>
             <article data-doc-filter>
               <h3>Use durable records for decisions</h3>
@@ -326,6 +333,8 @@ docs:
               <pre><code>mars tools run tool_create \
   --repo . \
   --trust contributor \
+  --execution-profile host \
+  --acknowledge-host-execution \
   --args-json '{"tool_name":"example_tool"}'</code></pre>
             </li>
             <li>
@@ -345,9 +354,9 @@ docs:
           <h2>External AI Clients</h2>
           <p>
             External clients should treat MARS as the source of tool truth
-            rather than recreating local shell shortcuts. Use observer trust for
-            read-only support and contributor trust only when the client should
-            mutate the repo.
+            rather than recreating local shell shortcuts. Use observer profile
+            for read-only support and acknowledged host plus contributor trust
+            only when the client should mutate the repo.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
@@ -355,8 +364,8 @@ docs:
               <tbody>
                 <tr><td>Read-only repository understanding.</td><td><code>mars mcp serve --repo /path --trust observer --allowlist file_read,file_search,grep,git_status</code></td><td>Prevents accidental mutation while still exposing useful context tools.</td></tr>
                 <tr><td>MARS lifecycle command access.</td><td>Add <code>mars_cli</code> to the allowlist.</td><td>Routes MARS commands through the active harness executable and structured args.</td></tr>
-                <tr><td>Controlled docs or ticket edits.</td><td>Use contributor trust with <code>file_read,file_write,git_status,record_decision,ticket_create</code>.</td><td>Allows mutation while keeping policy, docsync, and durable-record rules active.</td></tr>
-                <tr><td>Tool development.</td><td>Use contributor trust and include <code>tool_create</code>, <code>tool_creation_guard</code>, test tools, and git tools.</td><td>Keeps formalized tool creation auditable.</td></tr>
+                <tr><td>Controlled docs or ticket edits.</td><td>Use acknowledged host plus contributor trust with <code>file_read,file_write,git_status,record_decision,ticket_create</code>.</td><td>Allows mutation while keeping policy, docsync, and durable-record rules active.</td></tr>
+                <tr><td>Tool development.</td><td>Use acknowledged host plus contributor trust and include <code>tool_create</code>, <code>tool_creation_guard</code>, test tools, and git tools.</td><td>Keeps formalized tool creation auditable.</td></tr>
               </tbody>
             </table>
           </div>
@@ -369,7 +378,7 @@ docs:
               <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
               <tbody>
                 <tr><td><code>tools run</code> says a tool is not allowed.</td><td>The named tool is outside the active allowlist.</td><td>Pass a narrower correct <code>--allowlist</code>, or use the default named-tool allowlist.</td></tr>
-                <tr><td>A mutating tool is blocked.</td><td>The session is running with observer trust.</td><td>Use <code>--trust contributor</code> only when mutation is intended and authorized.</td></tr>
+                <tr><td>A mutating tool is blocked.</td><td>The execution profile or trust level is observer.</td><td>Use <code>--execution-profile host --acknowledge-host-execution --trust contributor</code> only when mutation and current-user host authority are intended and authorized.</td></tr>
                 <tr><td>MCP client cannot find repo files.</td><td>The MCP server was launched with the wrong working directory or a relative repo path.</td><td>Configure <code>--repo /absolute/path/to/repo</code>.</td></tr>
                 <tr><td>Output is truncated.</td><td>The executor output budget was reached.</td><td>Use a more specific tool query or raise <code>--max-output-bytes</code> deliberately.</td></tr>
                 <tr><td>Direct shell MARS command fails in an agent run.</td><td>Policy prefers the <code>mars_cli</code> tool for MARS commands.</td><td>Use <code>mars_cli</code> or the operator CLI outside the agent run.</td></tr>

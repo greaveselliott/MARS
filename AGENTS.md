@@ -224,10 +224,19 @@ token values into chat, docs, commits, traces, tickets, logs, or tool output.
 Start the autonomous orchestrator (webhooks, cron, queue, workers).
 
 ```bash
-mars serve
+mars serve # observer: owner-local state and managed inference, no target mutation
+mars serve --execution-profile host --acknowledge-host-execution
 ```
 
-Flags: `--addr 127.0.0.1:9091`, `--webhook-actor-id <numeric-id>`, `--concurrency 2`, `--db <path>`
+Flags: `--addr 127.0.0.1:9091`, `--webhook-actor-id <numeric-id>`, `--concurrency 2`, `--db <path>`, `--execution-profile observer|host|isolated`, `--acknowledge-host-execution`
+
+`run`, `start`, `serve`, `tools run`, and `mcp serve` default to execution
+profile `observer`. It independently caps role trust and blocks `shell_exec`
+and every mutating tool. Host work requires both flags shown above, has the
+current OS user's filesystem, network, process, keychain, and credential
+authority, and is not containment. `isolated` is unavailable until MARS has an
+enforceable adapter. Target manifests and stored trust cannot grant host
+authority, and host acknowledgement does not upgrade role trust.
 
 Health check: `curl http://localhost:9091/healthz` → `{"status":"healthy"}`
 
@@ -261,7 +270,11 @@ Register a repository for autonomous management.
 mars register --repo /path/to/repo --remote owner/repo
 ```
 
-If `.harness/manifest.yaml` is missing, `register`, `run`, `scan`, and `start` run the same scaffold as `mars init` automatically (the repo must be a git checkout).
+If `.harness/manifest.yaml` is missing, `register` and `scan` run the same
+scaffold as `mars init` automatically (the repo must be a git checkout).
+`run` and `start` may initialize only in acknowledged-host execution; observer
+execution fails before target or runtime-state writes. The explicit
+`run --dry-run --no-init` missing-harness preview remains a no-write exception.
 
 ### 4. Status
 
@@ -302,13 +315,13 @@ Aliases: `kill-switch`, `uninstall`.
 Manually execute a single agent role against a repository.
 
 ```bash
-mars run <role> --repo /path/to/repo
+mars run <role> --repo /path/to/repo --execution-profile host --acknowledge-host-execution
 mars run engineer --repo . --dry-run   # preview system prompt
 mars run engineer --repo /path/to/legacy-repo --dry-run --no-init   # observer-safe missing-harness check
 mars run foundation-maintainer --repo . --dry-run --no-init   # preview source-only foundation context
 ```
 
-Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--no-init`, `--budget`, `--max-turns`
+Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--no-init`, `--budget`, `--max-turns`, `--execution-profile observer|host|isolated`, `--acknowledge-host-execution`
 
 ### 8. Universal Tools
 
@@ -322,8 +335,10 @@ mars mcp serve --repo /path/to/repo --trust observer
 ```
 
 Use `mcp serve` for any MCP-compatible client or local harness agent.
-Use `--trust contributor` only when the client should be allowed to call
-mutating tools such as `tool_create`, `file_write`, or `record_decision`.
+Mutating tool or MCP sessions require both `--trust contributor` (or an
+otherwise permitted trust level) and `--execution-profile host
+--acknowledge-host-execution`; neither gate upgrades the other. Keep the
+default observer profile for read-only, no-harness inspection.
 
 ### 9. Release Notes
 
@@ -391,7 +406,7 @@ For day-to-day source development, install the command into the Go bin directory
 
 ```bash
 make install
-mars start --repo /path/to/target-repo
+mars start --repo /path/to/target-repo --execution-profile host --acknowledge-host-execution
 ```
 
 Upgrade or reinstall the installed command without changing into this repo:

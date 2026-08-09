@@ -158,14 +158,24 @@ MARS is a command installed on your machine. It should be runnable from any work
 Execute a role against your repository:
 
 ```bash
-mars run pipeline-fixer --repo ~/my-project
+mars run pipeline-fixer --repo ~/my-project \
+  --execution-profile host \
+  --acknowledge-host-execution
 ```
 
 Start the full autonomous loop for one target repo:
 
 ```bash
-mars start --repo ~/my-project
+mars start --repo ~/my-project \
+  --execution-profile host \
+  --acknowledge-host-execution
 ```
+
+`run`, `start`, `serve`, `tools run`, and `mcp serve` default to
+`observer`. That profile independently caps role trust and blocks
+`shell_exec` plus every mutating tool. Host work has the current OS user's
+filesystem, network, process, keychain, and credential authority and is not
+containment. `isolated` is unavailable until MARS has an enforceable adapter.
 
 ### Dry-run mode
 
@@ -187,7 +197,9 @@ mars run pipeline-fixer --repo ~/legacy-project --dry-run --no-init
 |------|-------------|
 | `--repo` | Path to the target repository (required) |
 | `--dry-run` | Print system prompt and exit |
-| `--no-init` | Do not auto-initialize a missing target harness; pair with `--dry-run` for observer-safe inspection |
+| `--no-init` | Never initialize a missing target harness; `run --dry-run --no-init` retains the explicit observer-safe missing-harness preview |
+| `--execution-profile` | `observer` (default), `host`, or `isolated`; isolated currently fails before runtime state |
+| `--acknowledge-host-execution` | Required with host profile; acknowledges current-user host authority and no containment without upgrading role trust |
 | `--debug` | Stream verbose trace and logs inline instead of the default TTY dashboard |
 | `--log-file` | Write verbose command logs to a specific path |
 | `--trace` | Compatibility alias for debug-style trace detail on `run` |

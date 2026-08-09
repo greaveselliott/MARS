@@ -64,6 +64,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 47. F-005-S058 - Alternate input exclusions do not descope basic keyboard movement.
 48. F-005-S064 - Repeated policy blocks return actionable repair guidance to the active role.
 49. F-005-S065 - OpenAI-compatible tool-call batches receive all model-requested tool results before synthetic runtime messages.
+50. F-005-S066 - Execution profiles admit observer, acknowledged host, or unavailable isolated behavior before runtime effects.
 
 ## Scenarios
 
@@ -113,7 +114,7 @@ And if a terminal tool completes the job before the whole batch executes, the re
 
 Given a role has an allowlist and trust level
 When it asks to call a tool
-Then unknown tools, disallowed tools, invalid JSON, observer mutations, path escapes, secret writes, destructive shell commands, and mutating shell commands in already-over-budget repos fail closed, while known read-only shell inspection remains available for diagnosis
+Then unknown tools, disallowed tools, invalid JSON, observer mutations, path escapes, secret writes, destructive shell commands, and mutating shell commands in already-over-budget repos fail closed, while known read-only shell inspection remains available for diagnosis only inside admitted host execution when role trust and policy allow it
 
 Given a target repository contains a symlink as the parent or leaf of a requested `file_read`, `file_write`, `file_search`, or `grep` path
 When the universal file tool resolves or opens that repository entry
@@ -281,6 +282,28 @@ Then verbose trace and log output streams inline while the same command log file
 Given the target has no `.harness/manifest.yaml`
 When the user passes `--dry-run --no-init`
 Then the command reports the missing harness boundary, writes no target harness files, and exits without calling the LLM
+
+### F-005-S066: Explicit Execution-Profile Admission
+
+Given an operator invokes `run`, `start`, `serve`, `tools run`, or `mcp serve` without selecting an execution profile
+When the command admits execution before opening state, logs, or subprocesses
+Then it defaults to `observer`, caps role, stored, and CLI-requested trust below target mutation, and still permits read-only tools plus owner-local database telemetry, dispositions, traces, and managed inference
+And direct server writers for convention learning, workspace-hygiene repair, runtime learnings, scanner tickets, intervention-debt tickets, automatic harness remediation, and Jira mirrors do not mutate the target
+And target-mutating tools including `file_write`, `shell_exec`, and `git_branch` remain blocked even when requested trust is contributor or autonomous
+
+Given `run` or `start` targets a repository without `.harness/manifest.yaml` in observer profile
+When admission checks the target
+Then it fails before target, log, or database mutation, except that `run --dry-run --no-init` retains the explicit missing-harness observer preview
+And observer `start --force` fails before repair or initialization
+
+Given the operator selects `--execution-profile host`
+When `--acknowledge-host-execution` is absent
+Then the command fails before runtime effects and states that host execution has the current operating-system user's filesystem, network, process, keychain, and credential authority and is not containment
+And when acknowledgement is present the profile preserves, but does not upgrade, the separately requested role or tool trust
+
+Given the operator selects `--execution-profile isolated`
+When any of those five entry points admits execution
+Then it fails before state or subprocess creation because no enforceable isolation adapter exists
 
 ### F-005-S007: Mirrored Built-In Tools
 
@@ -974,7 +997,7 @@ None.
 - F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract|TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance'`, `go test ./internal/serve -run TestFoundationAcceptance`, the focused T-075 repository-boundary suites, and installed-candidate Dogfood at `c18030e` and `9ba8156`
 - F-005-S004: `go test ./internal/agent -run TestRun_persistsTraceToSQLite`
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
-- F-005-S006: `go test ./cmd/mars -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence
+- F-005-S006: `go test ./cmd/mars -run 'TestRunStartServeExposeDebugAndLogFileFlags|TestRunCommandNoInitDryRunDoesNotWriteUninitializedTarget'` and planned broader E2E dogfood evidence
 - F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsCLI'`
 - F-005-S008: `go test ./internal/tools -run TestPersonaCreate` and `go test ./internal/personas`
 - F-005-S009: `go test ./internal/tools -run 'TestTicketCreate_dedupes(IndependentFeatureTicketsForSameBDDScenario|ActiveFeatureTicketsForOverlappingBDDScenario)'`
@@ -984,6 +1007,7 @@ None.
 - F-005-S013: `go test ./internal/scanner -run TestInit_success`
 - F-005-S014: `go test ./internal/tools -run TestExecutor_toolHandlerHardTimeout`
 - F-005-S015: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'`, `go test ./internal/tools -race -count=1 -coverprofile=<validation-root> -covermode=atomic`, `demo-api-run7`, and `demo-api-run8` live evidence
+- F-005-S066: `go test ./internal/executionprofile ./internal/tools ./internal/serve ./cmd/mars` with focused admission, profile-ceiling, direct-writer, owner-state, and missing-harness assertions
 - F-005-S016: `go test ./internal/tools -run 'TestShellExecArgvAllowsLiteralNewlineArgument|TestRecordSessionToolOutcomeTracksValidationCommands|TestReviewApprovalRequiresPassingValidationWhenTestsExist'`
 - F-005-S017: `go test ./internal/tools -run 'TestTicketCreate_parseHintForQuotedBDDScenarios|TestRecordSessionToolOutcomeTracksTicketCreationFailures'`
 - F-005-S018: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerCorrectsMissingArgumentRuntimeFailure`

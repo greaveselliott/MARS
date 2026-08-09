@@ -23,6 +23,7 @@ github.com/greaveselliott/mars/internal/docsconsistency nostmt
 github.com/greaveselliott/mars/internal/docsync 70
 github.com/greaveselliott/mars/internal/doctor 70
 github.com/greaveselliott/mars/internal/evolution 70
+github.com/greaveselliott/mars/internal/executionprofile 70
 github.com/greaveselliott/mars/internal/foundationtelemetry 70
 github.com/greaveselliott/mars/internal/github 70
 github.com/greaveselliott/mars/internal/githubauth 60

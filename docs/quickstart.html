@@ -224,10 +224,11 @@ git -C /path/to/target-repo diff --stat</code></pre>
           </ol>
           <div class="callout">
             <strong>Automatic init:</strong>
-            <code>mars start</code>, <code>mars run</code>,
-            <code>mars register</code>, and <code>mars scan</code> scaffold a
-            missing target harness unless you use an observer-safe dry-run path
-            such as <code>--dry-run --no-init</code>.
+            <code>mars register</code> and <code>mars scan</code> scaffold a
+            missing target harness. <code>mars start</code> and
+            <code>mars run</code> may do so only with acknowledged host
+            execution; observer mode rejects a missing harness before writes,
+            apart from the explicit <code>run --dry-run --no-init</code> preview.
           </div>
         </section>
 
@@ -258,21 +259,34 @@ mars mcp serve --repo /path/to/target-repo --trust observer</code></pre>
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Run one role</h3>
-              <pre><code>mars run engineer --repo /path/to/target-repo
-mars run qa --repo /path/to/target-repo --debug</code></pre>
+              <pre><code>mars run engineer --repo /path/to/target-repo \
+  --execution-profile host --acknowledge-host-execution
+mars run qa --repo /path/to/target-repo --debug \
+  --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use <code>run</code> when you want one bounded job with a named role.</p>
             </article>
             <article data-doc-filter>
               <h3>Start the single-repo loop</h3>
-              <pre><code>mars start --repo /path/to/target-repo</code></pre>
-              <p><code>start</code> initializes when needed, registers the repo, reconciles state, serves the dashboard, and runs the autonomous loop.</p>
+              <pre><code>mars start --repo /path/to/target-repo \
+  --execution-profile host --acknowledge-host-execution</code></pre>
+              <p>Acknowledged-host <code>start</code> initializes when needed, registers the repo, reconciles state, serves the dashboard, and runs the autonomous loop.</p>
             </article>
             <article data-doc-filter>
               <h3>Run a persistent daemon</h3>
               <pre><code>mars register --repo /path/to/target-repo --remote owner/repo
-mars serve --addr :9091 --concurrency 2</code></pre>
+mars serve --addr 127.0.0.1:9091 --concurrency 2 \
+  --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use <code>serve</code> when you want a long-running orchestrator for registered repos.</p>
             </article>
+          </div>
+          <div class="callout">
+            <strong>Execution profile:</strong>
+            These five agent entry points default to <code>observer</code>, which
+            independently caps role trust and blocks <code>shell_exec</code> plus
+            all mutating tools. Host mode has the current OS user's filesystem,
+            network, process, keychain, and credential authority and is not
+            containment. <code>isolated</code> is unavailable until an enforceable
+            adapter exists.
           </div>
           <h3>Useful first-run flags</h3>
           <div class="wide-table" data-doc-filter>
@@ -281,7 +295,9 @@ mars serve --addr :9091 --concurrency 2</code></pre>
               <tbody>
                 <tr><td><code>--repo</code></td><td>Most repo-scoped commands</td><td>You want to operate on a target repo from any current directory.</td></tr>
                 <tr><td><code>--dry-run</code></td><td><code>run</code>, setup/update/release commands</td><td>You want preview output without the mutating path.</td></tr>
-                <tr><td><code>--no-init</code></td><td><code>run</code></td><td>You want to inspect a missing harness without creating one.</td></tr>
+                <tr><td><code>--no-init</code></td><td><code>run</code></td><td>Never initialize a missing harness; pair with <code>--dry-run</code> for the explicit observer-safe preview.</td></tr>
+                <tr><td><code>--execution-profile</code></td><td><code>run</code>, <code>start</code>, <code>serve</code>, <code>tools run</code>, <code>mcp serve</code></td><td>Select <code>observer</code> (default), <code>host</code>, or unavailable <code>isolated</code>.</td></tr>
+                <tr><td><code>--acknowledge-host-execution</code></td><td>The same five entry points</td><td>Required for host mode; acknowledges current-user authority and no containment without upgrading trust.</td></tr>
                 <tr><td><code>--debug</code></td><td><code>run</code>, <code>start</code></td><td>You want verbose trace and logs inline.</td></tr>
                 <tr><td><code>--model-endpoint</code></td><td><code>run</code>, <code>start</code></td><td>You need to point at a specific OpenAI-compatible endpoint.</td></tr>
                 <tr><td><code>--max-turns</code></td><td><code>run</code></td><td>You want to bound LLM round trips for a manual job.</td></tr>
@@ -412,8 +428,8 @@ mars version</code></pre>
                 <tr><td><code>mars version</code> shows an old binary</td><td>The shell command cache points at an older path.</td><td><code>hash -r</code>, then <code>which mars</code>.</td></tr>
                 <tr><td>Setup cannot download models</td><td>Network, disk, or release auth problem.</td><td><code>mars setup --dry-run</code> and <code>mars doctor</code>.</td></tr>
                 <tr><td>Model preflight fails</td><td>The active profile requires a missing local model file.</td><td>Run <code>mars setup --skip-github</code>, or bypass local inference with <code>mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code> or <code>mars run engineer --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code>.</td></tr>
-                <tr><td>A target repo changed unexpectedly</td><td>A command auto-initialized a missing harness.</td><td>Use <code>git status</code>; use <code>--dry-run --no-init</code> for future inspection.</td></tr>
-                <tr><td>Dashboard port is unavailable</td><td>Another process owns the default port.</td><td>Run with <code>--addr :9091</code> or stop the other process.</td></tr>
+                <tr><td>A target repo changed unexpectedly</td><td>A command ran with acknowledged host authority.</td><td>Use <code>git status</code>; keep the default observer profile for future inspection and initialize deliberately.</td></tr>
+                <tr><td>Dashboard port is unavailable</td><td>Another process owns the default port.</td><td>Run with an explicit literal-loopback address such as <code>--addr 127.0.0.1:9091</code> or stop the other process.</td></tr>
                 <tr><td>Release updater cannot authenticate</td><td>No GitHub token source is configured.</td><td><code>gh auth login</code>, then <code>mars auth github check</code>.</td></tr>
               </tbody>
             </table>

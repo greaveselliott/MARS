@@ -394,14 +394,15 @@ mars run engineer --repo . --dry-run --no-init</code></pre>
               <tbody>
                 <tr><td>Preview a role prompt</td><td><code>mars run engineer --repo /path/to/repo --dry-run</code></td><td>Inspect assembled context without model calls.</td></tr>
                 <tr><td>Inspect a repo without scaffolding</td><td><code>mars run engineer --repo /path/to/repo --dry-run --no-init</code></td><td>Check missing-harness behavior safely.</td></tr>
-                <tr><td>Run one role</td><td><code>mars run qa --repo /path/to/repo</code></td><td>Targeted manual execution.</td></tr>
-                <tr><td>Run the scoped lifecycle</td><td><code>mars start --repo /path/to/repo</code></td><td>Initialize, register, reconcile, seed, and dispatch work for one repo.</td></tr>
-                <tr><td>Run multi-repo service</td><td><code>mars serve --addr :9091</code></td><td>Persistent scheduler, dashboard, worker pool, webhooks, and surveys.</td></tr>
+                <tr><td>Run one mutating role</td><td><code>mars run qa --repo /path/to/repo --execution-profile host --acknowledge-host-execution</code></td><td>Targeted manual execution with current-user host authority.</td></tr>
+                <tr><td>Run the scoped lifecycle</td><td><code>mars start --repo /path/to/repo --execution-profile host --acknowledge-host-execution</code></td><td>Initialize, register, reconcile, seed, and dispatch work for one repo.</td></tr>
+                <tr><td>Run multi-repo service</td><td><code>mars serve --addr 127.0.0.1:9091 --execution-profile host --acknowledge-host-execution</code></td><td>Persistent mutating scheduler, dashboard, worker pool, webhooks, and surveys.</td></tr>
                 <tr><td>Check role health</td><td><code>mars scores --repo /path/to/repo</code></td><td>View outcome scores per role.</td></tr>
                 <tr><td>Change autonomy</td><td><code>mars trust set engineer /path/to/repo contributor --reason "Ticket-bound edits approved"</code></td><td>Record an explicit trust decision.</td></tr>
               </tbody>
             </table>
           </div>
+          <p>These agent entry points default to observer, which independently caps progressive role trust and blocks every mutating tool. Host acknowledgement does not upgrade trust; isolated is unavailable.</p>
         </section>
 
         <section class="doc-section" id="troubleshooting">

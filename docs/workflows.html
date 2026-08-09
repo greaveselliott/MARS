@@ -183,22 +183,23 @@ mars mcp serve --repo ~/my-project --trust observer</code></pre>
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Manual role run</h3>
-              <pre><code>mars run engineer --repo ~/my-project
-mars run qa --repo ~/my-project --debug</code></pre>
+              <pre><code>mars run engineer --repo ~/my-project --execution-profile host --acknowledge-host-execution
+mars run qa --repo ~/my-project --debug --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use <code>run</code> for one role, one repo, one bounded job.</p>
             </article>
             <article data-doc-filter>
               <h3>Single-repo lifecycle</h3>
-              <pre><code>mars start --repo ~/my-project</code></pre>
-              <p>Use <code>start</code> for the normal autonomous path: init if missing, register, reconcile, seed, serve dashboard/control APIs, and run the repo pipeline.</p>
+              <pre><code>mars start --repo ~/my-project --execution-profile host --acknowledge-host-execution</code></pre>
+              <p>Use acknowledged-host <code>start</code> for the autonomous path: init if missing, register, reconcile, seed, serve dashboard/control APIs, and run the repo pipeline.</p>
             </article>
             <article data-doc-filter>
               <h3>Multi-repo daemon</h3>
               <pre><code>mars register --repo ~/my-project --remote owner/repo
-mars serve --addr :9091 --concurrency 2</code></pre>
+mars serve --addr 127.0.0.1:9091 --concurrency 2 --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use <code>serve</code> when you want a persistent orchestrator for registered repositories.</p>
             </article>
           </div>
+          <p><code>run</code>, <code>start</code>, <code>serve</code>, <code>tools run</code>, and <code>mcp serve</code> default to observer, which independently caps trust and blocks every mutator. Host has current-user authority and is not containment; isolated is unavailable.</p>
           <h3>Control Keys</h3>
           <div class="wide-table" data-doc-filter>
             <table>

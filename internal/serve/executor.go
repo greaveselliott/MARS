@@ -18,6 +18,7 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-013-board-driven-integrations.md
 - docs/features/F-012-self-improvement-loop.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -37,6 +38,7 @@ import (
 	"github.com/greaveselliott/mars/internal/codeintel"
 	harctx "github.com/greaveselliott/mars/internal/context"
 	"github.com/greaveselliott/mars/internal/dashboard"
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/guardrails"
 	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/greaveselliott/mars/internal/inference"
@@ -86,30 +88,45 @@ type RepoLookup func(ctx context.Context, repoID string) (string, error)
 
 // Executor runs agent jobs claimed from the queue.
 type Executor struct {
-	lookupRepo RepoLookup
-	router     *inference.Router
-	dbPath     string
-	codeIntel  codeintel.Runtime
-	traceStore *trace.Store
-	trustStore *trust.Store
-	orgStore   *orgstate.Store
-	dash       *dashboard.Dashboard
-	onSignal   func(context.Context, interventionDebtSignal)
-	jobViews   ui.JobViewFactory
+	lookupRepo       RepoLookup
+	router           *inference.Router
+	dbPath           string
+	codeIntel        codeintel.Runtime
+	traceStore       *trace.Store
+	trustStore       *trust.Store
+	orgStore         *orgstate.Store
+	dash             *dashboard.Dashboard
+	onSignal         func(context.Context, interventionDebtSignal)
+	jobViews         ui.JobViewFactory
+	executionProfile executionprofile.Profile
 }
 
 // NewExecutor creates an executor bound to a repo lookup function and inference router.
 // traceStore is optional; pass nil to disable trace persistence.
 func NewExecutor(lookupRepo RepoLookup, router *inference.Router, dbPath string, traceStore *trace.Store, trustStore *trust.Store) *Executor {
 	return &Executor{
-		lookupRepo: lookupRepo,
-		router:     router,
-		dbPath:     strings.TrimSpace(dbPath),
-		codeIntel:  codeintel.NewRuntime(true, "default"),
-		traceStore: traceStore,
-		trustStore: trustStore,
-		jobViews:   ui.NewDebugJobViewFactory(os.Stdout, false, false),
+		lookupRepo:       lookupRepo,
+		router:           router,
+		dbPath:           strings.TrimSpace(dbPath),
+		codeIntel:        codeintel.NewRuntime(true, "default"),
+		traceStore:       traceStore,
+		trustStore:       trustStore,
+		jobViews:         ui.NewDebugJobViewFactory(os.Stdout, false, false),
+		executionProfile: executionprofile.Host,
 	}
+}
+
+// SetExecutionProfile applies the CLI-admitted execution boundary to every
+// server job, independently of manifest or stored progressive trust.
+func (e *Executor) SetExecutionProfile(profile executionprofile.Profile) {
+	if profile == "" {
+		profile = executionprofile.Host
+	}
+	e.executionProfile = profile
+}
+
+func (e *Executor) targetMutationAllowed(operation string) bool {
+	return e.executionProfile.RequireTargetMutation(operation) == nil
 }
 
 // SetCodeIntel configures automatic code graph context and loop maintenance.
@@ -341,8 +358,12 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		if len(learnData.Excludes) == 0 {
 			learnData.Excludes = learnings.DetectExcludes(repoPath)
 		}
-		if err := learnStore.Save(learnData); err != nil {
-			log.Warn("executor: failed to save detected conventions", "err", err)
+		if e.targetMutationAllowed("persist detected target conventions") {
+			if err := learnStore.Save(learnData); err != nil {
+				log.Warn("executor: failed to save detected conventions", "err", err)
+			}
+		} else {
+			log.Debug("executor: observer profile kept detected conventions in memory")
 		}
 	}
 
@@ -420,14 +441,15 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return terminalDispositionRecorded
 	}
 	toolExec.Session = &tools.Session{
-		Role:         job.Role,
-		JobID:        job.ID,
-		RepoID:       job.RepoID,
-		Trigger:      job.Trigger,
-		TrustLevel:   string(trustLevel),
-		Guardrails:   guardEngine,
-		SafetyLimits: safety.DefaultLimits(),
-		ToolCounts:   toolCounts,
+		Role:             job.Role,
+		JobID:            job.ID,
+		RepoID:           job.RepoID,
+		Trigger:          job.Trigger,
+		ExecutionProfile: string(e.executionProfile),
+		TrustLevel:       string(trustLevel),
+		Guardrails:       guardEngine,
+		SafetyLimits:     safety.DefaultLimits(),
+		ToolCounts:       toolCounts,
 		PolicyRecorder: func(evt tools.PolicyEvent) {
 			if e.onSignal == nil {
 				return
@@ -515,11 +537,13 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		},
 	}
 
-	repair, err := tools.RepairWorkspaceHygieneIgnorePolicy(ctx, root)
-	if err != nil {
-		log.Warn("executor: workspace hygiene ignore auto-repair failed", "err", err)
-	} else if repair.Committed {
-		log.Info("executor: workspace hygiene ignore auto-repaired", "commit", repair.Commit, "missing_ignores", repair.MissingIgnores)
+	if e.targetMutationAllowed("repair target workspace hygiene ignores") {
+		repair, err := tools.RepairWorkspaceHygieneIgnorePolicy(ctx, root)
+		if err != nil {
+			log.Warn("executor: workspace hygiene ignore auto-repair failed", "err", err)
+		} else if repair.Committed {
+			log.Info("executor: workspace hygiene ignore auto-repaired", "commit", repair.Commit, "missing_ignores", repair.MissingIgnores)
+		}
 	}
 
 	hygiene, err := tools.AuditWorkspaceHygiene(ctx, root, tools.WorkspaceHygieneOptions{Mode: "pre_job"})
@@ -643,16 +667,20 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	})
 
 	if res.Err != nil {
-		learnings.RecordJobLessons(learnStore, job.Role, res.Err.Error(), "", nil)
-		if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
-			log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+		if e.targetMutationAllowed("write and commit target runtime learnings") {
+			learnings.RecordJobLessons(learnStore, job.Role, res.Err.Error(), "", nil)
+			if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+				log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+			}
 		}
 		return fmt.Errorf("executor: agent loop error (%s): %w", res.EndReason, res.Err)
 	}
 	if err := agent.NonSuccessError(res); err != nil {
-		learnings.RecordJobLessons(learnStore, job.Role, err.Error(), "", nil)
-		if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
-			log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+		if e.targetMutationAllowed("write and commit target runtime learnings") {
+			learnings.RecordJobLessons(learnStore, job.Role, err.Error(), "", nil)
+			if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+				log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+			}
 		}
 		return fmt.Errorf("executor: %w", err)
 	}
@@ -665,9 +693,11 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 		if gateErr := validateEngineerTicketGateWithEvidence(repoPath, beforeTickets, afterTickets); gateErr != nil {
 			tw.WriteError(gateErr.Error())
-			learnings.RecordJobLessons(learnStore, job.Role, gateErr.Error(), "", nil)
-			if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
-				log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+			if e.targetMutationAllowed("write and commit target runtime learnings") {
+				learnings.RecordJobLessons(learnStore, job.Role, gateErr.Error(), "", nil)
+				if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+					log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+				}
 			}
 			return fmt.Errorf("executor: %w", gateErr)
 		}
@@ -686,11 +716,13 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 	}
 
-	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)
-	if committed, commit, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
-		log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
-	} else if committed {
-		log.Info("executor: committed runtime learnings", "commit", commit, "role", job.Role)
+	if e.targetMutationAllowed("write and commit target runtime learnings") {
+		learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)
+		if committed, commit, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+			log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+		} else if committed {
+			log.Info("executor: committed runtime learnings", "commit", commit, "role", job.Role)
+		}
 	}
 
 	if manifest.DispatchMode() && job.Role != "orchestrator" {

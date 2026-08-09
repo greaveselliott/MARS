@@ -100,8 +100,8 @@ docs:
             <table>
               <thead><tr><th>Mode</th><th>Use when</th><th>Default scope</th><th>Default database</th></tr></thead>
               <tbody>
-                <tr><td><code>mars start --repo /path/to/repo</code></td><td>You want one target repo initialized, registered, reconciled, and run from one command.</td><td>Single target repo.</td><td><code>~/.mars/db/{repo-name}/mars.db</code>.</td></tr>
-                <tr><td><code>mars serve</code></td><td>You already registered repos and want a long-running orchestrator that receives webhooks and cron triggers.</td><td>All repos in the configured DB.</td><td>Legacy shared DB <code>~/.mars/db/mars.db</code> unless <code>--db</code> is passed.</td></tr>
+                <tr><td><code>mars start --repo /path/to/repo --execution-profile host --acknowledge-host-execution</code></td><td>You want one target repo initialized, registered, reconciled, and run with target mutation enabled.</td><td>Single target repo.</td><td><code>~/.mars/db/{repo-name}/mars.db</code>.</td></tr>
+                <tr><td><code>mars serve --execution-profile host --acknowledge-host-execution</code></td><td>You already registered repos and want a long-running mutating orchestrator that receives webhooks and cron triggers.</td><td>All repos in the configured DB.</td><td>Legacy shared DB <code>~/.mars/db/mars.db</code> unless <code>--db</code> is passed.</td></tr>
                 <tr><td><code>mars run &lt;role&gt; --repo /path/to/repo</code></td><td>You need one manual role execution rather than the full orchestrator loop.</td><td>One role, one repo, one job.</td><td>Uses the selected repo and command options; not the dashboard loop.</td></tr>
               </tbody>
             </table>
@@ -109,24 +109,31 @@ docs:
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Scoped lifecycle</h3>
-              <pre><code>mars start --repo ~/my-project
-mars start --repo ~/my-project --dashboard-addr 127.0.0.1:9090 --addr 127.0.0.1:9091</code></pre>
+              <pre><code>mars start --repo ~/my-project --execution-profile host --acknowledge-host-execution
+mars start --repo ~/my-project --dashboard-addr 127.0.0.1:9090 --addr 127.0.0.1:9091 --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use explicit addresses when scripts or users depend on stable ports. With default addresses, scoped start can fall back to ephemeral local ports on conflict.</p>
             </article>
             <article data-doc-filter>
               <h3>Persistent daemon</h3>
               <pre><code>mars register --repo ~/my-project --remote owner/repo
-mars serve --addr 127.0.0.1:9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
+mars serve --addr 127.0.0.1:9091 --concurrency 2 --db ~/.mars/db/mars.db --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use this when webhooks, schedules, and multiple registered repos should share one orchestrator.</p>
             </article>
+          </div>
+          <div class="callout">
+            <strong>Execution profiles:</strong> agent entry points default to
+            observer, which independently caps trust and blocks all target
+            mutators. Host requires both acknowledgement flags, has the current
+            OS user's full authority, and is not containment. Isolated is
+            unavailable until MARS has an enforceable adapter.
           </div>
         </section>
 
         <section class="doc-section" id="startup">
           <h2>Startup Lifecycle</h2>
           <p>
-            <code>mars start</code> is intentionally more than a process
-            launcher. It prepares the target harness, creates a clean initial
+            Acknowledged-host <code>mars start</code> is intentionally more than
+            a process launcher. It prepares the target harness, creates a clean initial
             scaffold commit when needed, registers the repo, reconciles stale or
             resumable lifecycle state, then either resumes work or seeds the
             bootstrap role.
@@ -138,7 +145,7 @@ mars serve --addr 127.0.0.1:9091 --concurrency 2 --db ~/.mars/db/mars.db</code><
             </li>
             <li>
               <h3>Ensure the deployed harness exists</h3>
-              <p>If <code>.harness/manifest.yaml</code> is missing, MARS runs the same scaffold path as <code>mars init</code>. Generated first-run files are committed as <code>chore(harness): initialize mars harness</code> so agents start from a clean baseline.</p>
+              <p>In this acknowledged-host path, a missing <code>.harness/manifest.yaml</code> runs the same scaffold as <code>mars init</code>. Generated first-run files are committed as <code>chore(harness): initialize mars harness</code> so agents start from a clean baseline; observer mode fails before target writes.</p>
             </li>
             <li>
               <h3>Open the per-repo database</h3>
@@ -409,7 +416,7 @@ mars trust --repo ~/my-project</code></pre>
               <pre><code>mars init --repo ~/my-project
 mars doctor --repo ~/my-project --json
 mars run engineer --repo ~/my-project --dry-run
-mars start --repo ~/my-project --concurrency 1</code></pre>
+mars start --repo ~/my-project --concurrency 1 --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Initialize, inspect, then run sequentially. This is the safest first target path.</p>
             </article>
             <article data-doc-filter>
@@ -443,7 +450,7 @@ mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8088/v1</code><
                 <tr><td><code>/api/scan</code> or <code>/api/run-role</code> returns a bad request.</td><td>Missing <code>repo_id</code> or role payload.</td><td>Call <code>GET /api/repos</code> and <code>GET /api/repo-roles?repo_id=...</code> first.</td></tr>
                 <tr><td>Startup refuses ambiguous lifecycle state.</td><td>MARS found state that could be resumed or restarted, but cannot choose safely.</td><td>Inspect tickets, queue, and DB state; rerun with <code>--new-lifecycle</code> only when intentionally starting fresh.</td></tr>
                 <tr><td>Model preflight fails before agents run.</td><td>Required local model file is missing or the active profile changed.</td><td>Run <code>mars setup</code>, or provide a real endpoint on the command that starts agents: <code>mars start --repo /path/to/repo --model-endpoint http://127.0.0.1:8080/v1</code> or <code>mars run engineer --repo /path/to/repo --model-endpoint http://127.0.0.1:8080/v1</code>. See <a href="models-guide.html">Models Guide</a>.</td></tr>
-                <tr><td>Serve appears to use the wrong repo history.</td><td><code>serve</code> defaults to the shared legacy DB.</td><td>Use <code>mars start --repo ...</code> for isolated state, or pass <code>--db</code> deliberately.</td></tr>
+                <tr><td>Serve appears to use the wrong repo history.</td><td><code>serve</code> defaults to the shared legacy DB.</td><td>Use <code>mars start --repo ...</code> for per-repo state, or pass <code>--db</code> deliberately.</td></tr>
                 <tr><td>Trace/log files clutter the repo.</td><td>A manual path was pointed inside the source or target checkout.</td><td>Move runtime logs under <code>~/.mars/traces/</code>; lifecycle commands validate these paths.</td></tr>
               </tbody>
             </table>

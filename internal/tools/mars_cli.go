@@ -428,19 +428,20 @@ Global command surface:
     Destructive example: ["eject", "--repo", ".", "--apply", "--confirm", "my-repo"]
 
   start
-    Auto-init/register, reconcile existing lifecycle state, and run the autonomous orchestrator for one target repo. It resumes active jobs, stale recoverable jobs, in-progress/rework tickets, or recent deterministic dispositions before seeding CEO.
-    Flags: --repo <path>, --remote <owner/repo>, --branch <branch>, --webhook-actor-id <numeric-id> (repeatable), --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>, --model-endpoint <real-url>, --addr <host:port>, --dashboard-addr <host:port> (both hosts must be literal loopback), --dashboard-trusted-origin <exact-https-origin>
+    Register, reconcile existing lifecycle state, and run the orchestrator for one target repo. It resumes active jobs, stale recoverable jobs, in-progress/rework tickets, or recent deterministic dispositions before seeding CEO. Observer is the default and requires an initialized target; only acknowledged host mode may initialize or repair target files.
+    Flags: --repo <path>, --remote <owner/repo>, --branch <branch>, --webhook-actor-id <numeric-id> (repeatable), --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>, --model-endpoint <real-url>, --addr <host:port>, --dashboard-addr <host:port> (both hosts must be literal loopback), --dashboard-trusted-origin <exact-https-origin>, --execution-profile <observer|host|isolated>, --acknowledge-host-execution
     Use --new-lifecycle only when intentionally reseeding CEO over existing lifecycle state.
     --model-endpoint is only for real OpenAI-compatible endpoints; fake or scripted endpoints are test fixtures, not live validation evidence. Control/dashboard listeners accept only literal loopback addresses. Default scoped starts fall back to ephemeral local control/dashboard ports on conflict; the fallback host remains 127.0.0.1. Anonymous loopback dashboard access is limited to page/login shells, embedded assets, and path-free minimal status; rich reads, SSE, and mutation require environment-only MARS_DASHBOARD_CONTROL_SECRET (>=32 bytes) plus login, with exact Host/Origin and session CSRF for mutation. --dashboard-trusted-origin overrides MARS_DASHBOARD_TRUSTED_ORIGIN and permits authenticated remote browser access through that exact HTTPS reverse-proxy origin while MARS stays on loopback. GitHub webhook dispatch also requires a >=32-byte secret (MARS_WEBHOOK_SECRET first, then owner-only 0600 GitHub App credentials fallback), trusted numeric actor IDs from CLI/env/YAML, and an exact registered remote/branch; absent policy leaves local operation healthy with webhook ingress disabled.
     Long-running; use background:true when starting it from an agent.
-    Example: ["start", "--repo", ".", "--concurrency", "1"]
+    Mutating example: ["start", "--repo", ".", "--concurrency", "1", "--execution-profile", "host", "--acknowledge-host-execution"]
 
   serve
     Run multi-repo orchestrator, dashboard, webhooks, scheduler, and workers.
-    Flags: --addr <host:port> (literal loopback), --webhook-actor-id <numeric-id> (repeatable), --dashboard-trusted-origin <exact-https-origin>, --concurrency <n>, --db <path>, --debug, --log-file <path>, --code-intel <true|false>
+    Flags: --addr <host:port> (literal loopback), --webhook-actor-id <numeric-id> (repeatable), --dashboard-trusted-origin <exact-https-origin>, --concurrency <n>, --db <path>, --debug, --log-file <path>, --code-intel <true|false>, --execution-profile <observer|host|isolated>, --acknowledge-host-execution
+	Observer is the default: owner-local bookkeeping and managed inference remain available, but target tools and direct target writers are blocked. Host requires acknowledgement and preserves role trust; isolated is unavailable.
 	Control/dashboard listeners are loopback-only. Anonymous dashboard access is only page/login shells, assets, and minimal path-free status; rich reads, SSE, and mutation require environment-only MARS_DASHBOARD_CONTROL_SECRET (>=32 bytes) plus login, and mutation also requires exact Host/Origin and session CSRF. An exact HTTPS proxy origin may be selected by --dashboard-trusted-origin over MARS_DASHBOARD_TRUSTED_ORIGIN. GitHub webhook policy uses MARS_WEBHOOK_SECRET or the owner-only 0600 setup fallback plus actor IDs from CLI, MARS_WEBHOOK_ALLOWED_ACTOR_IDS, or webhook_allowed_actor_ids YAML; CLI actor policy overrides env, which overrides YAML.
     Long-running; use background:true when starting it from an agent.
-    Example: ["serve", "--addr", "127.0.0.1:9091", "--concurrency", "2"]
+    Mutating example: ["serve", "--addr", "127.0.0.1:9091", "--concurrency", "2", "--execution-profile", "host", "--acknowledge-host-execution"]
 
   register
     Register a repository for autonomous management.
@@ -449,8 +450,8 @@ Global command surface:
 
   run <role>
     Manually execute one role against a target repository.
-    Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --no-init, --code-intel <true|false>, --budget <tokens>, --max-turns <n>
-    Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/. Source work may run foundation-maintainer from the mars source repo to preview the source-only foundation operating context without creating a source manifest.
+    Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --no-init, --code-intel <true|false>, --budget <tokens>, --max-turns <n>, --execution-profile <observer|host|isolated>, --acknowledge-host-execution
+    Observer is the default and caps mutating tools. Host requires acknowledgement and does not upgrade role trust; isolated is unavailable. Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/. Source work may run foundation-maintainer from the mars source repo to preview the source-only foundation operating context without creating a source manifest.
     Example: ["run", "engineer", "--repo", ".", "--dry-run"]
 
   scan
@@ -502,14 +503,16 @@ Global command surface:
   tools run <name>
     Execute one registered built-in tool through the same executor, allowlist,
     trust policy, repo root, and JSON argument path used by agent runs.
-    Flags: --repo <path>, --args-json <json>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>, --json
-    Example: ["tools", "run", "tool_create", "--repo", ".", "--args-json", "{\"name\":\"cli_reference\",\"description\":\"Read CLI docs.\",\"fields\":[]}"]
+    Flags: --repo <path>, --args-json <json>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>, --json, --execution-profile <observer|host|isolated>, --acknowledge-host-execution
+    Observer execution is the default and caps mutating tools independently of --trust. Host requires acknowledgement but does not upgrade --trust; isolated is unavailable.
+    Mutating example: ["tools", "run", "tool_create", "--repo", ".", "--trust", "contributor", "--execution-profile", "host", "--acknowledge-host-execution", "--args-json", "{\"name\":\"cli_reference\",\"description\":\"Read CLI docs.\",\"fields\":[]}"]
 
   mcp serve
     Expose all registered MARS tools as a stdio MCP server for any
     MCP-compatible client or local harness agent.
-    Flags: --repo <path>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>
-    Example client command: mars mcp serve --repo /path/to/repo --trust contributor
+    Flags: --repo <path>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>, --execution-profile <observer|host|isolated>, --acknowledge-host-execution
+    Observer execution is the default and caps mutating tools independently of --trust. Host requires acknowledgement but does not upgrade --trust; isolated is unavailable.
+    Mutating client command: mars mcp serve --repo /path/to/repo --trust contributor --execution-profile host --acknowledge-host-execution
 
   update check
     Check installed CLI and deployed harness version drift.

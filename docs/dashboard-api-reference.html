@@ -97,14 +97,16 @@ docs:
               <pre><code>MARS_DASHBOARD_CONTROL_SECRET='&lt;owner-provided-32+-byte-secret&gt;' \
 mars start --repo /path/to/repo \
   --dashboard-addr 127.0.0.1:9090 \
-  --addr 127.0.0.1:9091</code></pre>
+  --addr 127.0.0.1:9091 \
+  --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use this when one target repo is the active autonomous lifecycle.</p>
             </article>
             <article data-doc-filter>
               <h3>Persistent orchestrator</h3>
               <pre><code>mars serve \
   --addr 127.0.0.1:9091 \
-  --concurrency 2</code></pre>
+  --concurrency 2 \
+  --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use this when webhooks, cron, and multiple registered repos are managed by one process.</p>
             </article>
             <article data-doc-filter>

@@ -366,7 +366,8 @@ rules:
               <thead><tr><th>Command</th><th>Bundle behavior</th><th>Preservation rule</th></tr></thead>
               <tbody>
                 <tr><td><code>mars init --repo /path/to/repo</code></td><td>Creates the initial bundle and operating docs.</td><td>Use in a git checkout and review generated files before committing.</td></tr>
-                <tr><td><code>mars start</code>, <code>run</code>, <code>register</code>, <code>scan</code></td><td>Auto-initialize a missing target harness unless an observer-safe flag prevents it.</td><td>Use <code>--dry-run --no-init</code> when inspecting an uninitialized repo.</td></tr>
+                <tr><td><code>mars register</code>, <code>scan</code></td><td>Auto-initialize a missing target harness.</td><td>Review generated target files before continuing.</td></tr>
+                <tr><td><code>mars start</code>, <code>run</code></td><td>Observer is the default and rejects a missing target before writes; acknowledged host may initialize.</td><td>Use <code>run --dry-run --no-init</code> for the explicit missing-harness preview, or pass <code>--execution-profile host --acknowledge-host-execution</code> only when current-user host mutation is intended.</td></tr>
                 <tr><td><code>mars upgrade --repo /path/to/repo</code></td><td>Fills missing defaults after a MARS upgrade.</td><td>Preserves existing manifest, prompts, knowledge routes, guardrails, docs, tickets, and plans.</td></tr>
                 <tr><td><code>mars eject --repo /path/to/repo</code></td><td>Previews removal of the deployed harness and associated per-repo DB.</td><td>Requires explicit apply and confirm flags for deletion.</td></tr>
               </tbody>

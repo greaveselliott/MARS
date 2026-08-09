@@ -147,11 +147,12 @@ docs:
         <section class="doc-section" id="target">
           <h2>Target Repo Files</h2>
           <p>
-            <code>mars init</code>, <code>mars start</code>, <code>mars run</code>,
-            <code>mars register</code>, and <code>mars scan</code> all ensure a
-            target harness exists unless the command is explicitly run with
-            <code>--no-init</code> where supported. The first scaffold is
-            committed as a generated harness baseline when possible.
+            <code>mars init</code>, <code>mars register</code>, and
+            <code>mars scan</code> ensure a target harness exists.
+            <code>mars start</code> and <code>mars run</code> do so only in
+            acknowledged-host mode; default observer rejects a missing target
+            before writes apart from the explicit no-init dry-run preview. The
+            first scaffold is committed as a generated harness baseline when possible.
           </p>
           <pre><code>.
 |-- AGENTS.md
@@ -383,10 +384,10 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
               <tbody>
                 <tr><td><code>mars setup</code></td><td><code>~/.mars/config.yaml</code>, <code>~/.mars/models/</code>, <code>~/.mars/bin/</code>.</td><td>Machine setup outside target repos.</td></tr>
                 <tr><td><code>mars init --repo</code></td><td>Target harness, operating docs, release files, hygiene <code>.gitignore</code>.</td><td>Creates baseline and commits it when possible.</td></tr>
-                <tr><td><code>mars start --repo</code></td><td>Ensures harness, registers repo, writes per-repo DB, logs, traces, and tickets as agents work.</td><td>Scoped autonomous lifecycle.</td></tr>
+                <tr><td><code>mars start --repo --execution-profile host --acknowledge-host-execution</code></td><td>Ensures harness, registers repo, writes per-repo DB, logs, traces, and tickets as agents work.</td><td>Scoped autonomous lifecycle with current-user host authority; not containment.</td></tr>
                 <tr><td><code>mars register --repo</code></td><td>Ensures harness and writes registry entry to DB.</td><td>Prepares target for serve.</td></tr>
                 <tr><td><code>mars scan --repo --tickets</code></td><td>Reads repo, writes backlog tickets for findings.</td><td>Scanner output becomes repo-owned work items.</td></tr>
-                <tr><td><code>mars run &lt;role&gt; --repo</code></td><td>Reads harness and docs, may write role outputs, tickets, docs, source, logs, traces.</td><td>Role behavior depends on manifest, trust, tools, and prompt.</td></tr>
+                <tr><td><code>mars run &lt;role&gt; --repo</code></td><td>Observer reads harness/docs and writes only owner-local runtime records; acknowledged host may write role outputs, tickets, docs, source, logs, and traces.</td><td>Execution profile is an independent ceiling over manifest, trust, tools, and prompt.</td></tr>
                 <tr><td><code>mars upgrade --repo</code></td><td>Writes missing generated defaults only.</td><td>Preserves existing manifest, prompts, knowledge routes, guardrails, tickets, plans, design docs, references, and AGENTS.md.</td></tr>
                 <tr><td><code>mars eject --repo</code></td><td>Dry-run plan unless <code>--apply --confirm</code>.</td><td>Preview before destructive cleanup.</td></tr>
               </tbody>

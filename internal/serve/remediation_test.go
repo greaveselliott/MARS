@@ -6,6 +6,7 @@ docs:
 - docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-012-self-improvement-loop.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -17,9 +18,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/queue"
 	"github.com/greaveselliott/mars/internal/remediation"
 	"github.com/greaveselliott/mars/internal/telemetry"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHandleJobFailedRecordsDeterministicRemediationInScoreDetails(t *testing.T) {
@@ -102,6 +105,32 @@ func TestHandleJobFailedExecutesGeneratedDocsAutoSafeRemediation(t *testing.T) {
 	if !remediationExecutionIncludes(evidence.Executions, "generated-docs:update-missing-defaults", "applied") {
 		t.Fatalf("expected applied generated-docs remediation execution, got %#v", evidence.Executions)
 	}
+}
+
+func TestHandleJobFailedObserverBlocksGeneratedDocsRemediation(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:      "127.0.0.1:0",
+		DashboardAddr:    "127.0.0.1:0",
+		DBPath:           dbPath,
+		ExecutionProfile: executionprofile.Observer,
+	})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/remediation-observer", "main")
+	require.NoError(t, err)
+
+	failedJob := queueJob("job-remediation-observer", repoID, "engineer")
+	srv.handleJobFailed(ctx, &failedJob, errTest("missing generated docs and operating-model drift"))
+
+	require.NoFileExists(t, filepath.Join(repoRoot, ".harness", "metadata.yaml"))
+	var details string
+	require.NoError(t, srv.db.QueryRow(`SELECT details FROM outcomes WHERE job_id = ?`, failedJob.ID).Scan(&details))
+	var evidence remediationPlanEvidence
+	require.NoError(t, json.Unmarshal([]byte(details), &evidence))
+	require.True(t, remediationExecutionIncludes(evidence.Executions, "generated-docs:update-missing-defaults", "blocked_execution_profile"), "%#v", evidence.Executions)
 }
 
 func TestHandleRemediationExecutableReadyRecipeSuppressesGenericRetry(t *testing.T) {

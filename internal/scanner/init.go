@@ -1265,6 +1265,15 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 - CLI tool/skill sync: when ` + "`mars`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
+- MARS execution profile is operator-selected and cannot be granted by this
+  repo's manifest. ` + "`run`" + `, ` + "`start`" + `, ` + "`serve`" + `,
+  ` + "`tools run`" + `, and ` + "`mcp serve`" + ` default to ` + "`observer`" + `,
+  which independently blocks ` + "`shell_exec`" + ` and every mutating tool.
+  Host work requires both the ` + "`--execution-profile host`" + ` and
+  ` + "`--acknowledge-host-execution`" + ` flags, has the current OS user's
+  filesystem, network, process, keychain, and credential authority, and is not
+  containment.
+  ` + "`isolated`" + ` is unavailable until MARS has an enforceable adapter.
 - MARS control and dashboard listeners are loopback-only. Optional GitHub webhook work dispatch remains disabled unless the process receives a webhook secret of at least 32 bytes (` + "`MARS_WEBHOOK_SECRET`" + ` first, then only the owner-only ` + "`0600`" + ` GitHub App setup fallback), a trusted numeric actor policy from ` + "`--webhook-actor-id`" + `, ` + "`MARS_WEBHOOK_ALLOWED_ACTOR_IDS`" + `, or YAML ` + "`webhook_allowed_actor_ids`" + `, and an exact registered ` + "`owner/repo`" + ` plus case-sensitive branch. CLI actor IDs override env, which overrides YAML; login names, empty remotes, forks, and issue comments never authorize work. Webhook secrets are never YAML/CLI fields and must not enter logs or traces.
 - Anonymous dashboard access is limited to loopback page/login shells, embedded assets, and path-free minimal status. Rich reads, SSE, and mutations require the operator to set environment-only ` + "`MARS_DASHBOARD_CONTROL_SECRET`" + ` to at least 32 bytes and log in; mutations also require the exact Host/Origin plus session CSRF. Optional remote browser access keeps MARS on loopback and requires one exact HTTPS origin from ` + "`--dashboard-trusted-origin`" + ` (CLI over ` + "`MARS_DASHBOARD_TRUSTED_ORIGIN`" + `); forwarded headers and wildcard/suffix origins do not grant authority.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
@@ -2734,7 +2743,12 @@ tools are added, removed, renamed, or materially change behavior.
 - Tools are available only when registered in the built-in registry and included
   in the current role allowlist.
 - Mirrored tools are valid in both the foundation harness and deployed harnesses.
-- Mutating tools are blocked at observer trust.
+- Execution profile is an admission boundary independent of role trust. The
+  default ` + "`observer`" + ` profile blocks every classified mutating tool,
+  including ` + "`shell_exec`" + ` and ` + "`git_branch`" + `, even if requested or
+  stored trust is contributor or autonomous. ` + "`host`" + ` requires
+  ` + "`--acknowledge-host-execution`" + ` and does not upgrade the requested trust;
+  ` + "`isolated`" + ` is unavailable until MARS has an enforceable adapter.
 - Prefer purpose-built tools over ` + "`shell_exec`" + ` when a deterministic tool exists.
 - Prefer structured argv over shell strings unless shell features are required.
 - Universal tools are also exposed through ` + "`mars mcp serve --repo <path>`" + ` for MCP-compatible clients and local harness agents.
@@ -2756,7 +2770,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`code_trace`" + ` | Inspect inbound/outbound import and call relationships where Mars extractors know them. | Non-mutating. Treat the graph as structural evidence, not full LSP proof. Stale traces require ` + "`code_index`" + ` or corroborating source reads before decisions. |
 | ` + "`code_impact`" + ` | Map changed paths or a git diff to related symbols, likely tests, docs, feature contracts, and tickets. | Non-mutating. Use before Engineer edits, QA review plans, Dogfood validation, and Release risk summaries. MarsDocSync remains documentation authority; code-intel consumes its metadata and cross-links it into impact output. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Planner roles such as CEO, Head of Strategy, COO, CTO, and CTO-weekly may use read-only shell inspection when otherwise policy-safe, but mutating shell commands are blocked so strategy, planning, ticketing, dependency, and implementation ownership cannot be bypassed. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Engineer review rework with only done or in-review product tickets must reopen the dispatch-named source-disposition ticket before validation shell commands or product mutation. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. During Engineer unresolved test/build repair, ` + "`go mod init <module>`" + ` is allowed only when the latest failure says Go cannot find a main module and no ` + "`go.mod`" + ` exists. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. HTTP probes that fail because no server is listening are validation-procedure failures, so reviewers may start the appropriate server with ` + "`background:true`" + ` and rerun a separate probe before approval. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
-| ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
+| ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; acknowledged-host ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading, while observer execution only reports the audit. |
 | ` + "`github_auth_check`" + ` | Check private MARS GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go get`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
@@ -2849,10 +2863,13 @@ validation; concrete proof belongs after the behavior has been exercised.
 - Need to discover or invoke the universal tool surface from an operator shell:
   use ` + "`mars tools list`" + ` and
   ` + "`mars tools run <name> --args-json '{...}'`" + `. Add
-  ` + "`--trust contributor`" + ` only for deliberate mutating tool calls.
+  ` + "`--trust contributor --execution-profile host --acknowledge-host-execution`" + `
+  only for deliberate mutating tool calls.
 - Need an MCP-compatible client or local harness agent to see MARS tools
   as native tools: configure it to launch
-  ` + "`mars mcp serve --repo <path> --trust observer|contributor`" + `.
+  ` + "`mars mcp serve --repo <path> --trust observer`" + ` for inspection. A mutating
+  contributor session additionally requires both ` + "`--execution-profile host`" + `
+  and ` + "`--acknowledge-host-execution`" + `.
 - Need to run or prepare the whole release ritual: use ` + "`release_orchestrate`" + `,
   ` + "`git_release_guard`" + `, and ` + "`github_release_status`" + ` before mutating state.
 - Need a durable repo-owned note: use ` + "`record_decision`" + `.
@@ -2876,8 +2893,9 @@ validation; concrete proof belongs after the behavior has been exercised.
   ` + "`tool_creation_guard`" + `, and ` + "`tool_inventory_audit`" + `.
 - Need to inspect generated dependency/build churn before a job, commit, or
   package-manager operation: use ` + "`workspace_hygiene`" + `. Missing ignore policy may
-  be auto-repaired by ` + "`serve`" + ` as a ` + "`.gitignore`" + `-only commit when generated paths
-  are untracked and ` + "`.gitignore`" + ` has no user changes.
+  be auto-repaired by acknowledged-host ` + "`serve`" + ` as a ` + "`.gitignore`" + `-only
+  commit when generated paths are untracked and ` + "`.gitignore`" + ` has no user
+  changes. Observer ` + "`serve`" + ` reports but does not repair it.
 - Need dependency setup or package fetch/install: use ` + "`dependency_sync`" + `, not raw
   package-manager commands through ` + "`shell_exec`" + `.
 - Need to know which docs must be checked after touching a code file: read the
@@ -2890,8 +2908,9 @@ validation; concrete proof belongs after the behavior has been exercised.
   auto-refresh limits, or exact raw text is required.
 - Need ordinary repository mutation: use ` + "`file_write`" + `, ` + "`git_commit`" + `, and
   ` + "`git_push`" + ` with the repository's operating rules.
-- Need a command outside the built-in tool surface: use ` + "`shell_exec`" + `, keep the
-  command narrow, and record any reusable gap as a tool improvement.
+- Need a command outside the built-in tool surface: first require acknowledged
+  host execution, then use ` + "`shell_exec`" + `, keep the command narrow, and
+  record any reusable gap as a tool improvement.
 
 ## Maintenance Rules
 
@@ -4728,9 +4747,9 @@ Local release publication:
 
 ## Role
 
-You are the dogfood tester. You build, run, and validate this project in an
-isolated environment (Podman container when available, native fallback otherwise)
-and record bounded evidence for the real user path. You are observation-first:
+You are the dogfood tester. You build, run, and validate this project in a
+Podman container when available; otherwise use native host validation without
+isolation. Record bounded evidence for the real user path. You are observation-first:
 do not edit product source, package manifests, lockfiles, config, or harness
 scaffold to make validation pass. Create target-owned tickets for product
 defects, and leave foundation/runtime failures as telemetry or blocked

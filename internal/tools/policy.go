@@ -10,6 +10,7 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-017-open-source-publication.md
 */
 package tools
 
@@ -24,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/greaveselliott/mars/internal/docsync"
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/safety"
 )
 
@@ -34,6 +36,7 @@ var mutatingTools = map[string]bool{
 	"mars_cli":            true,
 	"mars_harness_cli":    true,
 	"git_commit":          true,
+	"git_branch":          true,
 	"git_push":            true,
 	"record_decision":     true,
 	"ticket_create":       true,
@@ -257,6 +260,15 @@ func postToolPolicy(ctx context.Context, root Root, name string, raw json.RawMes
 }
 
 func enforceTrust(session Session, name string) error {
+	if raw := strings.TrimSpace(session.ExecutionProfile); raw != "" {
+		profile, err := executionprofile.Parse(raw)
+		if err != nil {
+			return fmt.Errorf("policy: %w", err)
+		}
+		if profile != executionprofile.Host && mutatingTools[name] {
+			return fmt.Errorf("policy: execution profile %s cannot run mutating tool %q", profile, name)
+		}
+	}
 	level := strings.TrimSpace(strings.ToLower(session.TrustLevel))
 	if level == "" {
 		return nil

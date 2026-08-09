@@ -284,6 +284,15 @@ mars eject --repo ~/my-project --apply --confirm my-project</code></pre></dd>
 
         <section class="doc-section" id="execution">
           <h2>Agent Execution And Orchestration</h2>
+          <div class="source-callout">
+            <strong>Profile admission:</strong> <code>run</code>,
+            <code>start</code>, <code>serve</code>, <code>tools run</code>, and
+            <code>mcp serve</code> default to observer, which independently caps
+            trust and blocks every mutator. Host requires
+            <code>--execution-profile host --acknowledge-host-execution</code>,
+            has the current OS user's full authority, and is not containment.
+            <code>isolated</code> is unavailable.
+          </div>
           <div class="reference-stack">
             <article data-doc-filter>
               <h3><code>mars run &lt;role&gt;</code></h3>
@@ -294,31 +303,31 @@ mars eject --repo ~/my-project --apply --confirm my-project</code></pre></dd>
               </p>
               <dl>
                 <dt>Flags</dt>
-                <dd><code>--repo</code>, <code>--model-endpoint</code>, <code>--trace</code>, <code>--debug</code>, <code>--log-file</code>, <code>--dry-run</code>, <code>--no-init</code>, <code>--code-intel</code>, <code>--budget</code>, <code>--max-turns</code>.</dd>
+                <dd><code>--repo</code>, <code>--model-endpoint</code>, <code>--trace</code>, <code>--debug</code>, <code>--log-file</code>, <code>--dry-run</code>, <code>--no-init</code>, <code>--code-intel</code>, <code>--budget</code>, <code>--max-turns</code>, <code>--execution-profile</code>, <code>--acknowledge-host-execution</code>.</dd>
                 <dt>Safe inspection</dt>
                 <dd>Pair <code>--dry-run --no-init</code> when a target has no harness and you do not want files written.</dd>
                 <dt>Example</dt>
-                <dd><pre><code>mars run engineer --repo ~/my-project
-mars run qa --repo ~/my-project --debug
+                <dd><pre><code>mars run engineer --repo ~/my-project --execution-profile host --acknowledge-host-execution
+mars run qa --repo ~/my-project --debug --execution-profile host --acknowledge-host-execution
 mars run engineer --repo ~/legacy-project --dry-run --no-init</code></pre></dd>
               </dl>
             </article>
             <article data-doc-filter>
               <h3><code>mars start</code></h3>
               <p>
-                The single-repo autonomous lifecycle path. It initializes if
-                needed, registers the repo, reconciles lifecycle state, starts
+                The single-repo lifecycle path. Acknowledged-host mode initializes
+                if needed, registers the repo, reconciles lifecycle state, starts
                 the control/dashboard listeners, and runs the scoped pipeline
                 with repo-isolated database state.
               </p>
               <dl>
                 <dt>Flags</dt>
-                <dd><code>--repo</code>, <code>--concurrency</code>, <code>--db</code>, <code>--force</code>, <code>--new-lifecycle</code>, <code>--debug</code>, <code>--log-file</code>, <code>--code-intel</code>, <code>--model-endpoint</code>, <code>--addr</code>, <code>--dashboard-addr</code>, <code>--yes</code>, <code>--json</code>, <code>--plain</code>.</dd>
+                <dd><code>--repo</code>, <code>--concurrency</code>, <code>--db</code>, <code>--force</code>, <code>--new-lifecycle</code>, <code>--debug</code>, <code>--log-file</code>, <code>--code-intel</code>, <code>--model-endpoint</code>, <code>--addr</code>, <code>--dashboard-addr</code>, <code>--yes</code>, <code>--json</code>, <code>--plain</code>, <code>--execution-profile</code>, <code>--acknowledge-host-execution</code>.</dd>
                 <dt>When to use <code>--new-lifecycle</code></dt>
                 <dd>Only when you deliberately want a fresh CEO lifecycle over resumable work.</dd>
                 <dt>Example</dt>
-                <dd><pre><code>mars start --repo ~/my-project
-mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code></pre></dd>
+                <dd><pre><code>mars start --repo ~/my-project --execution-profile host --acknowledge-host-execution
+mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1 --execution-profile host --acknowledge-host-execution</code></pre></dd>
               </dl>
             </article>
             <article data-doc-filter>
@@ -333,10 +342,10 @@ mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code><
                 <dt>Register flags</dt>
                 <dd><code>--repo</code>, <code>--remote</code>, <code>--branch</code>, <code>--db</code>.</dd>
                 <dt>Serve flags</dt>
-                <dd><code>--addr</code>, <code>--concurrency</code>, <code>--db</code>, <code>--debug</code>, <code>--log-file</code>, <code>--code-intel</code>.</dd>
+                <dd><code>--addr</code>, <code>--concurrency</code>, <code>--db</code>, <code>--debug</code>, <code>--log-file</code>, <code>--code-intel</code>, <code>--execution-profile</code>, <code>--acknowledge-host-execution</code>.</dd>
                 <dt>Example</dt>
                 <dd><pre><code>mars register --repo ~/my-project --remote owner/repo
-mars serve --addr :9091 --concurrency 2</code></pre></dd>
+mars serve --addr 127.0.0.1:9091 --concurrency 2 --execution-profile host --acknowledge-host-execution</code></pre></dd>
               </dl>
             </article>
           </div>
@@ -468,18 +477,19 @@ mars models credentials write-local-env --repo ~/my-project --api-key-env OPENAI
               <thead><tr><th>Command</th><th>Purpose</th><th>Examples</th></tr></thead>
               <tbody>
                 <tr><td><code>mars tools list</code></td><td>Lists registered built-in tools. Use <code>--json</code> for OpenAI-style tool definitions.</td><td><code>mars tools list --json</code></td></tr>
-                <tr><td><code>mars tools run &lt;name&gt;</code></td><td>Executes one tool using the same registry, allowlist, root, session role, and trust policy as agent runs.</td><td><code>mars tools run git_status --repo ~/my-project --args-json '{}'</code></td></tr>
-                <tr><td><code>mars mcp serve</code></td><td>Runs a stdio MCP server exposing the tool registry to compatible clients.</td><td><code>mars mcp serve --repo ~/my-project --trust observer</code></td></tr>
+                <tr><td><code>mars tools run &lt;name&gt;</code></td><td>Executes one tool using the same profile, registry, allowlist, root, session role, and trust policy as agent runs.</td><td><code>mars tools run git_status --repo ~/my-project --args-json '{}'</code></td></tr>
+                <tr><td><code>mars mcp serve</code></td><td>Runs an observer-default stdio MCP server exposing the tool registry to compatible clients; mutation additionally requires acknowledged host and permitted trust.</td><td><code>mars mcp serve --repo ~/my-project --trust observer</code></td></tr>
               </tbody>
             </table>
           </div>
           <h3>Trust And Mutation</h3>
           <p>
             <code>observer</code> should be the default for exploratory MCP
-            clients. Use <code>contributor</code> only when the client should
-            be able to call mutating tools such as <code>file_write</code>,
-            <code>tool_create</code>, <code>record_decision</code>, or git
-            commit/push tools.
+            clients. Mutating clients require both <code>contributor</code>
+            trust and <code>--execution-profile host
+            --acknowledge-host-execution</code>; trust alone cannot enable
+            <code>file_write</code>, <code>tool_create</code>,
+            <code>record_decision</code>, or git commit/push tools.
           </p>
         </section>
 

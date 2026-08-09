@@ -121,6 +121,14 @@ func (s *Server) executeReadyRemediation(ctx context.Context, plan remediation.P
 			continue
 		}
 		if remediationAttemptHasExecutor(attempt) {
+			if err := s.requireTargetMutation("automatic generated-harness remediation"); err != nil {
+				executions = append(executions, remediationExecutionEvidence{
+					RecipeID: attempt.RecipeID,
+					Status:   "blocked_execution_profile",
+					Error:    err.Error(),
+				})
+				continue
+			}
 			executions = append(executions, s.executeGeneratedDocsUpdate(ctx, plan.Signal, attempt))
 			continue
 		}

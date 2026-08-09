@@ -100,6 +100,17 @@ func TestExecutor_observerCannotMutate(t *testing.T) {
 	require.Contains(t, err.Error(), "observer")
 }
 
+func TestExecutionProfileObserverCapsContributorAndGitBranch(t *testing.T) {
+	t.Parallel()
+	session := Session{ExecutionProfile: "observer", TrustLevel: "contributor"}
+	for _, name := range []string{"file_write", "git_branch"} {
+		err := enforceTrust(session, name)
+		require.ErrorContains(t, err, "execution profile observer")
+		require.ErrorContains(t, err, name)
+	}
+	require.NoError(t, enforceTrust(session, "git_status"))
+}
+
 func TestExecutor_secretScannerBlocksFileWrite(t *testing.T) {
 	t.Parallel()
 	if _, err := exec.LookPath("git"); err != nil {

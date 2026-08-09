@@ -62,6 +62,7 @@ import (
 	ctx "github.com/greaveselliott/mars/internal/context"
 	"github.com/greaveselliott/mars/internal/docsync"
 	"github.com/greaveselliott/mars/internal/doctor"
+	"github.com/greaveselliott/mars/internal/executionprofile"
 	"github.com/greaveselliott/mars/internal/foundationtelemetry"
 	gh "github.com/greaveselliott/mars/internal/github"
 	"github.com/greaveselliott/mars/internal/githubauth"
@@ -98,6 +99,30 @@ var (
 	date             = "unknown"
 	jsonErrorWritten bool
 )
+
+type executionProfileFlags struct {
+	profile         string
+	acknowledgeHost bool
+}
+
+func (f *executionProfileFlags) bind(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&f.profile, "execution-profile", string(executionprofile.Observer), "Execution boundary: observer, host, or isolated (isolated is currently unavailable)")
+	cmd.Flags().BoolVar(&f.acknowledgeHost, "acknowledge-host-execution", false, "Acknowledge that host execution has the current OS user's authority and is not containment")
+}
+
+func (f executionProfileFlags) admit(command string) (executionprofile.Profile, error) {
+	return executionprofile.Admit(command, f.profile, f.acknowledgeHost)
+}
+
+func requireInitializedObserverTarget(command, repoRoot string) error {
+	manifestPath := filepath.Join(repoRoot, ".harness", "manifest.yaml")
+	if _, err := os.Stat(manifestPath); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("%s: inspect harness manifest at %s: %w", command, manifestPath, err)
+	}
+	return fmt.Errorf("%s: execution profile observer requires an initialized target; .harness/manifest.yaml is missing in %s and no target files were written. Run `mars init --repo %s` deliberately, or rerun with --execution-profile host --acknowledge-host-execution only if initialization and current-user host authority are intended", command, repoRoot, repoRoot)
+}
 
 func main() {
 	root := newRootCommand()
@@ -411,11 +436,12 @@ func runStartGit(repoRoot string, args ...string) error {
 
 func mcpServeCmd() *cobra.Command {
 	var (
-		repoPath  string
-		allow     string
-		role      string
-		trustLvl  string
-		maxOutput int
+		repoPath     string
+		allow        string
+		role         string
+		trustLvl     string
+		maxOutput    int
+		profileFlags executionProfileFlags
 	)
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -426,6 +452,14 @@ executor, trust policy, repository root, and JSON arguments as agent runs.
 
 Configure MCP clients to launch this command as a local stdio server.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			profile, err := profileFlags.admit("mcp serve")
+			if err != nil {
+				return err
+			}
+			trustLevel, ok := trust.ParseLevel(trustLvl)
+			if !ok {
+				return fmt.Errorf("mcp serve: trust level %q is invalid; choose observer, contributor, or autonomous", trustLvl)
+			}
 			absRepo, err := filepath.Abs(repoPath)
 			if err != nil {
 				return fmt.Errorf("mcp serve: resolve repo %s: %w", repoPath, err)
@@ -443,8 +477,9 @@ Configure MCP clients to launch this command as a local stdio server.`,
 				executor.MaxOutput = maxOutput
 			}
 			executor.Session = &tools.Session{
-				Role:       role,
-				TrustLevel: trustLvl,
+				Role:             role,
+				ExecutionProfile: string(profile),
+				TrustLevel:       string(trustLevel),
 			}
 			allowlist := splitCSV(allow)
 			server := mcpstdio.Server{
@@ -461,6 +496,7 @@ Configure MCP clients to launch this command as a local stdio server.`,
 	cmd.Flags().StringVar(&role, "role", "mcp-client", "Role label used for session policy")
 	cmd.Flags().StringVar(&trustLvl, "trust", "observer", "Trust level used for mutating-tool policy")
 	cmd.Flags().IntVar(&maxOutput, "max-output-bytes", 0, "Maximum combined tool output bytes; 0 uses the executor default")
+	profileFlags.bind(cmd)
 	return cmd
 }
 
@@ -510,19 +546,28 @@ func toolsListCmd() *cobra.Command {
 
 func toolsRunCmd() *cobra.Command {
 	var (
-		repoPath  string
-		argsJSON  string
-		allow     string
-		role      string
-		trustLvl  string
-		maxOutput int
-		jsonOut   bool
+		repoPath     string
+		argsJSON     string
+		allow        string
+		role         string
+		trustLvl     string
+		maxOutput    int
+		jsonOut      bool
+		profileFlags executionProfileFlags
 	)
 	cmd := &cobra.Command{
 		Use:   "run <name>",
 		Short: "Execute one registered built-in tool",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			profile, err := profileFlags.admit("tools run")
+			if err != nil {
+				return err
+			}
+			trustLevel, ok := trust.ParseLevel(trustLvl)
+			if !ok {
+				return fmt.Errorf("tools run: trust level %q is invalid; choose observer, contributor, or autonomous", trustLvl)
+			}
 			name := strings.TrimSpace(args[0])
 			if name == "" {
 				return fmt.Errorf("tools run: tool name is empty")
@@ -544,8 +589,9 @@ func toolsRunCmd() *cobra.Command {
 				executor.MaxOutput = maxOutput
 			}
 			executor.Session = &tools.Session{
-				Role:       role,
-				TrustLevel: trustLvl,
+				Role:             role,
+				ExecutionProfile: string(profile),
+				TrustLevel:       string(trustLevel),
 			}
 			allowlist := []string{name}
 			if strings.TrimSpace(allow) != "" {
@@ -581,6 +627,7 @@ func toolsRunCmd() *cobra.Command {
 	cmd.Flags().StringVar(&trustLvl, "trust", "observer", "Trust level used for mutating-tool policy")
 	cmd.Flags().IntVar(&maxOutput, "max-output-bytes", 0, "Maximum combined tool output bytes; 0 uses the executor default")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write structured JSON output")
+	profileFlags.bind(cmd)
 	return cmd
 }
 
@@ -1819,6 +1866,7 @@ func runCmd() *cobra.Command {
 		codeIntelFlag string
 		budget        int
 		maxTurns      int
+		profileFlags  executionProfileFlags
 	)
 
 	cmd := &cobra.Command{
@@ -1826,27 +1874,33 @@ func runCmd() *cobra.Command {
 		Short: "Run an agent role against a repository",
 		Long: `Load the .harness/ bundle from --repo and execute the named role.
 
-If .harness/manifest.yaml is missing, the same scaffold as 'mars init'
-is applied automatically (requires a git repository). Use --no-init with
---dry-run when inspecting an uninitialized target without writing harness
-scaffolding. The source-only foundation-maintainer role may run from the
-mars source repo with --dry-run --no-init without creating a source
-manifest.`,
+Observer is the default and requires an initialized target. When
+--execution-profile host is selected and acknowledged, a missing manifest may
+use the same scaffold as 'mars init' (requires a git repository). Use --no-init
+with --dry-run for the explicit missing-harness preview without writing
+scaffolding. The source-only foundation-maintainer role may run from the mars
+source repo with --dry-run --no-init without creating a source manifest.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			profile, err := profileFlags.admit("run")
+			if err != nil {
+				return err
+			}
 			roleName := args[0]
 			return executeRun(runOpts{
-				roleName:      roleName,
-				repoPath:      repoPath,
-				modelEndpoint: modelEndpoint,
-				trace:         traceFlag,
-				debug:         debug,
-				logFile:       logFile,
-				dryRun:        dryRun,
-				noInit:        noInit,
-				codeIntelFlag: codeIntelFlag,
-				budget:        budget,
-				maxTurns:      maxTurns,
+				roleName:         roleName,
+				repoPath:         repoPath,
+				modelEndpoint:    modelEndpoint,
+				trace:            traceFlag,
+				debug:            debug,
+				logFile:          logFile,
+				dryRun:           dryRun,
+				noInit:           noInit,
+				codeIntelFlag:    codeIntelFlag,
+				budget:           budget,
+				maxTurns:         maxTurns,
+				executionProfile: profile,
+				acknowledgeHost:  profileFlags.acknowledgeHost,
 			})
 		},
 	}
@@ -1861,23 +1915,26 @@ manifest.`,
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 	cmd.Flags().IntVar(&budget, "budget", 0, "Token budget (0 = unlimited)")
 	cmd.Flags().IntVar(&maxTurns, "max-turns", 50, "Maximum LLM round-trips")
+	profileFlags.bind(cmd)
 	_ = cmd.MarkFlagRequired("repo")
 
 	return cmd
 }
 
 type runOpts struct {
-	roleName      string
-	repoPath      string
-	modelEndpoint string
-	trace         bool
-	debug         bool
-	logFile       string
-	dryRun        bool
-	noInit        bool
-	codeIntelFlag string
-	budget        int
-	maxTurns      int
+	roleName         string
+	repoPath         string
+	modelEndpoint    string
+	trace            bool
+	debug            bool
+	logFile          string
+	dryRun           bool
+	noInit           bool
+	codeIntelFlag    string
+	budget           int
+	maxTurns         int
+	executionProfile executionprofile.Profile
+	acknowledgeHost  bool
 }
 
 const foundationMaintainerRoleName = "foundation-maintainer"
@@ -2205,6 +2262,10 @@ func codeGraphRunMaintenanceEnabled(roleTools []string, graph codeintel.ContextR
 }
 
 func executeRun(opts runOpts) error {
+	profile, err := executionprofile.Admit("run", string(opts.executionProfile), opts.acknowledgeHost)
+	if err != nil {
+		return err
+	}
 	absRepo, err := filepath.Abs(opts.repoPath)
 	if err != nil {
 		tw := ui.NewTraceWriter(os.Stdout, false, false)
@@ -2221,20 +2282,26 @@ func executeRun(opts runOpts) error {
 	}
 
 	manifestPath := filepath.Join(absRepo, ".harness", "manifest.yaml")
-	if opts.noInit && !sourceFoundationRole {
-		if _, err := os.Stat(manifestPath); err != nil {
-			if !os.IsNotExist(err) {
-				return fmt.Errorf("run: inspect harness manifest at %s: %w", manifestPath, err)
+	if !sourceFoundationRole {
+		_, manifestErr := os.Stat(manifestPath)
+		if manifestErr != nil && !os.IsNotExist(manifestErr) {
+			return fmt.Errorf("run: inspect harness manifest at %s: %w", manifestPath, manifestErr)
+		}
+		if os.IsNotExist(manifestErr) && profile == executionprofile.Observer && opts.dryRun && opts.noInit {
+			msg := fmt.Sprintf("run: .harness/manifest.yaml is missing in %s and --no-init was set; no files were written. Run `mars init --repo %s` deliberately before executing this role.", absRepo, absRepo)
+			fmt.Println("── dry-run: observer-safe no-init ──")
+			fmt.Println(msg)
+			fmt.Printf("Role: %s\n", opts.roleName)
+			fmt.Println("── end dry-run ──")
+			return nil
+		}
+		if opts.noInit && os.IsNotExist(manifestErr) {
+			return fmt.Errorf("run: .harness/manifest.yaml is missing in %s and --no-init was set; no files were written. Run `mars init --repo %s` deliberately before executing this role, or omit --no-init only with --execution-profile host --acknowledge-host-execution when initialization is intended", absRepo, absRepo)
+		}
+		if profile == executionprofile.Observer {
+			if err := requireInitializedObserverTarget("run", absRepo); err != nil {
+				return err
 			}
-			msg := fmt.Sprintf("run: .harness/manifest.yaml is missing in %s and --no-init was set; no files were written. Run `mars init --repo %s` to scaffold the target, or rerun without --no-init when initialization is intended.", absRepo, absRepo)
-			if opts.dryRun {
-				fmt.Println("── dry-run: observer-safe no-init ──")
-				fmt.Println(msg)
-				fmt.Printf("Role: %s\n", opts.roleName)
-				fmt.Println("── end dry-run ──")
-				return nil
-			}
-			return errors.New(msg)
 		}
 	}
 
@@ -2265,7 +2332,7 @@ func executeRun(opts runOpts) error {
 		Role:     opts.roleName,
 	})
 
-	if !opts.noInit && !sourceFoundationRole {
+	if profile == executionprofile.Host && !opts.noInit && !sourceFoundationRole {
 		preInitChanges, err := gitChangedPaths(absRepo)
 		if err != nil {
 			tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
@@ -2457,14 +2524,19 @@ func executeRun(opts runOpts) error {
 		return err
 	}
 	executor := tools.NewExecutor(registry)
+	roleTrustLevel, ok := trust.ParseLevel(role.TrustLevel)
+	if !ok {
+		roleTrustLevel = trust.LevelObserver
+	}
 	executor.Session = &tools.Session{
-		Role:         opts.roleName,
-		JobID:        fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
-		RepoID:       absRepo,
-		TrustLevel:   string(trust.LevelContributor),
-		Guardrails:   guardEngine,
-		SafetyLimits: safety.DefaultLimits(),
-		ToolCounts:   map[string]int{},
+		Role:             opts.roleName,
+		JobID:            fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
+		RepoID:           absRepo,
+		ExecutionProfile: string(profile),
+		TrustLevel:       string(roleTrustLevel),
+		Guardrails:       guardEngine,
+		SafetyLimits:     safety.DefaultLimits(),
+		ToolCounts:       map[string]int{},
 	}
 	if codeIntelRuntime.Enabled && codeintel.ToolAllowed(role.Tools) {
 		codeintel.RecordContextCounters(executor.Session.ToolCounts, codeGraph, codeGraphErr)
@@ -4079,6 +4151,7 @@ func serveCmd() *cobra.Command {
 		logFile         string
 		codeIntelFlag   string
 		dashboardOrigin string
+		profileFlags    executionProfileFlags
 	)
 
 	cmd := &cobra.Command{
@@ -4086,6 +4159,10 @@ func serveCmd() *cobra.Command {
 		Short: "Start the autonomous pipeline server",
 		Long:  "Run the orchestrator: receive webhooks, fire cron schedules, and execute agent roles.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			profile, err := profileFlags.admit("serve")
+			if err != nil {
+				return err
+			}
 			cfg, err := config.Load(config.DefaultPath())
 			if err != nil {
 				slog.Warn("config load failed, using defaults", "err", err)
@@ -4131,7 +4208,9 @@ func serveCmd() *cobra.Command {
 			}
 			defer display.Close()
 
-			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
+			if profile == executionprofile.Host {
+				serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
+			}
 
 			srv, err := serve.New(serve.Config{
 				WebhookAddr:            webhookAddr,
@@ -4150,6 +4229,7 @@ func serveCmd() *cobra.Command {
 				JobViews:               display.jobViews,
 				CodeIntelDisabled:      !codeIntelRuntime.Enabled,
 				CodeIntelSource:        codeIntelRuntime.Source,
+				ExecutionProfile:       profile,
 			})
 			if err != nil {
 				return err
@@ -4193,6 +4273,7 @@ func serveCmd() *cobra.Command {
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-serve.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 	cmd.Flags().StringVar(&dashboardOrigin, "dashboard-trusted-origin", "", "Exact HTTPS reverse-proxy origin for authenticated dashboard access (overrides MARS_DASHBOARD_TRUSTED_ORIGIN; listener stays loopback-only)")
+	profileFlags.bind(cmd)
 
 	return cmd
 }
@@ -4466,17 +4547,23 @@ func startCmd() *cobra.Command {
 		yes               bool
 		jsonOut           bool
 		plain             bool
+		profileFlags      executionProfileFlags
 	)
 
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Bootstrap and run the full autonomous pipeline",
-		Long: `Initialise .harness/ if needed, register the repo, reconcile any
-existing lifecycle state, and start the orchestrator. Bootstrap order is exec
-plan first, then feature contracts, then tickets, then delivery. Dispatch
+		Short: "Run scoped pipeline orchestration",
+		Long: `Register the repo, reconcile existing lifecycle state, and start the
+orchestrator. Observer is the default and requires an initialized target;
+acknowledged host mode may initialize .harness/ when needed. Bootstrap order is
+exec plan first, then feature contracts, then tickets, then delivery. Dispatch
 routes deterministic role dispositions directly and uses Orchestrator for
 ambiguous handoffs.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			profile, err := profileFlags.admit("start")
+			if err != nil {
+				return err
+			}
 			defer silenceLogsForJSON(jsonOut)()
 			if repoPath == "" {
 				var err error
@@ -4488,6 +4575,14 @@ ambiguous handoffs.`,
 			absPath, err := filepath.Abs(repoPath)
 			if err != nil {
 				return fmt.Errorf("start: resolve path: %w", err)
+			}
+			if profile == executionprofile.Observer {
+				if force {
+					return fmt.Errorf("start: execution profile observer blocks --force because it can rewrite target harness files; use an initialized target without --force, or rerun with --execution-profile host --acknowledge-host-execution only if target mutation is intended")
+				}
+				if err := requireInitializedObserverTarget("start", absPath); err != nil {
+					return err
+				}
 			}
 			if err := validateRuntimeArtifactPathOutsideRepo("start", "--log-file", logFile, absPath, "default ~/.mars/traces/logs/<timestamp>-start.log"); err != nil {
 				return err
@@ -4525,26 +4620,28 @@ ambiguous handoffs.`,
 			}
 			defer display.Close()
 
-			preInitChanges, err := gitChangedPaths(absPath)
-			if err != nil {
-				display.Error(fmt.Sprintf("inspect pre-init git status: %v", err))
-				return err
-			}
-
-			didInit, err := scanner.EnsureHarness(absPath, force)
-			if err != nil {
-				display.Error(fmt.Sprintf("init failed: %v", err))
-				return err
-			}
-			if didInit {
-				display.Event("init", "No .harness/ found — initialised with default pipeline...")
-				committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
+			if profile == executionprofile.Host {
+				preInitChanges, err := gitChangedPaths(absPath)
 				if err != nil {
-					display.Error(fmt.Sprintf("commit generated harness baseline: %v", err))
+					display.Error(fmt.Sprintf("inspect pre-init git status: %v", err))
 					return err
 				}
-				if committed {
-					display.Event("git", "Committed generated harness baseline so bootstrap agents start from a clean scaffold.")
+
+				didInit, err := scanner.EnsureHarness(absPath, force)
+				if err != nil {
+					display.Error(fmt.Sprintf("init failed: %v", err))
+					return err
+				}
+				if didInit {
+					display.Event("init", "No .harness/ found — initialised with default pipeline...")
+					committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
+					if err != nil {
+						display.Error(fmt.Sprintf("commit generated harness baseline: %v", err))
+						return err
+					}
+					if committed {
+						display.Event("git", "Committed generated harness baseline so bootstrap agents start from a clean scaffold.")
+					}
 				}
 			}
 
@@ -4583,7 +4680,7 @@ ambiguous handoffs.`,
 			}
 			allowHTTPFallback := strings.TrimSpace(webhookAddrFlag) == "" && strings.TrimSpace(dashboardAddrFlag) == ""
 
-			if config.Env("MARS_SKIP_START_CLEANUP") != "1" {
+			if profile == executionprofile.Host && config.Env("MARS_SKIP_START_CLEANUP") != "1" {
 				serve.CleanupScopedLifecycle(dbPath)
 			}
 
@@ -4607,6 +4704,7 @@ ambiguous handoffs.`,
 				JobViews:               display.jobViews,
 				CodeIntelDisabled:      !codeIntelRuntime.Enabled,
 				CodeIntelSource:        codeIntelRuntime.Source,
+				ExecutionProfile:       profile,
 			})
 			if err != nil {
 				display.Error(fmt.Sprintf("orchestrator init: %v", err))
@@ -4714,6 +4812,7 @@ ambiguous handoffs.`,
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output for deterministic setup/seed paths")
 	cmd.Flags().BoolVar(&plain, "plain", false, "Disable styling and animation")
 	cmd.Flags().BoolVar(&exitAfterSeed, "exit-after-seed", false, "Exit after init/register/seed; intended for deterministic smoke tests")
+	profileFlags.bind(cmd)
 	_ = cmd.Flags().MarkHidden("exit-after-seed")
 
 	return cmd

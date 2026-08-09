@@ -199,7 +199,8 @@ docs:
             </article>
             <article data-doc-filter>
               <h3>Look for failed-check repair work</h3>
-              <pre><code>mars serve --addr :9091</code></pre>
+              <pre><code>mars serve --addr 127.0.0.1:9091 \
+  --execution-profile host --acknowledge-host-execution</code></pre>
               <p>When the repo is registered and the role exists, the survey loop can route recent failed checks to <code>pipeline-fixer</code>.</p>
             </article>
             <article data-doc-filter>

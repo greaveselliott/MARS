@@ -112,8 +112,8 @@ docs:
               <tbody>
                 <tr><td>Create the harness deliberately.</td><td><code>mars init --repo /path/to/repo</code></td><td>Yes.</td><td><code>.harness/</code>, operating docs, release files, tickets, goals, quality score.</td></tr>
                 <tr><td>Register a repo for orchestration.</td><td><code>mars register --repo /path/to/repo</code></td><td>Maybe; auto-inits if missing.</td><td>Repo record in the per-repo SQLite database.</td></tr>
-                <tr><td>Run the full scoped autonomous loop.</td><td><code>mars start --repo /path/to/repo</code></td><td>Maybe; auto-inits if missing and agents may later mutate.</td><td>Dashboard, workers, queue, lifecycle reconciliation, role execution.</td></tr>
-                <tr><td>Preview or execute one role.</td><td><code>mars run engineer --repo /path/to/repo</code></td><td>Maybe; auto-inits unless <code>--dry-run --no-init</code> is used.</td><td>One assembled role context or one role execution.</td></tr>
+                <tr><td>Run the full scoped autonomous loop.</td><td><code>mars start --repo /path/to/repo --execution-profile host --acknowledge-host-execution</code></td><td>Yes; acknowledged host may initialize and agents may later mutate.</td><td>Dashboard, workers, queue, lifecycle reconciliation, role execution.</td></tr>
+                <tr><td>Preview or execute one role.</td><td><code>mars run engineer --repo /path/to/repo</code></td><td>Observer default does not mutate; acknowledged host may initialize and mutate. <code>--dry-run --no-init</code> retains the missing-harness preview.</td><td>One assembled role context or one role execution.</td></tr>
                 <tr><td>Find repo gaps and starter work.</td><td><code>mars scan --repo /path/to/repo --tickets</code></td><td>Maybe; auto-inits if missing and can write tickets.</td><td>Findings and optional backlog tickets.</td></tr>
                 <tr><td>Check health without broad mutation.</td><td><code>mars doctor --repo /path/to/repo --json</code></td><td>No expected target writes.</td><td>Machine, model, database, harness, plan, and config diagnostics.</td></tr>
                 <tr><td>Check tool and harness drift.</td><td><code>mars update check --repo /path/to/repo --json</code></td><td>No.</td><td>Installed tool, target metadata, and operating-model drift report.</td></tr>
@@ -202,16 +202,16 @@ git -C /path/to/repo diff --stat</code></pre>
         <section class="doc-section" id="auto-init">
           <h2>Automatic Scaffolding</h2>
           <p>
-            <code>register</code>, <code>scan</code>, <code>run</code>, and
-            <code>start</code> all use the same scaffold path as
-            <code>mars init</code> when <code>.harness/manifest.yaml</code> is
-            missing. That makes first use plug-and-play, but it also means
-            those commands can create target files.
+            <code>register</code> and <code>scan</code> use the same scaffold path
+            as <code>mars init</code> when the manifest is missing.
+            <code>run</code> and <code>start</code> use it only in acknowledged-host
+            mode; observer rejects a missing target before writes apart from the
+            explicit no-init dry-run preview.
           </p>
           <div class="concept-grid">
             <article data-doc-filter>
               <h3>Auto-init writes files</h3>
-              <p>A missing manifest causes the command to create the deployed harness before continuing.</p>
+              <p>A missing manifest causes register, scan, or acknowledged-host run/start to create the deployed harness before continuing.</p>
             </article>
             <article data-doc-filter>
               <h3>Git checkout required</h3>
@@ -253,14 +253,15 @@ mars register --repo /path/to/repo --db /private/tmp/mars-demo.db</code></pre>
         <section class="doc-section" id="start">
           <h2>Start</h2>
           <p>
-            <code>mars start</code> is the scoped one-repo autonomous loop. It
-            initializes when needed, registers the repo, reconciles resumable
+            Acknowledged-host <code>mars start</code> is the scoped one-repo
+            autonomous loop. It initializes when needed, registers the repo, reconciles resumable
             lifecycle state, starts the dashboard and workers, and executes the
             delivery operating model.
           </p>
-          <pre data-doc-filter><code>mars start --repo /path/to/repo
-mars start --repo /path/to/repo --concurrency 1
-mars start --repo /path/to/repo --debug --log-file /private/tmp/mars-start.log</code></pre>
+          <pre data-doc-filter><code>mars start --repo /path/to/repo --execution-profile host --acknowledge-host-execution
+mars start --repo /path/to/repo --concurrency 1 --execution-profile host --acknowledge-host-execution
+mars start --repo /path/to/repo --debug --log-file /private/tmp/mars-start.log --execution-profile host --acknowledge-host-execution</code></pre>
+          <p>All five agent entry points default to observer, which independently caps trust and blocks every target mutator. Host has the current OS user's full authority and is not containment; isolated is unavailable.</p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Concept</th><th>User behavior</th></tr></thead>
@@ -301,7 +302,7 @@ mars start --repo /path/to/repo --debug --log-file /private/tmp/mars-start.log</
             </article>
             <article data-doc-filter>
               <h3>Bound one execution</h3>
-              <pre><code>mars run engineer --repo /path/to/repo --max-turns 20 --budget 120000</code></pre>
+              <pre><code>mars run engineer --repo /path/to/repo --max-turns 20 --budget 120000 --execution-profile host --acknowledge-host-execution</code></pre>
               <p>Use turn and token budgets to constrain local experiments or risky roles.</p>
             </article>
           </div>
@@ -437,7 +438,7 @@ mars run engineer --repo /path/to/uninitialized-repo --dry-run --no-init</code><
             </article>
             <article data-doc-filter>
               <h3>Run a scoped loop with explicit local state</h3>
-              <pre><code>mars start --repo /path/to/repo --db ~/.mars/db/my-repo/mars.db --concurrency 1</code></pre>
+              <pre><code>mars start --repo /path/to/repo --db ~/.mars/db/my-repo/mars.db --concurrency 1 --execution-profile host --acknowledge-host-execution</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Recover from suspected drift</h3>

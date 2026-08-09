@@ -138,9 +138,29 @@ mars auth github setup</code></pre>
               <h3>Explicit database path</h3>
               <pre><code>mars start --repo /path/to/repo --db /private/tmp/mars-demo.db
 mars serve --db /private/tmp/mars-shared.db</code></pre>
-              <p>Use <code>--db</code> for isolated validation runs, demos, or deliberate multi-repo service state.</p>
+              <p>Use <code>--db</code> for separate-state validation runs, demos, or deliberate multi-repo service state. A separate database is not process or filesystem isolation.</p>
             </article>
           </div>
+        </section>
+
+        <section class="doc-section" id="execution-profile">
+          <h2>Execution Profile Admission</h2>
+          <p>
+            <code>run</code>, <code>start</code>, <code>serve</code>,
+            <code>tools run</code>, and <code>mcp serve</code> default to
+            <code>observer</code>. This operator-selected boundary independently
+            caps manifest and stored trust, blocks <code>shell_exec</code> and all
+            mutating tools, and cannot be enabled from target YAML.
+          </p>
+          <pre><code>mars run engineer --repo /path/to/repo --dry-run
+mars start --repo /path/to/repo \
+  --execution-profile host --acknowledge-host-execution</code></pre>
+          <p>
+            Host execution has the current OS user's filesystem, network,
+            process, keychain, and credential authority and is not containment.
+            Acknowledgement does not upgrade role trust. <code>isolated</code>
+            fails before runtime state until MARS has an enforceable adapter.
+          </p>
         </section>
 
         <section class="doc-section" id="code-intel-config">
@@ -249,7 +269,7 @@ roles:
                 <tr><td><code>domain</code></td><td><code>planner</code>, <code>engineer</code>, <code>reviewer</code>, <code>maintainer</code>, <code>end-to-end-tester</code>, <code>orchestrator</code>.</td><td>Optional for compatibility, recommended for all active roles.</td></tr>
                 <tr><td><code>mode</code></td><td>Lower-kebab-case purpose.</td><td>Use names like <code>ticket-delivery</code> or <code>quality-review</code>.</td></tr>
                 <tr><td><code>model</code></td><td><code>fast</code>, <code>reasoning</code>, <code>coding</code>, or model hint.</td><td>Prefer tier names so routing can adapt to hardware and overrides.</td></tr>
-                <tr><td><code>trust_level</code></td><td><code>observer</code>, <code>contributor</code>, or <code>autonomous</code>.</td><td>Start narrow; raise trust from evidence.</td></tr>
+                <tr><td><code>trust_level</code></td><td><code>observer</code>, <code>contributor</code>, or <code>autonomous</code>.</td><td>Progressive role trust only. Start narrow and raise it from evidence; the operator-selected execution profile remains an independent ceiling and target config cannot grant host authority.</td></tr>
                 <tr><td><code>tools</code></td><td>Tool names from the MARS tool registry.</td><td>Explicit allowlist. Roles with no tools cannot mutate or inspect through tools.</td></tr>
                 <tr><td><code>guardrails</code></td><td>Files under <code>.harness/</code>.</td><td>Attach global and role-specific policy.</td></tr>
                 <tr><td><code>knowledge</code></td><td>Route files under <code>.harness/knowledge/</code>.</td><td>Keep context routed, not stuffed.</td></tr>
@@ -473,7 +493,7 @@ go test ./internal/docsconsistency ./internal/docsync</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
               <tbody>
-                <tr><td><code>missing .harness/manifest.yaml</code></td><td>Repo is not initialized or harness files were removed.</td><td>Run <code>mars init --repo /path/to/repo</code>, or use <code>--dry-run --no-init</code> for observer-safe inspection.</td></tr>
+                <tr><td><code>missing .harness/manifest.yaml</code></td><td>Observer <code>run</code>/<code>start</code> requires an initialized target.</td><td>Run <code>mars init --repo /path/to/repo</code> deliberately, or use the explicit <code>run --dry-run --no-init</code> no-write preview.</td></tr>
                 <tr><td>Invalid <code>orchestration_mode</code></td><td>Manifest value is not empty, <code>legacy</code>, or <code>dispatch</code>.</td><td>Set <code>orchestration_mode: dispatch</code> unless preserving legacy chains.</td></tr>
                 <tr><td>Role chain points to missing role</td><td><code>then</code> or <code>idle_then</code> references an unknown key.</td><td>Correct the role key or move to dispatch mode.</td></tr>
                 <tr><td>Cloud model auth fails</td><td><code>api_key_env</code> is missing from the process environment.</td><td>Export the named variable or write ignored local credentials with <code>mars models credentials write-local-env</code>.</td></tr>

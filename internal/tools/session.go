@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-017-open-source-publication.md
 */
 package tools
 
@@ -33,6 +34,7 @@ type Session struct {
 	JobID               string
 	RepoID              string
 	Trigger             string
+	ExecutionProfile    string
 	TrustLevel          string
 	BaselineCommit      string
 	Guardrails          *guardrails.Engine

@@ -140,6 +140,14 @@ func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interv
 }
 
 func (s *Server) recordInterventionDebtTicket(ctx context.Context, repoID string, proposal telemetry.ImprovementProposal, origin interventionDebtOrigin) {
+	if err := s.requireTargetMutation("intervention-debt target ticket creation"); err != nil {
+		slog.Info("serve: intervention-debt ticket suppressed by execution profile",
+			"repo_id", repoID,
+			"role", proposal.Role,
+			"reason", err,
+		)
+		return
+	}
 	if strings.TrimSpace(proposal.RepoID) == "" {
 		proposal.RepoID = repoID
 	}
