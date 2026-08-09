@@ -151,8 +151,11 @@ func TestLoadDefaultPathReadsLegacyConfigWhenNewConfigMissing(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o700); err != nil {
 		t.Fatalf("mkdir legacy config: %v", err)
 	}
-	if err := os.WriteFile(legacyPath, []byte("models_dir: /tmp/legacy-models\n"), 0o600); err != nil {
+	if err := os.WriteFile(legacyPath, []byte("models_dir: /tmp/legacy-models\n"), 0o644); err != nil {
 		t.Fatalf("write legacy config: %v", err)
+	}
+	if err := os.Chmod(legacyPath, 0o644); err != nil {
+		t.Fatalf("loosen legacy config: %v", err)
 	}
 
 	cfg, err := Load(DefaultPath())
@@ -161,6 +164,99 @@ func TestLoadDefaultPathReadsLegacyConfigWhenNewConfigMissing(t *testing.T) {
 	}
 	if cfg.ModelsDir != "/tmp/legacy-models" {
 		t.Fatalf("expected legacy config fallback, got %+v", cfg)
+	}
+	assertConfigMode(t, legacyPath, 0o600)
+}
+
+func TestLoadTightensExistingConfigWithoutChangingContent(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	want := []byte("models_dir: /preserved\n")
+	if err := os.WriteFile(path, want, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if err := os.Chmod(path, 0o644); err != nil {
+		t.Fatalf("loosen config: %v", err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.ModelsDir != "/preserved" {
+		t.Fatalf("unexpected loaded config: %+v", cfg)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("config content changed: got %q want %q", got, want)
+	}
+	assertConfigMode(t, path, 0o600)
+}
+
+func TestSaveTightensConfigAndPreservesCustomParentMode(t *testing.T) {
+	parent := filepath.Join(t.TempDir(), "operator-config")
+	if err := os.Mkdir(parent, 0o755); err != nil {
+		t.Fatalf("mkdir custom parent: %v", err)
+	}
+	if err := os.Chmod(parent, 0o755); err != nil {
+		t.Fatalf("set custom parent mode: %v", err)
+	}
+	path := filepath.Join(parent, "config.yaml")
+	if err := os.WriteFile(path, []byte("models_dir: /old\n"), 0o644); err != nil {
+		t.Fatalf("write old config: %v", err)
+	}
+	if err := os.Chmod(path, 0o644); err != nil {
+		t.Fatalf("loosen old config: %v", err)
+	}
+
+	if err := Save(path, Defaults()); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	assertConfigMode(t, parent, 0o755)
+	assertConfigMode(t, path, 0o600)
+}
+
+func TestConfigLoadAndSaveRejectSymlinkWithoutTouchingTarget(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target.yaml")
+	want := []byte("models_dir: /target\n")
+	if err := os.WriteFile(target, want, 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	if err := os.Chmod(target, 0o644); err != nil {
+		t.Fatalf("set target mode: %v", err)
+	}
+	link := filepath.Join(dir, "config.yaml")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatalf("symlink config: %v", err)
+	}
+
+	if _, err := Load(link); err == nil {
+		t.Fatal("expected Load to reject config symlink")
+	}
+	if err := Save(link, Defaults()); err == nil {
+		t.Fatal("expected Save to reject config symlink")
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("read target: %v", err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("symlink target changed: got %q want %q", got, want)
+	}
+	assertConfigMode(t, target, 0o644)
+}
+
+func assertConfigMode(t *testing.T, path string, want os.FileMode) {
+	t.Helper()
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatalf("lstat %s: %v", path, err)
+	}
+	if got := info.Mode().Perm(); got != want {
+		t.Fatalf("mode %s = %04o, want %04o", path, got, want)
 	}
 }
 

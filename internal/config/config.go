@@ -79,13 +79,20 @@ func Load(path string) (Config, error) {
 	if strings.TrimSpace(path) == "" {
 		path = DefaultPath()
 	}
+	if err := secureConfigLeaf(path); err != nil {
+		return cfg, err
+	}
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			if isDefaultConfigPath(path) {
-				if legacy, legacyErr := os.ReadFile(LegacyPath()); legacyErr == nil {
+				legacyPath := LegacyPath()
+				if secureErr := secureConfigLeaf(legacyPath); secureErr != nil {
+					return cfg, secureErr
+				}
+				if legacy, legacyErr := os.ReadFile(legacyPath); legacyErr == nil {
 					if err := yaml.Unmarshal(legacy, &cfg); err != nil {
-						return cfg, fmt.Errorf("config: parse legacy %s: %w", LegacyPath(), err)
+						return cfg, fmt.Errorf("config: parse legacy %s: %w", legacyPath, err)
 					}
 					applyEnv(&cfg)
 					return cfg, nil
@@ -112,12 +119,35 @@ func Save(path string, cfg Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return fmt.Errorf("config: create %s: %w", filepath.Dir(path), err)
 	}
+	if err := secureConfigLeaf(path); err != nil {
+		return err
+	}
 	data, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return fmt.Errorf("config: marshal %s: %w", path, err)
 	}
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("config: write %s: %w", path, err)
+	}
+	return secureConfigLeaf(path)
+}
+
+func secureConfigLeaf(path string) error {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("config: inspect %s: %w", path, err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return fmt.Errorf("config: %s must be a regular file, not a symlink or other entry — replace it with a regular file and retry", path)
+	}
+	if info.Mode().Perm() == 0o600 && info.Mode()&(os.ModeSetuid|os.ModeSetgid|os.ModeSticky) == 0 {
+		return nil
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		return fmt.Errorf("config: secure %s: %w — run chmod 600 %q and retry", path, err, path)
 	}
 	return nil
 }

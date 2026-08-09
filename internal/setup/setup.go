@@ -231,11 +231,7 @@ func writeDefaultConfigStep(baseDir string) Step {
 					ReportInterval: "24h",
 				},
 			}
-			data, err := yaml.Marshal(&cfg)
-			if err != nil {
-				return fmt.Errorf("marshal config: %w", err)
-			}
-			return os.WriteFile(cfgPath, data, 0o644)
+			return config.Save(cfgPath, cfg)
 		},
 	}
 }

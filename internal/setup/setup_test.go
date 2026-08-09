@@ -32,6 +32,7 @@ func TestRun_testMode(t *testing.T) {
 	assert.FileExists(t, filepath.Join(baseDir, "config.yaml"))
 	assert.FileExists(t, filepath.Join(baseDir, "hardware.yaml"))
 	assert.FileExists(t, filepath.Join(home, ".profile"))
+	assert.Equal(t, os.FileMode(0o600), setupFileMode(t, filepath.Join(baseDir, "config.yaml")))
 }
 
 func TestRun_idempotent(t *testing.T) {
@@ -192,6 +193,14 @@ func TestWriteDefaultConfigStep_execute(t *testing.T) {
 	assert.Contains(t, string(data), "telemetry:")
 	assert.Contains(t, string(data), "reporting: \"off\"")
 	assert.Contains(t, string(data), "report_interval: 24h")
+	assert.Equal(t, os.FileMode(0o600), setupFileMode(t, filepath.Join(baseDir, "config.yaml")))
+}
+
+func setupFileMode(t *testing.T, path string) os.FileMode {
+	t.Helper()
+	info, err := os.Lstat(path)
+	require.NoError(t, err)
+	return info.Mode().Perm()
 }
 
 func TestDetectHardwareStep_execute(t *testing.T) {
