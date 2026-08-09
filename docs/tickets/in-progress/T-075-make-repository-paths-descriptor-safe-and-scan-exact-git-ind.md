@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22"]
-verified_by: "Checkpoints A and B: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
+evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08"]
+verified_by: "Checkpoints A, B, and C1: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint B passed and was pushed at b3b5b98; Checkpoint C is current"
+last_attempt: "2026-08-09: Checkpoint C1 passed through fixture repair 88f7737 and repository-writer containment e30f207; Checkpoint C2 is current"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-repository-boundary:2026-08-09"
-next_action: "Implement and validate Checkpoint C sub-checkpoint 1 only: migrate the named internal/tools repository writers through repofs."
+next_action: "Implement and validate Checkpoint C sub-checkpoint 2 only: migrate target init, upgrade, generated-target writes, and eject through repofs."
 dedupe_key: "open-source:repository-path-and-index-secret-boundary"
 metadata:
   classification: "foundation-owned"
@@ -82,6 +82,18 @@ Deliver independently green sub-checkpoints:
 1. Migrate ticket_create, tool_create, persona_create, workspace hygiene, record-decision/learnings, and other repo-backed internal/tools writers.
 2. Migrate target init, upgrade, generated-target writes, and eject; contained removal rejects symlink parents/leaves.
 3. Migrate model override and .harness credential-route readers/writers, bundle/context reads that can enter model input, release notes/backfill writers, and the remaining named repository-backed integration writer surfaces.
+
+Sub-checkpoint 1 passed through exact commits
+`88f7737bf9be3b804483f676507a193f68ffa7d4` and
+`e30f207c9edc00a42a28b4d31b9ea5e52dba8a08`. Ticket, tool, persona,
+workspace-hygiene, record-decision, and learnings persistence now use the
+admitted repository descriptor; new files are exclusive, replacements are
+atomic and preserve existing modes, and Git subprocesses verify repository
+identity before and after execution. Focused `internal/learnings` and
+`internal/tools` normal/race tests, package vet, the exact 26-case Git-admission
+fixture regression, formatting, and diff checks pass. QA, Security, Release
+Manager, and Orchestrator returned GO. Sub-checkpoint 2 is current;
+sub-checkpoint 3, Checkpoint D, T-075, and F-017-S002 remain incomplete.
 
 Use atomic replacement or exclusive creation as appropriate and preserve existing behavior and owner-only credential mode. Do not mediate shell_exec, Git's own internal writes, global MARS state, model downloads, databases, logs, traces, self-update installation, or validation-output directories; those are outside this repository boundary or owned by T-076/T-077.
 

@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — T-074 network entry points and T-075 Checkpoints A/B's direct file-tool and exact Git-index boundaries pass, while the remaining named repository-path migrations remain pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
+**Current Failing Scenario:** F-017-S002 — T-074 network entry points and T-075 Checkpoints A, B, and C1's direct file-tool, exact Git-index, and first repository-writer boundaries pass, while target lifecycle and the remaining named repository-path migrations remain pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
 **Walking Skeleton Slice:** Deliver T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
 **Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement and validate only T-075 Checkpoint C sub-checkpoint 1: migrate the named `internal/tools` repository writers through `repofs`, then commit and push before the lifecycle or credential/release slices.
+- **Next Primary Action:** Implement and validate only T-075 Checkpoint C sub-checkpoint 2: migrate target init, upgrade, generated-target writes, and eject through `repofs`, then commit and push before the credential/release slice.
 
 ## Starting Baseline
 
@@ -224,7 +224,19 @@ deletion states, scans tracked/force-added local credentials and Git-hidden
 worktree entries, and rejects a nested worktree root. Focused normal/race,
 vet, documentation-consistency, DocSync, staged, and real full-repository
 scans pass with candidate- and OID-free results; QA, Security, Release Manager,
-and Orchestrator returned GO. Checkpoint C is current.
+and Orchestrator returned GO.
+
+Checkpoint C sub-checkpoint 1 passed through exact commits
+`88f7737bf9be3b804483f676507a193f68ffa7d4` and
+`e30f207c9edc00a42a28b4d31b9ea5e52dba8a08`. At those commits, the finite
+ticket, tool, persona, workspace-hygiene, record-decision, and learnings writer family
+uses the admitted descriptor, exclusive creation, atomic mode-preserving
+replacement, and pre/post Git repository-identity checks. Focused normal/race
+tests, package vet, the exact 26-case Git-admission fixture regression,
+formatting, and diff checks pass; QA, Security, Release Manager, and
+Orchestrator returned GO. Sub-checkpoint 2, covering target init, upgrade,
+generated-target writes, and eject, is the 2026-08-09 next action. Sub-checkpoint 3, Checkpoint D,
+T-075, and F-017-S002 remain incomplete.
 
 No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,
