@@ -10,10 +10,10 @@ evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/featu
 verified_by: "pending repository owner, QA, Security, Release Manager, and Orchestrator"
 owner: "foundation-maintainer"
 last_attempt: "2026-08-09: all machine-verifiable provenance, claims, notices, prompt lineage, current-tree media, and default-model admission checkpoints are pushed and verified"
-blocker: "Qualified trademark disposition and owner authority over first-party/AI/automation and retained-history PNG material remain required."
+blocker: "Owner-only: qualified trademark counsel's written disposition for retaining MARS and the repository-owner authority/history attestation remain absent. All machine-verifiable T-073 checkpoints are complete."
 blocked_by: []
 trace_id: "launch-rights-provenance:2026-08-08"
-next_action: "Complete the bounded owner authority/history attestation and obtain qualified trademark counsel's written disposition for retaining MARS; do not close T-073 or publish early."
+next_action: "When the owner-only evidence is available, move T-073 to in-progress at a ticket boundary, commit the bounded attestation and name/history disposition, obtain QA, Security, Release Manager, owner, and Orchestrator sign-off, and close F-017-S001 before T-080."
 dedupe_key: "open-source:rights-provenance-owner-disposition"
 metadata:
   classification: "mixed-unclear-until-disposition"
@@ -79,11 +79,10 @@ registration 8092258 covers AI agent-based analysis and process automation in
 Class 42. On 2026-08-09, the repository owner directed that `MARS` be retained.
 Checkpoint A remains open pending qualified trademark counsel's written
 disposition plus the bounded owner authority, prompt/AI/automation, and media
-decisions. Checkpoints B and C may gather and remediate machine-verifiable
-provenance and notice evidence while those owner-only inputs are pending, but
-checkpoint D, publication, and visibility remain prohibited.
-The repository remains private; checkpoints B and C do not authorize
-checkpoint D, any later ticket, or any remote/publication action.
+decisions. Machine-verifiable checkpoints B and C are complete. The active plan
+may route bounded private T-074 through T-079 work while the owner-only inputs
+are pending, but checkpoint D, T-080, publication, and visibility remain
+prohibited.
 
 ## Checkpoint B/C And Current-Tree Remediation Evidence — 2026-08-09
 
@@ -119,10 +118,14 @@ checkpoint D, any later ticket, or any remote/publication action.
   GitHub run `31289522986` passes every source-compatibility lane at that
   commit; model bytes and routing behavior are unchanged.
 
-Checkpoints B and C's machine work is complete. The risk-calibrated model
+Machine work for checkpoints B and C is complete. The risk-calibrated model
 contract does not pretend that publishers recorded unavailable conversion-input
 revisions: exact output identity, declared base/license/quantizer evidence, and
 the download-only boundary are required instead. Checkpoints A and D remain open
 for the owner authority/AI/automation/history-PNG attestation and qualified
 trademark disposition; none of the commits above clears retained history,
 changes visibility, or authorizes publication.
+
+T-073 is parked in backlog, not completed. It may resume only at a ticket
+boundary when the required owner and counsel evidence is available, and it must
+pass F-017-S001 before T-080 begins.

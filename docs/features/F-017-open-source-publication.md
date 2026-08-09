@@ -36,6 +36,11 @@ Supporting private evidence cannot authorize visibility conversion. Visibility i
 4. F-017-S004 - Verify fork-safe contribution, governance, support, and private reporting.
 5. F-017-S005 - Rehearse privately, perform separately approved cutover smoke, and complete the 48-hour canary.
 
+F-017-S001 through F-017-S004 may receive bounded private technical work
+independently. An unresolved S001 owner/legal hold never counts as scenario
+completion, and T-080/T-081 cannot begin until S001 passes together with the
+other required scenarios.
+
 ## Scenarios
 
 ### F-017-S001: Publication Surface, Authority, Privacy, And Provenance

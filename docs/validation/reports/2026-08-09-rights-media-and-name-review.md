@@ -4,7 +4,7 @@
 **Ticket:** T-073 checkpoint A
 **Scenario:** F-017-S001
 **Publication Root:** `1b870f8d04840c2ba88d1e2790caa4ab9bddf3f4`
-**Status:** `owner_disposition_required`
+**Status:** `owner_legal_hold`
 **Primary Status:** `primary_blocked`
 
 ## Primary Outcome Contract
@@ -21,8 +21,9 @@ community surfaces, and the 48-hour canary pass.
 registration in directly overlapping AI-agent/process-automation services;
 owner authority over retained prompt/AI/automation and historical PNG material
 also remains unsigned.
-**Next Primary Action:** obtain the qualified trademark disposition and complete
-the bounded owner authority/history attestation without changing visibility.
+**Next Primary Action:** continue bounded private T-074 through T-079 work; when
+the owner and counsel evidence is available, resume T-073 at a ticket boundary
+and complete the authority, name, and history disposition before T-080.
 **Supporting Evidence:** the immutable publication-root, prompt, predecessor,
 AI-attribution, media, and official-register evidence recorded below.
 
@@ -40,10 +41,11 @@ the `MARS` name. That decision does not constitute clearance. A qualified
 trademark counsel's written disposition addressing the overlapping record,
 the intended software/services, and launch territories is now required before
 checkpoint A can pass. An adverse, inconclusive, or absent disposition remains
-a launch no-go. No tag, Release, GitHub setting, visibility, or announcement
-mutation is authorized by this report.
-Only owner-disposition-approved T-073 repository remediation may follow; tag,
-Release, GitHub-setting, visibility, and announcement mutation remain denied.
+a launch no-go. This report grants no mutation or publication authority. The
+active plan may independently route bounded private T-074 through T-079 work;
+T-073 completion, T-080 release authority, T-081 visibility, and announcement
+remain denied until the qualified name disposition, owner attestation, and
+`preserve_audited_history` decision pass.
 
 ## Machine Remediation Progress
 
@@ -214,3 +216,7 @@ Checkpoint A can continue only after the repository owner records:
 
 The final `preserve_audited_history` decision remains unavailable until these
 owner and trademark findings close in checkpoint D.
+
+All machine-verifiable T-073 checkpoints are complete. The ticket is parked in
+backlog on the owner/legal hold; parking is not completion evidence and does
+not clear F-017-S001.

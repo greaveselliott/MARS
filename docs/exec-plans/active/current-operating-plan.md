@@ -5,17 +5,17 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-073 — complete publication rights, provenance, notices, and owner disposition
+**Current Ticket:** None — T-073 is parked on owner/legal input; create T-074 next
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
-**Hypothesis:** Sequential closure of hosted surfaces, publication rights, reachable runtime risks, anonymous signed distribution, fork-safe governance, and a public canary will produce a safe supported open-source launch.
+**Hypothesis:** Independent private readiness gates can close while owner/legal evidence is pending, provided every gate passes before a supported release or cutover.
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
-**Scenario Schedule:** T-071; T-072; T-073; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; T-080; T-081.
-**Current Failing Scenario:** F-017-S001 — a live U.S. `MARS` registration directly overlaps AI-agent/process-automation software; owner authority over first-party/AI/automation and retained-history PNG material plus the final history disposition remain incomplete.
-**Walking Skeleton Slice:** Retain `MARS` only after qualified trademark counsel's written disposition and complete the bounded owner authority/history attestation; `preserve_audited_history` remains unavailable until both gates close.
-**Learning Or MVP Outcome:** Establish whether every retained source, prompt, document, dependency, model, binary, and asset is authorized and notice-complete for publication.
+**Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
+**Current Failing Scenario:** F-017-S002 — GitHub App setup and telemetry entry points do not yet meet the launch loopback, state, and request-boundary contract; F-017-S001 remains independently blocked on T-073's owner/legal hold.
+**Walking Skeleton Slice:** Create T-074 and close the two remaining network entry points without changing release, visibility, or publication state.
+**Learning Or MVP Outcome:** Prove setup callbacks and telemetry collection fail closed at the intended local boundary.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Complete the bounded owner authority/history attestation and obtain qualified trademark counsel's written disposition for retaining `MARS`; keep publication and visibility blocked.
+- **Next Primary Action:** Commit the T-073 legal-hold sequencing exception, create T-074 through `ticket_create`, and close only its bounded private network-entry-point scope.
 
 ## Starting Baseline
 
@@ -67,24 +67,31 @@ immutable `v0.69.2` and a repeated lifecycle and canary.
 
 ## Sequential Ticket Schedule
 
-Only one implementation ticket is current. Each new ticket is created through
-`ticket_create` only after its predecessor closes; T-058 is resumed rather
-than recreated.
+Only one implementation ticket is current. T-073 is the sole
+predecessor-closure exception: after every machine-verifiable checkpoint passed,
+it returned to backlog on its owner-only authority and qualified-trademark-
+counsel hold. T-074 through T-079 are created and closed sequentially, one
+current ticket at a time. T-073 may resume only at a ticket boundary and must
+pass F-017-S001 before T-080 begins. A parked T-073 is not completion evidence
+and authorizes no release-note commit, version tag, signing, upload, launch
+Release, visibility change, or announcement. T-058 is resumed rather than
+recreated.
 
 | Order | Ticket | Scenario ownership | Dependency |
 |---:|---|---|---|
 | 1 | T-071 — restore green vulnerability baseline | F-017-S002 prerequisite | T-070 |
 | 2 | T-072 — audit GitHub-hosted publication surfaces | F-017-S001 | T-071 |
-| 3 | T-073 — rights, provenance, notices, and owner disposition | F-017-S001 completion | T-072 |
-| 4 | T-074 — close remaining network entry points | F-017-S002 | T-073 |
+| 3 | T-073 — machine checkpoints complete; owner/legal hold parked | F-017-S001 hold | T-072 |
+| 4 | T-074 — close remaining network entry points | F-017-S002 | T-072 and T-073 machine checkpoints |
 | 5 | T-075 — descriptor-safe repository filesystem and secret scanning | F-017-S002 | T-074 |
 | 6 | T-076 — execution profiles, environment, state, and traces | F-017-S002 | T-075 |
 | 7 | Resume T-058 — current-candidate browser proof | F-017-S002 and F-010-S024 | T-076 |
 | 8 | T-077 — anonymous access, trusted bootstrap, and setup | F-017-S003 | T-058 |
 | 9 | T-078 — production signing and legacy-asset sanitation | F-017-S003 and F-018-S004 | T-077 |
 | 10 | T-079 — community, fork-safe CI, Pages, and GitHub controls | F-017-S004 | T-078 |
-| 11 | T-080 — final private bridge and launch releases | F-017-S003 and F-017-S005 prerequisite | T-079 |
-| 12 | T-081 — public cutover and 48-hour canary | F-017-S005 | T-080 and explicit owner visibility approval |
+| 11 | Resume and close T-073 — owner/legal disposition | F-017-S001 completion | T-079 or an earlier ticket boundary with the required evidence |
+| 12 | T-080 — final private bridge and launch releases | F-017-S003 and F-017-S005 prerequisite | T-079 and T-073 passed |
+| 13 | T-081 — public cutover and 48-hour canary | F-017-S005 | T-080 and explicit owner visibility approval |
 
 ## Per-Ticket Operating Loop
 
@@ -127,7 +134,7 @@ successful workflow run was acquired and rescanned with zero findings or
 errors, producing a final exact 401-run cleanup set. T-072 passes; the App
 finding remains a T-079/T-080 launch no-go and no hosted mutation was allowed.
 
-## Next Walking Skeleton — T-073
+## Parked Walking Skeleton — T-073
 
 T-073 was created through `ticket_create` after bounded COO, CTO-weekly, and
 Security scope review. Complete its four independently reviewed checkpoints:
@@ -155,6 +162,12 @@ revisions are recorded as unavailable and never inferred. Exact GitHub run
 the dependency-notice job at `b8d9349`; no model bytes or routing behavior
 changed. The owner attestation and qualified trademark counsel disposition
 remain launch no-go gates.
+
+All machine-verifiable T-073 checkpoints are complete at `5068334`. T-073 is
+parked in backlog on the two owner-only/legal inputs above; it is not complete
+and F-017-S001 does not pass. The active plan routes bounded private
+T-074 through T-079 work. T-073 must resume and pass before T-080 receives any
+release, signing, upload, or publication authority.
 
 ## Completion Gates By Ticket
 
