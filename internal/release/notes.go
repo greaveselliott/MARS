@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -97,7 +96,7 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	baseRef := findBaseRef(ctx, absRepo, previous)
+	baseRef := findBaseRef(ctx, root, previous)
 	commits, err := readCommits(ctx, absRepo, baseRef)
 	if err != nil {
 		return Result{}, err
@@ -118,7 +117,7 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	entry := renderEntry(absRepo, next, cfg.Now, head, commits)
+	entry := renderEntry(root, next, cfg.Now, head, commits)
 	result := Result{
 		PreviousVersion: previous,
 		NextVersion:     next,
@@ -151,8 +150,9 @@ func readVersion(root *repofs.Root) (SemVer, error) {
 	return ParseSemVer(string(data))
 }
 
-func findBaseRef(ctx context.Context, repoRoot string, current SemVer) string {
-	if marker := latestChangelogMarker(repoRoot); marker != "" {
+func findBaseRef(ctx context.Context, root *repofs.Root, current SemVer) string {
+	repoRoot := root.Abs()
+	if marker := latestChangelogMarker(root); marker != "" {
 		if gitOK(ctx, repoRoot, "merge-base", "--is-ancestor", marker, "HEAD") {
 			return marker
 		}
@@ -167,8 +167,8 @@ func findBaseRef(ctx context.Context, repoRoot string, current SemVer) string {
 	return ""
 }
 
-func latestChangelogMarker(repoRoot string) string {
-	data, err := os.ReadFile(filepath.Join(repoRoot, "CHANGELOG.md"))
+func latestChangelogMarker(root *repofs.Root) string {
+	data, err := root.ReadFile("CHANGELOG.md")
 	if err != nil {
 		return ""
 	}
@@ -216,7 +216,7 @@ func inferBump(commits []Commit) Bump {
 	return bump
 }
 
-func renderEntry(repoRoot string, version SemVer, now time.Time, head string, commits []Commit) string {
+func renderEntry(root *repofs.Root, version SemVer, now time.Time, head string, commits []Commit) string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "## [%s] - %s\n", version.String(), now.Format("2006-01-02"))
 	fmt.Fprintf(&buf, "<!-- mars-release: version=%s commit=%s -->\n\n", version.String(), strings.TrimSpace(head))
@@ -244,7 +244,7 @@ func renderEntry(repoRoot string, version SemVer, now time.Time, head string, co
 		}
 		buf.WriteString("\n")
 	}
-	if evidence := renderDeliveryEvidence(repoRoot, commits); evidence != "" {
+	if evidence := renderDeliveryEvidence(root, commits); evidence != "" {
 		buf.WriteString(evidence)
 		buf.WriteString("\n")
 	}
@@ -509,7 +509,7 @@ func lowerFirst(value string) string {
 	return strings.ToLower(value[:1]) + value[1:]
 }
 
-func renderDeliveryEvidence(repoRoot string, commits []Commit) string {
+func renderDeliveryEvidence(root *repofs.Root, commits []Commit) string {
 	ids := ticketIDsFromCommits(commits)
 	if len(ids) == 0 {
 		return ""
@@ -517,7 +517,7 @@ func renderDeliveryEvidence(repoRoot string, commits []Commit) string {
 	var shipped []string
 	var enablers []string
 	for _, id := range ids {
-		ticket, ok := readDoneTicketSummary(repoRoot, id)
+		ticket, ok := readDoneTicketSummary(root, id)
 		if !ok {
 			continue
 		}
@@ -569,12 +569,12 @@ type doneTicketSummary struct {
 	BDDScenarios []string
 }
 
-func readDoneTicketSummary(repoRoot, id string) (doneTicketSummary, bool) {
-	matches, err := filepath.Glob(filepath.Join(repoRoot, "docs", "tickets", "done", id+"-*.md"))
+func readDoneTicketSummary(root *repofs.Root, id string) (doneTicketSummary, bool) {
+	matches, err := root.Glob(filepath.Join("docs", "tickets", "done", id+"-*.md"))
 	if err != nil || len(matches) == 0 {
 		return doneTicketSummary{}, false
 	}
-	data, err := os.ReadFile(matches[0])
+	data, err := root.ReadFile(matches[0])
 	if err != nil {
 		return doneTicketSummary{}, false
 	}

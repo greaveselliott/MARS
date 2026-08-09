@@ -299,6 +299,53 @@ func TestPrepareIgnoresStaleChangelogMarkerAndUsesCurrentVersionTag(t *testing.T
 	require.Contains(t, result.Entry, "One more bug")
 }
 
+func TestPrepareDryRunRejectsOutsideReleaseEvidence(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "seed.txt"), []byte("seed\n"), 0o644))
+	gitCommit(t, dir, "chore: seed release state")
+	seedHead := gitOutput(t, dir, "rev-parse", "--short=12", "HEAD")
+
+	outsideDir := t.TempDir()
+	outsideChangelog := filepath.Join(outsideDir, "CHANGELOG.md")
+	changelogSentinel := []byte("# OUTSIDE_CHANGELOG_SENTINEL\n\n<!-- mars-release: version=0.1.0 commit=" + seedHead + " -->\n")
+	require.NoError(t, os.WriteFile(outsideChangelog, changelogSentinel, 0o600))
+	require.NoError(t, os.Symlink(outsideChangelog, filepath.Join(dir, "CHANGELOG.md")))
+
+	doneDir := filepath.Join(dir, "docs", "tickets", "done")
+	require.NoError(t, os.MkdirAll(doneDir, 0o755))
+	outsideTicket := filepath.Join(outsideDir, "T-123-outside.md")
+	ticketSentinel := []byte("---\nid: T-123\ntitle: OUTSIDE_TICKET_SENTINEL\nwork_type: enabler\nbdd_scenarios: []\n---\n")
+	require.NoError(t, os.WriteFile(outsideTicket, ticketSentinel, 0o600))
+	require.NoError(t, os.Symlink(outsideTicket, filepath.Join(doneDir, "T-123-outside.md")))
+	gitCommit(t, dir, "release: seed v0.1.0")
+	gitRun(t, dir, "tag", "v0.1.0")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "feature.txt"), []byte("feature\n"), 0o644))
+	gitCommit(t, dir, "feat: deliver bounded change (T-123)")
+
+	result, err := Prepare(context.Background(), Config{
+		RepoRoot: dir,
+		Bump:     BumpAuto,
+		DryRun:   true,
+		Now:      time.Date(2026, 5, 2, 12, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "v0.1.0", result.BaseRef)
+	require.Len(t, result.Commits, 1)
+	require.NotContains(t, result.Entry, "OUTSIDE_CHANGELOG_SENTINEL")
+	require.NotContains(t, result.Entry, "OUTSIDE_TICKET_SENTINEL")
+	require.NotContains(t, result.Entry, "### Delivery Evidence")
+
+	changelogAfter, err := os.ReadFile(outsideChangelog)
+	require.NoError(t, err)
+	require.Equal(t, changelogSentinel, changelogAfter)
+	ticketAfter, err := os.ReadFile(outsideTicket)
+	require.NoError(t, err)
+	require.Equal(t, ticketSentinel, ticketAfter)
+}
+
 func TestPrepareClassifiesDeliveryEvidenceFromDoneTickets(t *testing.T) {
 	t.Parallel()
 	dir := initGitRepo(t)
