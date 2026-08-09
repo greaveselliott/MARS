@@ -34,6 +34,14 @@ Weights live under **`~/.mars/models/`** (not committed). Expected hashes are re
 
 Corrupt or partial downloads must never be loaded silently; verification runs **before** binding a model to active traffic.
 
+Each built-in default also carries an exact publisher artifact commit, filename,
+byte size, SHA256, publisher evidence commit, declared base model,
+license/terms, quantizer identity, and conversion-tool commit/license. MARS
+downloads those third-party weights from their publisher and does not include
+them in MARS release archives. Where a publisher did not record the exact
+conversion-input revision, the registry says `not_published`; it does not infer
+one or claim that the conversion is reproducible from incomplete evidence.
+
 ### AD-031: Inference resilience — timeouts, context headroom, and health verification
 
 Three failure modes observed in production pipeline runs (crowd-runner, April 2026):
@@ -73,7 +81,9 @@ MARS must treat model selection as an evidence loop:
 - expose a `mars models evaluate` command for mechanical benchmark runs
 - compare candidates against the current pinned defaults on harness-relevant tasks
 - measure tool-call JSON reliability, structured-output reliability, latency, token throughput, memory fit, and ticket-completion behavior
-- promote only immutable model artifacts with pinned revisions and SHA256 checksums
+- promote only immutable model artifacts with pinned revisions, byte sizes,
+  SHA256 checksums, applicable terms, and truthful publisher/base/quantizer
+  evidence
 
 The reason is safety and repeatability: a model-card claim or newest-library ranking is useful discovery input, but default registry entries affect autonomous mutating agents. Default changes need local evidence and reproducible artifacts.
 

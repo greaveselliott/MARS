@@ -40,6 +40,12 @@ Then the harness selects a practical default model profile without requiring man
 Given setup needs a model artifact
 When a download is complete, cached, partial, or corrupt
 Then the model store verifies SHA256, resumes partial files when possible, reuses valid cache files, and rejects checksum mismatches before serving
+And built-in defaults bind the exact publisher artifact commit, filename, size,
+SHA256, license/terms, declared base model, quantizer, and conversion-tool
+evidence
+And an unavailable publisher conversion-input revision is recorded as
+`not_published` rather than inferred or described as reproducible
+And MARS release archives do not redistribute the model weights
 
 ### F-003-S003: Supervised llama.cpp Server
 

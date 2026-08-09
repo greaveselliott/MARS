@@ -8,6 +8,7 @@ docs:
 package hardware
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 )
@@ -17,7 +18,29 @@ const (
 	PerformanceQuality  = "quality"
 	PerformanceBalanced = "balanced"
 	PerformanceSpeed    = "speed"
+
+	ModelBaseRevisionNotPublished = "not_published"
+	ModelBaseRevisionPublished    = "published"
+	ModelDistributionDownloadOnly = "download_only"
 )
+
+// ModelProvenance records the publisher evidence and terms for a downloaded
+// GGUF without claiming facts the publisher did not record.
+type ModelProvenance struct {
+	Publisher                  string
+	EvidenceRevision           string
+	DeclaredBaseRepo           string
+	BaseRevision               string
+	BaseRevisionStatus         string
+	LicenseID                  string
+	LicenseURL                 string
+	TermsURL                   string
+	QuantizedBy                string
+	QuantizationToolRepo       string
+	QuantizationToolRevision   string
+	QuantizationToolLicenseURL string
+	Distribution               string
+}
 
 // ModelSpec describes one downloadable model.
 type ModelSpec struct {
@@ -30,6 +53,90 @@ type ModelSpec struct {
 	RAMMinMiB  int    // minimum RAM/VRAM to load
 	ContextLen int    // default context length
 	SHA256     string // expected checksum (empty = skip verification, computed on first download)
+	SizeBytes  int64  // exact publisher-recorded artifact size
+	Provenance ModelProvenance
+}
+
+var (
+	qwenCoderProvenance = ModelProvenance{
+		Publisher:                  "lmstudio-community",
+		EvidenceRevision:           "1f4ceb1041258b3fbfe59e1175d1321c6b41863b",
+		DeclaredBaseRepo:           "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+		BaseRevisionStatus:         ModelBaseRevisionNotPublished,
+		LicenseID:                  "Apache-2.0",
+		LicenseURL:                 "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct/blob/b2cff646eb4bb1d68355c01b18ae02e7cf42d120/LICENSE",
+		TermsURL:                   "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct/blob/b2cff646eb4bb1d68355c01b18ae02e7cf42d120/LICENSE",
+		QuantizedBy:                "bartowski",
+		QuantizationToolRepo:       "ggml-org/llama.cpp",
+		QuantizationToolRevision:   "00fa15fedc79263fa0285e6a3bbb0cfb3e3878a2",
+		QuantizationToolLicenseURL: "https://github.com/ggml-org/llama.cpp/blob/00fa15fedc79263fa0285e6a3bbb0cfb3e3878a2/LICENSE",
+		Distribution:               ModelDistributionDownloadOnly,
+	}
+	gemmaProvenance = ModelProvenance{
+		Publisher:                  "bartowski",
+		EvidenceRevision:           "029e94146666900b08caf49a3b47b413dfa8ec66",
+		DeclaredBaseRepo:           "google/gemma-4-E4B-it",
+		BaseRevisionStatus:         ModelBaseRevisionNotPublished,
+		LicenseID:                  "Apache-2.0",
+		LicenseURL:                 "https://huggingface.co/bartowski/google_gemma-4-E4B-it-GGUF/blob/029e94146666900b08caf49a3b47b413dfa8ec66/README.md",
+		TermsURL:                   "https://ai.google.dev/gemma/docs/gemma_4_license",
+		QuantizedBy:                "bartowski",
+		QuantizationToolRepo:       "ggml-org/llama.cpp",
+		QuantizationToolRevision:   "0893f50f2dc14fcc046e10d4f76a1ac7a62c0490",
+		QuantizationToolLicenseURL: "https://github.com/ggml-org/llama.cpp/blob/0893f50f2dc14fcc046e10d4f76a1ac7a62c0490/LICENSE",
+		Distribution:               ModelDistributionDownloadOnly,
+	}
+)
+
+// ValidateProvenance rejects incomplete or overclaimed default-model records.
+func (s ModelSpec) ValidateProvenance() error {
+	if strings.TrimSpace(s.Repo) == "" || strings.TrimSpace(s.File) == "" {
+		return fmt.Errorf("model provenance requires an artifact repository and filename")
+	}
+	if !isLowerHex(s.Revision, 40) {
+		return fmt.Errorf("model provenance requires a full 40-character artifact revision")
+	}
+	if !isLowerHex(s.SHA256, 64) || s.SizeBytes <= 0 {
+		return fmt.Errorf("model provenance requires an exact SHA256 and positive artifact size")
+	}
+	p := s.Provenance
+	if strings.TrimSpace(p.Publisher) == "" || !strings.HasPrefix(s.Repo, p.Publisher+"/") || !isLowerHex(p.EvidenceRevision, 40) || strings.TrimSpace(p.DeclaredBaseRepo) == "" {
+		return fmt.Errorf("model provenance requires publisher, evidence revision, and declared base model")
+	}
+	if strings.TrimSpace(p.LicenseID) == "" || !isHTTPS(p.LicenseURL) || !isHTTPS(p.TermsURL) {
+		return fmt.Errorf("model provenance requires applicable license and terms")
+	}
+	if strings.TrimSpace(p.QuantizedBy) == "" || strings.TrimSpace(p.QuantizationToolRepo) == "" || !isLowerHex(p.QuantizationToolRevision, 40) || !isHTTPS(p.QuantizationToolLicenseURL) {
+		return fmt.Errorf("model provenance requires quantizer and conversion-tool evidence")
+	}
+	switch p.BaseRevisionStatus {
+	case ModelBaseRevisionNotPublished:
+		if strings.TrimSpace(p.BaseRevision) != "" {
+			return fmt.Errorf("model provenance must not infer an unpublished base revision")
+		}
+	case ModelBaseRevisionPublished:
+		if !isLowerHex(p.BaseRevision, 40) {
+			return fmt.Errorf("model provenance requires a full published base revision")
+		}
+	default:
+		return fmt.Errorf("model provenance requires an explicit base revision status")
+	}
+	if p.Distribution != ModelDistributionDownloadOnly {
+		return fmt.Errorf("model provenance requires the download-only distribution boundary")
+	}
+	return nil
+}
+
+func isLowerHex(value string, length int) bool {
+	if len(value) != length || value != strings.ToLower(value) {
+		return false
+	}
+	_, err := hex.DecodeString(value)
+	return err == nil
+}
+
+func isHTTPS(value string) bool {
+	return strings.HasPrefix(value, "https://") && len(strings.TrimPrefix(value, "https://")) > 0
 }
 
 // DownloadURL returns the HuggingFace direct download URL for this model.
@@ -65,6 +172,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  8192,
 				ContextLen: 32768,
 				SHA256:     "ddad34d487a85c5a5872b422a15b1f3db196c7912ecd939e7e1ef373cbc7ef29",
+				SizeBytes:  14583005504,
+				Provenance: qwenCoderProvenance,
 			},
 			TierReasoning: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
@@ -76,6 +185,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  8192,
 				ContextLen: 65536,
 				SHA256:     "ddad34d487a85c5a5872b422a15b1f3db196c7912ecd939e7e1ef373cbc7ef29",
+				SizeBytes:  14583005504,
+				Provenance: qwenCoderProvenance,
 			},
 			TierFast: {
 				Name:       "Gemma 4 E4B",
@@ -87,6 +198,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  3072,
 				ContextLen: 16384,
 				SHA256:     "b937a48e96379116137c50acbe39fd1b46eb101d2df4e560f47f5e2171b6451e",
+				SizeBytes:  5405167904,
+				Provenance: gemmaProvenance,
 			},
 		}
 	case ProfileMedium:
@@ -101,6 +214,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  12288,
 				ContextLen: 32768,
 				SHA256:     "79ad15a5ee3caddc3f4ff0db33a14454a5a3eb503d7fa1c1e35feafc579de486",
+				SizeBytes:  18632186176,
+				Provenance: qwenCoderProvenance,
 			},
 			TierReasoning: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
@@ -112,6 +227,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  12288,
 				ContextLen: 131072,
 				SHA256:     "79ad15a5ee3caddc3f4ff0db33a14454a5a3eb503d7fa1c1e35feafc579de486",
+				SizeBytes:  18632186176,
+				Provenance: qwenCoderProvenance,
 			},
 			TierFast: {
 				Name:       "Gemma 4 E4B",
@@ -123,6 +240,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  4096,
 				ContextLen: 16384,
 				SHA256:     "8c2686257c840a1dcd4e6a3794a7e25c335cc5490a188d7f222b792bb5e82b4d",
+				SizeBytes:  5820881184,
+				Provenance: gemmaProvenance,
 			},
 		}
 	case ProfileHigh, ProfileMulti:
@@ -130,24 +249,28 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 			TierCoding: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
-				Revision:   "e9eb3e6",
+				Revision:   "e9eb3e611bdcd5842e021c014b392c70746da574",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q8_0",
 				RAMMinMiB:  24576,
 				ContextLen: 32768,
 				SHA256:     "a4a0207f4653bfece73d9818c83acf714f5593525fe3aab7026347fd73090fcc",
+				SizeBytes:  32483934528,
+				Provenance: qwenCoderProvenance,
 			},
 			TierReasoning: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
-				Revision:   "e9eb3e6",
+				Revision:   "e9eb3e611bdcd5842e021c014b392c70746da574",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q8_0",
 				RAMMinMiB:  24576,
 				ContextLen: 131072,
 				SHA256:     "a4a0207f4653bfece73d9818c83acf714f5593525fe3aab7026347fd73090fcc",
+				SizeBytes:  32483934528,
+				Provenance: qwenCoderProvenance,
 			},
 			TierFast: {
 				Name:       "Gemma 4 E4B",
@@ -159,6 +282,8 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  8192,
 				ContextLen: 16384,
 				SHA256:     "9c536ba17e55f3cf4d45aaa985bea7637f7b9034240b1377aca88d873aa6cb5c",
+				SizeBytes:  8031240480,
+				Provenance: gemmaProvenance,
 			},
 		}
 	default:
