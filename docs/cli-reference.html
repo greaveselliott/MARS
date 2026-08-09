@@ -137,7 +137,8 @@ docs:
               <p>
                 First-time machine preparation. It creates <code>~/.mars/</code>,
                 writes config, detects hardware, installs llama.cpp server
-                artifacts, downloads local model bundles when requested, and
+                artifacts, downloads local model bundles only after an exact
+                displayed-plan acknowledgement, and
                 leaves optional GitHub release credentials separate from ordinary setup.
               </p>
               <dl>
@@ -145,6 +146,8 @@ docs:
                 <dd><code>--skip-download</code>, <code>--download</code>, <code>--skip-github</code>, <code>--github</code>, <code>--test-mode</code>, <code>--dry-run</code>, <code>--install-dir</code>, <code>--inference local|cloud|defer</code>, <code>--local-bundle auto|local-cpu-q3|local-balanced-q4|local-quality-q8</code>, <code>--yes</code>, <code>--json</code>, <code>--plain</code>.</dd>
                 <dt>Use when</dt>
                 <dd>You are installing MARS on a machine, changing local bundle profile, or repairing missing model/server state.</dd>
+                <dt>Download admission</dt>
+                <dd>Pending artifacts are stable-sorted with concrete bundle, immutable identity, exact bytes, license ID/URL, and terms/notice URLs. Interactive use confirms once; non-TTY and JSON use require <code>--download --yes</code>. JSON emits the complete preflight plan on stderr before requests and includes it in the final stdout object. Skip/test/defer/cloud paths need no acknowledgement, and no legal attestation is persisted. Automatic Linux llama.cpp acquisition remains disabled.</dd>
                 <dt>Example</dt>
                 <dd><pre><code>mars setup
 mars setup --inference local --local-bundle auto --download --yes --json</code></pre></dd>

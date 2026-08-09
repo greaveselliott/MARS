@@ -413,7 +413,7 @@ Global command surface:
     Example: ["version"]
 
   setup
-    First-time install: config, shell PATH, hardware detection, and model/binary download. Ordinary setup does not require or check GitHub credentials; GitHub integration is an explicit opt-in.
+    First-time install: config, shell PATH, hardware detection, and acknowledged model/binary downloads. Pending artifacts are shown as one stable concrete-bundle plan with immutable identity, exact bytes, license ID/URL, and terms/notice URLs. Interactive use confirms once; non-TTY/JSON use requires exact --download --yes. JSON writes a complete download_plan event to stderr before requests and includes the plan in final stdout. Skip/test/defer/cloud paths need no acknowledgement; Linux managed llama.cpp acquisition remains disabled. Ordinary setup does not require or check GitHub credentials; GitHub integration is an explicit opt-in.
     Flags: --inference <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --download, --yes, --json, --plain, --skip-download, --skip-github, --github, --test-mode, --dry-run, --install-dir <dir>
     Example: ["setup", "--inference", "local", "--local-bundle", "auto", "--download", "--yes", "--json"]
 

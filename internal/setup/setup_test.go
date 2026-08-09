@@ -80,7 +80,7 @@ func TestRun_createsSubdirectories(t *testing.T) {
 
 func TestBuildSteps_testModeSkipsDownloadAndGitHub(t *testing.T) {
 	t.Parallel()
-	steps := buildSteps("/tmp/test-mars", Config{TestMode: true})
+	steps := buildSteps("/tmp/test-mars", Config{TestMode: true}, emptyDownloadPlan())
 
 	names := make([]string, len(steps))
 	for i, s := range steps {
@@ -94,7 +94,7 @@ func TestBuildSteps_testModeSkipsDownloadAndGitHub(t *testing.T) {
 
 func TestBuildSteps_fullMode(t *testing.T) {
 	t.Parallel()
-	steps := buildSteps("/tmp/test-mars", Config{})
+	steps := buildSteps("/tmp/test-mars", Config{}, emptyDownloadPlan())
 
 	names := make([]string, len(steps))
 	for i, s := range steps {
@@ -112,7 +112,7 @@ func TestBuildSteps_fullMode(t *testing.T) {
 
 func TestBuildSteps_skipGitHubSkipsOptionalIntegration(t *testing.T) {
 	t.Parallel()
-	steps := buildSteps("/tmp/test-mars", Config{SkipGitHub: true, EnableGitHub: true})
+	steps := buildSteps("/tmp/test-mars", Config{SkipGitHub: true, EnableGitHub: true}, emptyDownloadPlan())
 
 	names := make([]string, len(steps))
 	for i, s := range steps {
@@ -124,7 +124,7 @@ func TestBuildSteps_skipGitHubSkipsOptionalIntegration(t *testing.T) {
 
 func TestBuildSteps_githubOptIn(t *testing.T) {
 	t.Parallel()
-	steps := buildSteps("/tmp/test-mars", Config{EnableGitHub: true})
+	steps := buildSteps("/tmp/test-mars", Config{EnableGitHub: true}, emptyDownloadPlan())
 
 	names := make([]string, len(steps))
 	for i, s := range steps {

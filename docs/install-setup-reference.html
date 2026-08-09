@@ -98,7 +98,7 @@ docs:
                 <tr><td>Git</td><td>Source install, target harness review, release notes, and generated docs all rely on git.</td><td><code>git --version</code></td></tr>
                 <tr><td>Go 1.25.12 or newer for source installs</td><td>Source checkout installs build the CLI locally. Packaged MARS operation does not require an externally installed Go toolchain.</td><td><code>go version</code></td></tr>
                 <tr><td>Disk space</td><td>Local GGUF model bundles are large and live under <code>~/.mars/models/</code>.</td><td><code>df -h ~</code></td></tr>
-                <tr><td>Network for setup</td><td>First setup may contact GitHub and download llama.cpp/model artifacts.</td><td><code>mars setup --dry-run</code></td></tr>
+                <tr><td>Network for setup</td><td>Local setup downloads acknowledged llama.cpp/model artifacts; ordinary setup does not contact GitHub for release auth.</td><td><code>mars setup --dry-run</code></td></tr>
                 <tr><td>GPU recommended</td><td>Autonomous coding work is designed for local model throughput.</td><td><code>mars doctor</code></td></tr>
               </tbody>
             </table>
@@ -179,8 +179,20 @@ mars path setup --dry-run --json</code></pre>
             steps and prints the setup plan without changing local state.
           </p>
           <pre data-doc-filter><code>mars setup
-mars setup --inference local --local-bundle auto --yes --json
+mars setup --inference local --local-bundle auto --download --yes --json
 mars setup --dry-run</code></pre>
+          <p data-doc-filter>
+            Before a missing llama.cpp archive or GGUF is requested or written,
+            setup resolves one stable concrete-bundle plan with immutable
+            identity, exact byte size, license ID/URL, and terms/notice URLs.
+            Interactive setup displays the plan and confirms once. Non-TTY and
+            JSON setup require the exact <code>--download --yes</code> form.
+            JSON emits a complete preflight event on stderr before requests and
+            includes the same plan in the final stdout object. Decline, missing
+            acknowledgement, incomplete provenance, or a changed plan causes no
+            download request or download-artifact write; acceptance is not
+            persisted as a legal attestation.
+          </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Step</th><th>When it runs</th><th>Writes</th></tr></thead>
@@ -189,8 +201,8 @@ mars setup --dry-run</code></pre>
                 <tr><td>Write default config</td><td>When config is missing or needs defaults.</td><td><code>~/.mars/config.yaml</code>.</td></tr>
                 <tr><td>Detect hardware</td><td>During setup.</td><td>Hardware profile metadata in local config/state.</td></tr>
                 <tr><td>Configure shell path</td><td>When profile is not already configured.</td><td>User shell profile snippet.</td></tr>
-                <tr><td>Install llama-server</td><td>For local inference unless downloads are skipped/tested away.</td><td><code>~/.mars/bin/</code>.</td></tr>
-                <tr><td>Download models</td><td>For local inference unless <code>--skip-download</code>, <code>--test-mode</code>, or non-local inference is used.</td><td><code>~/.mars/models/</code>.</td></tr>
+                <tr><td>Install llama-server</td><td>After acknowledgement for a supported pending local archive. Automatic Linux acquisition remains disabled.</td><td><code>~/.mars/bin/</code>.</td></tr>
+                <tr><td>Download models</td><td>After acknowledgement for the exact pending local bundle; skipped for <code>--skip-download</code>, <code>--test-mode</code>, defer, or cloud routing.</td><td><code>~/.mars/models/</code>.</td></tr>
                 <tr><td>Optional GitHub integration placeholder</td><td>Only with <code>--github</code> and GitHub checks enabled.</td><td>Local setup metadata.</td></tr>
               </tbody>
             </table>
@@ -202,11 +214,11 @@ mars setup --dry-run</code></pre>
                 <tr><td><code>--skip-github</code></td><td>Skip optional GitHub integration checks. Official release access is already separate from ordinary setup.</td></tr>
                 <tr><td><code>--github</code></td><td>Opt into optional GitHub status/check integration setup.</td></tr>
                 <tr><td><code>--skip-download</code></td><td>Skip llama-server and model download steps. Use only when compatible artifacts already exist or inference is deferred/cloud.</td></tr>
-                <tr><td><code>--download</code></td><td>Accepted as explicit setup intent; local inference already downloads unless skipped.</td></tr>
+                <tr><td><code>--download</code></td><td>Select the displayed third-party download plan. In non-TTY/JSON mode it must be paired with <code>--yes</code>.</td></tr>
                 <tr><td><code>--test-mode</code></td><td>Skip downloads and external services for test automation.</td></tr>
                 <tr><td><code>--dry-run</code></td><td>Print planned setup steps without executing them.</td></tr>
                 <tr><td><code>--install-dir</code></td><td>Override the directory added to shell PATH.</td></tr>
-                <tr><td><code>--yes --json</code></td><td>Use deterministic output and fail with remediation instead of prompting where applicable.</td></tr>
+                <tr><td><code>--download --yes --json</code></td><td>Acknowledge the exact pending plan without prompting. The preflight plan event is on stderr; the final result object is on stdout.</td></tr>
               </tbody>
             </table>
           </div>
@@ -260,7 +272,7 @@ mars auth github clear-local --config /private/tmp/mars-config.yaml</code></pre>
             <table>
               <thead><tr><th>Mode</th><th>Setup behavior</th><th>Use when</th></tr></thead>
               <tbody>
-                <tr><td><code>local</code></td><td>Default. Installs local llama-server artifacts and downloads selected local bundle unless skipped.</td><td>You want local-first autonomous work.</td></tr>
+                <tr><td><code>local</code></td><td>Default. Plans local llama-server/model artifacts, then downloads only after acknowledgement. Automatic Linux llama.cpp acquisition is unavailable.</td><td>You want local-first autonomous work and have a supported managed artifact or independently installed server.</td></tr>
                 <tr><td><code>cloud</code></td><td>Skips local model downloads during setup.</td><td>You will configure explicit cloud/provider routing.</td></tr>
                 <tr><td><code>defer</code></td><td>Skips local model downloads during setup.</td><td>You want PATH/config/auth first and will choose models later.</td></tr>
               </tbody>
@@ -434,7 +446,7 @@ mars update check --repo /path/to/repo --skip-remote</code></pre>
               <thead><tr><th>Need</th><th>Pattern</th></tr></thead>
               <tbody>
                 <tr><td>Preview setup without writes.</td><td><code>mars setup --dry-run --json</code></td></tr>
-                <tr><td>Configure local setup deterministically.</td><td><code>mars setup --inference local --local-bundle auto --yes --json</code></td></tr>
+                <tr><td>Configure local setup deterministically.</td><td><code>mars setup --inference local --local-bundle auto --download --yes --json</code></td></tr>
                 <tr><td>Skip external services in tests.</td><td><code>mars setup --test-mode --json</code></td></tr>
                 <tr><td>Classify release access.</td><td><code>mars auth github check --json</code></td></tr>
                 <tr><td>Repair PATH predictably.</td><td><code>mars path setup --shell zsh --install-dir "$HOME/go/bin" --json</code></td></tr>
@@ -462,7 +474,7 @@ mars update check --repo /path/to/repo</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Cloud or deferred inference first pass</h3>
-              <pre><code>mars setup --inference defer --skip-download --yes --json
+              <pre><code>mars setup --inference defer --json
 mars doctor --skip-remote</code></pre>
             </article>
             <article data-doc-filter>

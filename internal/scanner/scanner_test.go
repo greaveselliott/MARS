@@ -644,6 +644,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releaseDoc), "mars auth github setup")
 	assert.Contains(t, string(releaseDoc), "mars auth github clear-local")
 	assert.Contains(t, string(releaseDoc), "github_auth_check")
+	assert.Contains(t, string(releaseDoc), "--download --yes")
+	assert.Contains(t, string(releaseDoc), "automatic Linux llama.cpp acquisition remains disabled")
 
 	agentGuide, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
 	require.NoError(t, err)

@@ -50,6 +50,7 @@ import (
 	"github.com/greaveselliott/mars/internal/scanner"
 	"github.com/greaveselliott/mars/internal/scoring"
 	"github.com/greaveselliott/mars/internal/serve"
+	"github.com/greaveselliott/mars/internal/setup"
 	harnesstools "github.com/greaveselliott/mars/internal/tools"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
@@ -68,6 +69,97 @@ func TestToolsListCommandIncludesUniversalTools(t *testing.T) {
 	require.Contains(t, lines, "github_auth_check")
 	require.Contains(t, lines, "tool_create")
 	require.Contains(t, lines, "tool_creation_guard")
+}
+
+func TestSetupDownloadAdmission(t *testing.T) {
+	var out bytes.Buffer
+	acknowledged, err := admitSetupDownloads(strings.NewReader(""), &out, true, true, false)
+	require.NoError(t, err)
+	require.True(t, acknowledged)
+	require.Empty(t, out.String())
+
+	out.Reset()
+	acknowledged, err = admitSetupDownloads(strings.NewReader(""), &out, false, true, false)
+	require.Error(t, err)
+	require.False(t, acknowledged)
+	require.ErrorContains(t, err, "--download --yes")
+	require.Empty(t, out.String(), "--yes alone must not select downloads")
+
+	out.Reset()
+	acknowledged, err = admitSetupDownloads(strings.NewReader("yes\n"), &out, false, false, true)
+	require.NoError(t, err)
+	require.True(t, acknowledged)
+	require.Equal(t, 1, strings.Count(out.String(), "[y/N]"))
+
+	out.Reset()
+	acknowledged, err = admitSetupDownloads(strings.NewReader("no\n"), &out, true, false, true)
+	require.Error(t, err)
+	require.False(t, acknowledged)
+	require.ErrorContains(t, err, "no download artifacts were written")
+	require.Equal(t, 1, strings.Count(out.String(), "[y/N]"))
+}
+
+func TestSetupJSONEmitsCompletePlanEvent(t *testing.T) {
+	plan := setup.DownloadPlan{
+		LocalBundle: "local-cpu-q3",
+		Artifacts: []setup.DownloadArtifact{
+			{
+				Kind:              "model",
+				Identity:          "huggingface.co/example/model@revision/model.gguf",
+				SizeBytes:         42,
+				LicenseID:         "Apache-2.0",
+				LicenseURL:        "https://example.com/license",
+				TermsOrNoticeURLs: []string{"https://example.com/terms"},
+			},
+		},
+		TotalBytes: 42,
+	}
+	var out bytes.Buffer
+	require.NoError(t, writeSetupJSONPlanEvent(&out, plan))
+	require.Contains(t, out.String(), plan.Artifacts[0].Identity)
+	require.Contains(t, out.String(), plan.Artifacts[0].LicenseURL)
+	require.Contains(t, out.String(), plan.Artifacts[0].TermsOrNoticeURLs[0])
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(out.Bytes(), &decoded))
+	require.Equal(t, "download_plan", decoded["event"])
+	require.Contains(t, decoded, "download_plan")
+}
+
+func TestSetupTextPlanDisplayFailsClosedWithoutWriterDetails(t *testing.T) {
+	plan := setup.DownloadPlan{
+		LocalBundle: "local-cpu-q3",
+		Artifacts: []setup.DownloadArtifact{{
+			Kind:              "model",
+			Identity:          "huggingface.co/example/model@revision/model.gguf",
+			SizeBytes:         42,
+			LicenseID:         "Apache-2.0",
+			LicenseURL:        "https://example.com/license",
+			TermsOrNoticeURLs: []string{"https://example.com/terms"},
+		}},
+		TotalBytes: 42,
+	}
+
+	err := printSetupDownloadPlan(setupFailWriter{}, plan)
+	require.EqualError(t, err, "setup: cannot display complete download plan — check output and retry")
+}
+
+type setupFailWriter struct{}
+
+func (setupFailWriter) Write([]byte) (int, error) {
+	return 0, fmt.Errorf("private/output/path: unavailable")
+}
+
+func TestSetupCommandRejectsContradictoryDownloadFlagsBeforeWrites(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cmd := setupCmd()
+	cmd.SetArgs([]string{"--download", "--skip-download"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cannot be used together")
+	_, statErr := os.Stat(filepath.Join(home, ".mars"))
+	require.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestCodeIntelMetricsCommandReportsEmptyLocalEvidence(t *testing.T) {

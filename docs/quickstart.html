@@ -161,7 +161,7 @@ mars path setup</code></pre>
               <h3>Ordinary setup</h3>
               <pre><code>mars setup
 mars doctor</code></pre>
-              <p>Official release access is anonymous-first, so ordinary setup does not require GitHub credentials.</p>
+              <p>Official release access is anonymous-first, so ordinary setup does not require GitHub credentials. When local artifacts are missing, setup prints one exact bundle/artifact/size/license/terms plan and asks once before downloading.</p>
             </article>
             <article data-doc-filter>
               <h3>Optional private-fork or rate-limit auth</h3>
@@ -173,9 +173,20 @@ mars auth github check</code></pre>
             <article data-doc-filter>
               <h3>Dry setup path</h3>
               <pre><code>mars setup --dry-run
-mars setup --skip-download</code></pre>
-              <p>Use dry run to preview setup. Use <code>--skip-download</code> only when compatible model files already exist.</p>
+mars setup --skip-download
+mars setup --inference defer</code></pre>
+              <p>Use dry run to preview setup. Use <code>--skip-download</code> only when compatible artifacts already exist. Test, cloud, and deferred paths download nothing and require no acknowledgement.</p>
             </article>
+          </div>
+          <div class="callout" data-doc-filter>
+            <strong>Download acknowledgement:</strong>
+            automation and JSON must use <code>mars setup --download --yes</code>.
+            JSON emits a complete preflight plan on stderr before requests and
+            includes the same plan in the final stdout result. Decline or
+            missing acknowledgement writes no download artifacts, and no legal
+            attestation is persisted. Automatic llama.cpp acquisition remains
+            disabled on Linux; use deferred/cloud inference or install a
+            compatible <code>llama-server</code> independently.
           </div>
           <h3>What setup creates</h3>
           <div class="wide-table" data-doc-filter>

@@ -33,6 +33,7 @@ docs:
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"database/sql"
@@ -96,9 +97,10 @@ import (
 var version = buildinfo.DefaultVersion
 
 var (
-	commit           = "unknown"
-	date             = "unknown"
-	jsonErrorWritten bool
+	commit            = "unknown"
+	date              = "unknown"
+	jsonErrorWritten  bool
+	errSetupPlanWrite = errors.New("setup: cannot display complete download plan — check output and retry")
 )
 
 type executionProfileFlags struct {
@@ -1150,6 +1152,8 @@ func remediationForError(err error) string {
 		return "export the named environment variable, then rerun mars models credentials write-local-env --repo <repo> --api-key-env <ENV_NAME> --yes --json"
 	case strings.Contains(msg, "missing model file(s)") || (strings.Contains(msg, "local model bundle") && strings.Contains(msg, "missing")):
 		return "run mars setup --inference local --local-bundle auto --download --yes --json, then rerun the command"
+	case strings.Contains(msg, "--download --yes"):
+		return "rerun mars setup with --download --yes, or choose --skip-download, --inference defer, or cloud routing"
 	case strings.Contains(msg, "--log-file path") || strings.Contains(msg, "--db path"):
 		return "pass a writable runtime artifact path outside the target repo or use the documented default"
 	case strings.Contains(msg, "non-interactive") && strings.Contains(msg, "--yes"):
@@ -2743,7 +2747,15 @@ func setupCmd() *cobra.Command {
 		Long:  "Create ~/.mars/, detect hardware, install local inference, and download pinned models. GitHub integration is optional.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			defer silenceLogsForJSON(jsonOut)()
-			result, err := setup.Run(setup.Config{
+			out := cmd.OutOrStdout()
+			if download && skipDownload {
+				err := fmt.Errorf("setup: --download and --skip-download cannot be used together — choose one download mode")
+				if jsonOut {
+					return writeSetupJSONFailure(out, setup.DownloadPlan{}, err)
+				}
+				return err
+			}
+			cfg := setup.Config{
 				SkipDownload: skipDownload,
 				SkipGitHub:   skipGitHub,
 				EnableGitHub: enableGitHub,
@@ -2752,30 +2764,63 @@ func setupCmd() *cobra.Command {
 				InstallDir:   installDir,
 				Inference:    inferenceMode,
 				LocalBundle:  localBundle,
-			})
+			}
+			plan, err := setup.ResolveDownloadPlan(cfg)
 			if err != nil {
 				if jsonOut {
-					return writeJSONError(err)
+					return writeSetupJSONFailure(out, setup.DownloadPlan{}, err)
 				}
 				return err
 			}
-			_ = download
-			_ = yes
+			if !jsonOut && !plan.Empty() {
+				if err := printSetupDownloadPlan(out, plan); err != nil {
+					return err
+				}
+			}
+
+			acknowledged := false
+			if !dryRun && !plan.Empty() {
+				interactive := !jsonOut && ui.IsTerminal(os.Stdin) && ui.IsTerminal(out)
+				acknowledged, err = admitSetupDownloads(cmd.InOrStdin(), out, download, yes, interactive)
+				if err != nil {
+					if jsonOut {
+						return writeSetupJSONFailure(out, plan, err)
+					}
+					return err
+				}
+			}
+			if acknowledged {
+				cfg.ApprovedDownloadPlan = &plan
+			}
 			_ = plain
+
+			if jsonOut && !dryRun && !plan.Empty() {
+				if err := writeSetupJSONPlanEvent(cmd.ErrOrStderr(), plan); err != nil {
+					return err
+				}
+			}
+			result, err := setup.Run(cfg)
+			if err != nil {
+				if jsonOut {
+					return writeSetupJSONFailure(out, plan, err)
+				}
+				return err
+			}
 			if jsonOut {
-				return writeJSON(os.Stdout, map[string]any{
+				return writeJSON(out, map[string]any{
+					"download_plan": plan,
 					"status":        "ok",
 					"steps_run":     result.StepsRun,
 					"steps_skipped": result.StepsSkipped,
 				})
 			}
-			fmt.Printf("Setup complete: %d steps run, %d skipped\n", result.StepsRun, result.StepsSkipped)
+			fmt.Fprintf(out, "Setup complete: %d steps run, %d skipped\n", result.StepsRun, result.StepsSkipped)
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVar(&skipDownload, "skip-download", false, "Skip model download")
-	cmd.Flags().BoolVar(&download, "download", false, "Download selected local model bundle artifacts")
+	cmd.Flags().BoolVar(&skipDownload, "skip-download", false, "Skip llama.cpp and model downloads")
+	cmd.Flags().BoolVar(&download, "download", false, "Select the displayed llama.cpp and model download plan")
 	cmd.Flags().BoolVar(&skipGitHub, "skip-github", false, "Skip optional GitHub integration checks")
 	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
@@ -2788,6 +2833,73 @@ func setupCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&plain, "plain", false, "Disable styling and animation")
 
 	return cmd
+}
+
+func printSetupDownloadPlan(w io.Writer, plan setup.DownloadPlan) error {
+	if _, err := fmt.Fprintf(w, "Third-party download plan (local bundle %s; %d artifacts, %d bytes)\n", plan.LocalBundle, len(plan.Artifacts), plan.TotalBytes); err != nil {
+		return errSetupPlanWrite
+	}
+	for _, artifact := range plan.Artifacts {
+		if _, err := fmt.Fprintf(w, "- %s [%s]\n", artifact.Identity, artifact.Kind); err != nil {
+			return errSetupPlanWrite
+		}
+		if _, err := fmt.Fprintf(w, "  size_bytes: %d\n", artifact.SizeBytes); err != nil {
+			return errSetupPlanWrite
+		}
+		if _, err := fmt.Fprintf(w, "  license: %s %s\n", artifact.LicenseID, artifact.LicenseURL); err != nil {
+			return errSetupPlanWrite
+		}
+		for _, noticeURL := range artifact.TermsOrNoticeURLs {
+			if _, err := fmt.Fprintf(w, "  terms_or_notice: %s\n", noticeURL); err != nil {
+				return errSetupPlanWrite
+			}
+		}
+	}
+	return nil
+}
+
+func admitSetupDownloads(in io.Reader, out io.Writer, download, yes, interactive bool) (bool, error) {
+	if download && yes {
+		return true, nil
+	}
+	remediation := "rerun `mars setup --download --yes` or use --skip-download, --inference defer, or cloud routing"
+	if yes || !interactive {
+		return false, fmt.Errorf("setup: pending third-party downloads require the exact --download --yes acknowledgement in non-interactive or JSON mode — %s", remediation)
+	}
+	if _, err := fmt.Fprint(out, "Download these third-party artifacts? [y/N]: "); err != nil {
+		return false, err
+	}
+	answer, err := bufio.NewReader(in).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("setup: read download acknowledgement: %w", err)
+	}
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "y", "yes":
+		return true, nil
+	default:
+		return false, fmt.Errorf("setup: third-party downloads declined; no download artifacts were written — %s", remediation)
+	}
+}
+
+func writeSetupJSONFailure(w io.Writer, plan setup.DownloadPlan, err error) error {
+	jsonErrorWritten = true
+	payload := map[string]any{
+		"status":      "error",
+		"error":       err.Error(),
+		"remediation": remediationForError(err),
+	}
+	if !plan.Empty() {
+		payload["download_plan"] = plan
+	}
+	_ = writeJSON(w, payload)
+	return err
+}
+
+func writeSetupJSONPlanEvent(w io.Writer, plan setup.DownloadPlan) error {
+	return writeJSON(w, map[string]any{
+		"event":         "download_plan",
+		"download_plan": plan,
+	})
 }
 
 func initCmd() *cobra.Command {

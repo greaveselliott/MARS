@@ -145,6 +145,7 @@ Given a user clones the MARS source repo
 When they follow the README quick start
 Then the primary path installs with `make install`, runs `mars setup`, verifies with `mars doctor`, initializes a target repo, and previews an agent run with `--dry-run`
 And the README describes system requirements, GPU expectations, model downloads, disk/network prerequisites, and anonymous-first official release access before optional private-fork auth
+And setup displays and requires acknowledgement of the exact third-party download plan before local artifact requests or writes; non-interactive/JSON examples use `--download --yes`
 And source checkout updates use `make update-tool` as the recommended command for safely fast-forwarding and reinstalling from the clone
 And release review cannot fail solely because a stale installed binary lacks a newer command surface
 

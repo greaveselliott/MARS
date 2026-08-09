@@ -3168,6 +3168,14 @@ mars auth github check
 mars update tool
 ` + "```" + `
 
+When local setup has missing third-party artifacts, it displays one stable
+concrete-bundle plan with immutable identities, exact byte sizes, license
+IDs/URLs, and terms/notice URLs before downloading. Interactive use confirms
+once; agent, non-TTY, and JSON uses require exact ` + "`--download --yes`" + `. JSON emits
+the complete preflight plan on stderr before requests and includes it in final
+stdout. Skip, test, deferred, and cloud paths need no acknowledgement, and
+automatic Linux llama.cpp acquisition remains disabled.
+
 The check makes one exact no-redirect anonymous request to the official API and
 reports ` + "`anonymous`" + `, ` + "`authenticated`" + `, or ` + "`unavailable`" + `. Only an exact 401,
 403, or 404 may resolve ` + "`GH_TOKEN`" + `, ` + "`GITHUB_TOKEN`" + `, GitHub CLI auth,

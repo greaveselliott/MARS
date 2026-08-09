@@ -48,6 +48,14 @@ And an unavailable publisher conversion-input revision is recorded as
 And MARS release archives do not redistribute the model weights
 And incomplete provenance fails before the download step contacts the
 publisher or writes model data and its completion marker
+And setup stable-sorts one combined pending-artifact plan containing the
+concrete bundle, immutable identities, exact byte sizes, license IDs/URLs, and
+applicable terms/notice URLs before any request or artifact write
+And interactive setup confirms the displayed plan once, while non-TTY/JSON
+setup requires exact `--download --yes`; decline, missing acknowledgement, or a
+changed plan has no download-owned effects and no legal attestation is persisted
+And skip, test, deferred, and cloud setup paths download nothing and require no
+acknowledgement
 
 ### F-003-S003: Supervised llama.cpp Server
 
@@ -57,6 +65,7 @@ Then argv, base URL, state transitions, health checks, and shutdown are managed 
 And multi-slot local servers preserve each slot's tier context window by scaling total server context with the requested parallel slot count
 And setup resolves llama.cpp only through an immutable release record that binds source, the archive license, separately declared source-tree notices, archive names, sizes, and checksums
 And an artifact recorded for provenance remains unavailable unless its platform entry is explicitly enabled
+And automatic Linux llama.cpp acquisition remains disabled
 
 ### F-003-S004: Manifest-Tier Routing
 

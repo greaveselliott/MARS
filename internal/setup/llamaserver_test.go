@@ -26,6 +26,7 @@ func TestPinnedLlamaCppReleaseMetadata(t *testing.T) {
 	expected := llamaCppRelease{
 		Tag:          "b8833",
 		SourceCommit: "45cac7ca703fb9085eae62b9121fca01d20177f6",
+		LicenseID:    "MIT",
 		License: llamaCppDocument{
 			Name:   "MIT License",
 			URL:    "https://raw.githubusercontent.com/ggml-org/llama.cpp/45cac7ca703fb9085eae62b9121fca01d20177f6/LICENSE",
@@ -100,6 +101,17 @@ func TestPrepareLlamaCppInstallRejectsDisabledLinuxBeforeFilesystemMutation(t *t
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "unavailable until T-077")
 	_, statErr := os.Stat(binDir)
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
+}
+
+func TestInstallLlamaServerRejectsUnplannedArtifactBeforeFilesystemMutation(t *testing.T) {
+	baseDir := filepath.Join(t.TempDir(), "missing", ".mars")
+
+	err := installLlamaServerStep(baseDir, emptyDownloadPlan()).Execute()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "absent or unusable")
+	assert.ErrorContains(t, err, "remove/move it aside")
+	_, statErr := os.Stat(baseDir)
 	assert.ErrorIs(t, statErr, os.ErrNotExist)
 }
 

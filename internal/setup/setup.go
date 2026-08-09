@@ -42,13 +42,16 @@ type Step struct {
 // Config controls setup behaviour.
 type Config struct {
 	SkipDownload bool
-	SkipGitHub   bool
-	EnableGitHub bool
-	TestMode     bool
-	DryRun       bool
-	InstallDir   string
-	Inference    string
-	LocalBundle  string
+	// ApprovedDownloadPlan is the exact in-memory plan acknowledged for this
+	// invocation. It is compared again before setup writes any state.
+	ApprovedDownloadPlan *DownloadPlan
+	SkipGitHub           bool
+	EnableGitHub         bool
+	TestMode             bool
+	DryRun               bool
+	InstallDir           string
+	Inference            string
+	LocalBundle          string
 }
 
 // Result reports what happened during setup.
@@ -66,8 +69,24 @@ func Run(cfg Config) (*Result, error) {
 		return nil, fmt.Errorf("setup: cannot determine home directory: %w — set $HOME and retry", err)
 	}
 	baseDir := filepath.Join(home, ".mars")
+	plan, err := resolveDownloadPlan(baseDir, cfg, hardware.Detect(), "")
+	if err != nil {
+		return nil, fmt.Errorf("setup: resolve download plan: %w", err)
+	}
+	return runResolvedSetup(baseDir, cfg, plan)
+}
 
-	steps := buildSteps(baseDir, cfg)
+func runResolvedSetup(baseDir string, cfg Config, plan DownloadPlan) (*Result, error) {
+	if !cfg.DryRun && !plan.Empty() {
+		if cfg.ApprovedDownloadPlan == nil {
+			return nil, fmt.Errorf("setup: pending third-party downloads require explicit acknowledgement — rerun `mars setup --download --yes` or use --skip-download")
+		}
+		if !plan.equal(*cfg.ApprovedDownloadPlan) {
+			return nil, fmt.Errorf("setup: pending third-party download plan changed after acknowledgement — review the new plan and rerun `mars setup --download --yes`")
+		}
+	}
+	cfg = bindResolvedDownloadPlan(cfg, plan)
+	steps := buildSteps(baseDir, cfg, plan)
 	result := &Result{}
 
 	for _, step := range steps {
@@ -102,7 +121,14 @@ func Run(cfg Config) (*Result, error) {
 	return result, nil
 }
 
-func buildSteps(baseDir string, cfg Config) []Step {
+func bindResolvedDownloadPlan(cfg Config, plan DownloadPlan) Config {
+	if plan.LocalBundle != "" {
+		cfg.LocalBundle = plan.LocalBundle
+	}
+	return cfg
+}
+
+func buildSteps(baseDir string, cfg Config, plan DownloadPlan) []Step {
 	inferenceMode := strings.ToLower(strings.TrimSpace(cfg.Inference))
 	if inferenceMode == "" {
 		inferenceMode = models.RoutingLocal
@@ -118,8 +144,8 @@ func buildSteps(baseDir string, cfg Config) []Step {
 		cfg.SkipDownload = true
 	}
 	if !cfg.SkipDownload && !cfg.TestMode {
-		steps = append(steps, installLlamaServerStep(baseDir))
-		steps = append(steps, downloadModelsStep(baseDir, cfg.LocalBundle))
+		steps = append(steps, installLlamaServerStep(baseDir, plan))
+		steps = append(steps, downloadModelsStep(baseDir, cfg.LocalBundle, plan))
 	}
 
 	if cfg.EnableGitHub && !cfg.SkipGitHub && !cfg.TestMode {
@@ -252,7 +278,7 @@ type hardwareSnapshot struct {
 // downloadModelsStep detects hardware, selects models for the profile, and downloads
 // each unique GGUF from HuggingFace with resume support. Idempotent: re-running
 // skips models whose files already exist in the models directory.
-func downloadModelsStep(baseDir, localBundle string) Step {
+func downloadModelsStep(baseDir, localBundle string, plan DownloadPlan) Step {
 	modelsDir := filepath.Join(baseDir, "models")
 	markerPath := filepath.Join(modelsDir, ".download-complete")
 
@@ -288,6 +314,10 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 			if err := validateDownloadModelProvenance(unique); err != nil {
 				return err
 			}
+			pending, err := pendingPlannedModels(modelsDir, unique, plan)
+			if err != nil {
+				return err
+			}
 			if err := os.MkdirAll(modelsDir, 0o755); err != nil {
 				return fmt.Errorf("create models dir: %w — check directory permissions", err)
 			}
@@ -295,19 +325,10 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 			slog.Info("model download plan",
 				"profile", string(hw.Profile),
 				"local_bundle", bundle.ID,
-				"models_to_download", len(unique),
+				"models_to_download", len(pending),
 			)
 
-			for i, spec := range unique {
-				destPath := filepath.Join(modelsDir, spec.File)
-				if _, err := os.Stat(destPath); err == nil {
-					slog.Info("model already present, skipping",
-						"file", spec.File,
-						"index", fmt.Sprintf("%d/%d", i+1, len(unique)),
-					)
-					continue
-				}
-
+			for i, spec := range pending {
 				url := spec.DownloadURL()
 				if url == "" {
 					return fmt.Errorf("no download URL for model %s — check registry configuration", spec.Name)
@@ -318,7 +339,7 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 					"quant", spec.Quant,
 					"file", spec.File,
 					"url", url,
-					"index", fmt.Sprintf("%d/%d", i+1, len(unique)),
+					"index", fmt.Sprintf("%d/%d", i+1, len(pending)),
 				)
 
 				started := time.Now()

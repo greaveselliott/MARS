@@ -134,6 +134,16 @@ mars start --repo /path/to/target-repo \
   --acknowledge-host-execution
 ```
 
+When local artifacts are missing, interactive setup first prints one exact
+llama.cpp/model plan with sizes, licenses, and terms/notices, then asks once
+before downloading. Automation and `--json` must use `mars setup --download
+--yes`; the JSON preflight plan is written to stderr before requests and the
+final result, including the same plan, is written to stdout. Skip, test, cloud,
+and deferred inference paths download nothing and require no acknowledgement.
+Automatic llama.cpp acquisition is currently disabled on Linux, so Linux users
+must select deferred/cloud inference or install `llama-server` independently
+before downloading local models.
+
 Acknowledged-host `start` initializes a missing target harness, registers the
 repo, reconciles existing lifecycle state, and runs the autonomous loop.
 

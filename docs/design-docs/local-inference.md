@@ -44,6 +44,18 @@ one or claim that the conversion is reproducible from incomplete evidence.
 Setup and doctor validate this record before the download step contacts the
 publisher or writes model data and its completion marker.
 
+Setup combines the missing enabled llama.cpp archive and unique missing models
+into one stable plan. The plan fixes the concrete local bundle and shows each
+immutable identity, exact byte size, license ID/URL, and applicable
+terms/notice URLs before any request or artifact write. Interactive setup may
+confirm once; non-TTY and JSON setup require `--download --yes`. JSON emits a
+complete preflight event on stderr before requests and includes the same plan
+in its final stdout object. A changed plan, incomplete provenance, decline, or
+missing acknowledgement fails before download-owned effects, and acceptance is
+never persisted as a legal attestation. Skip, test, defer, and cloud paths have
+no plan to accept. Recorded Linux llama.cpp artifacts remain disabled; Linux
+uses deferred/cloud inference or an independently installed compatible server.
+
 ### AD-031: Inference resilience — timeouts, context headroom, and health verification
 
 Three failure modes observed in production pipeline runs (crowd-runner, April 2026):

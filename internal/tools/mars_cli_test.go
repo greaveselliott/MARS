@@ -45,6 +45,8 @@ func TestMarsCLI_reference(t *testing.T) {
 	} {
 		require.Contains(t, res.Output, command)
 	}
+	require.Contains(t, res.Output, "exact --download --yes")
+	require.Contains(t, res.Output, "Linux managed llama.cpp acquisition remains disabled")
 	require.NotContains(t, res.Output, "release publish-assets")
 	require.NotContains(t, res.Output, "release verify-assets")
 	require.NotContains(t, res.Output, "release audit")

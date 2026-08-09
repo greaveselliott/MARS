@@ -43,6 +43,7 @@ type llamaCppPlatformArtifact struct {
 type llamaCppRelease struct {
 	Tag          string
 	SourceCommit string
+	LicenseID    string
 	License      llamaCppDocument
 	Notices      []llamaCppDocument
 	Platforms    map[string]llamaCppPlatformArtifact
@@ -51,6 +52,7 @@ type llamaCppRelease struct {
 var pinnedLlamaCppRelease = llamaCppRelease{
 	Tag:          "b8833",
 	SourceCommit: "45cac7ca703fb9085eae62b9121fca01d20177f6",
+	LicenseID:    "MIT",
 	License: llamaCppDocument{
 		Name:   "MIT License",
 		URL:    "https://raw.githubusercontent.com/ggml-org/llama.cpp/45cac7ca703fb9085eae62b9121fca01d20177f6/LICENSE",
@@ -91,35 +93,31 @@ var pinnedLlamaCppRelease = llamaCppRelease{
 	},
 }
 
-func installLlamaServerStep(baseDir string) Step {
+func installLlamaServerStep(baseDir string, plan DownloadPlan) Step {
 	binDir := filepath.Join(baseDir, "bin")
 	binaryPath := filepath.Join(binDir, "llama-server")
 
 	return Step{
 		Name: "install-llama-server",
 		Check: func() (bool, error) {
-			info, err := os.Stat(binaryPath)
-			if err != nil {
-				return false, nil
-			}
-			if info.Mode()&0o111 == 0 {
-				return false, nil
-			}
-			out, err := exec.Command(binaryPath, "--version").CombinedOutput()
-			if err != nil {
-				slog.Debug("llama-server exists but --version failed", "err", err)
-				return false, nil
-			}
-			slog.Info("llama-server already installed", "version", strings.TrimSpace(string(out)))
-			return true, nil
+			return llamaServerInstalled(binaryPath), nil
 		},
 		Execute: func() error {
+			if !plan.hasKind(downloadArtifactLlama) {
+				return fmt.Errorf("existing llama-server is absent or unusable and its replacement was not acknowledged — repair or replace ~/.mars/bin/llama-server, or remove/move it aside, then rerun `mars setup` to review a new download plan")
+			}
 			platform, err := llamaPlatformKey()
 			if err != nil {
 				return err
 			}
-			artifact, err := prepareLlamaCppInstall(platform, binDir)
+			artifact, err := enabledLlamaCppArtifact(platform)
 			if err != nil {
+				return err
+			}
+			if !plan.allows(downloadArtifactLlama, llamaDownloadIdentity(pinnedLlamaCppRelease, artifact)) {
+				return fmt.Errorf("llama.cpp download identity changed after acknowledgement — review the new plan and rerun `mars setup --download --yes`")
+			}
+			if _, err := prepareLlamaCppInstall(platform, binDir); err != nil {
 				return err
 			}
 
@@ -148,6 +146,20 @@ func installLlamaServerStep(baseDir string) Step {
 			return nil
 		},
 	}
+}
+
+func llamaServerInstalled(binaryPath string) bool {
+	info, err := os.Stat(binaryPath)
+	if err != nil || info.Mode()&0o111 == 0 {
+		return false
+	}
+	out, err := exec.Command(binaryPath, "--version").CombinedOutput()
+	if err != nil {
+		slog.Debug("llama-server exists but --version failed", "err", err)
+		return false
+	}
+	slog.Info("llama-server already installed", "version", strings.TrimSpace(string(out)))
+	return true
 }
 
 func prepareLlamaCppInstall(platform, binDir string) (llamaCppPlatformArtifact, error) {

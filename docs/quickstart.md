@@ -58,9 +58,19 @@ Setup creates `~/.mars/`, writes default config, detects hardware,
 installs the pinned `llama-server` binary, downloads pinned GGUF models into
 `~/.mars/models`, and configures shell PATH for the installed command.
 
+Before any missing third-party archive or model is requested or written, setup
+prints a stable plan with the concrete bundle, artifact identities, exact byte
+sizes, licenses, and terms/notices. Interactive setup asks once. Automation and
+JSON must use `mars setup --download --yes`; JSON emits the complete preflight
+plan on stderr and the final result on stdout. Declining or omitting that exact
+acknowledgement writes no download artifacts, and MARS does not persist a legal
+attestation.
+
 Use `--skip-download` only if compatible model files are already present. Use
-`--test-mode` only for dry/local setup paths that avoid downloads and external
-services.
+`--test-mode`, `--inference defer`, or cloud routing for paths that make no
+third-party downloads and require no acknowledgement. Automatic llama.cpp
+acquisition remains disabled on Linux; use deferred/cloud inference or install
+a compatible `llama-server` independently before downloading local models.
 
 MARS chooses a local inference profile automatically during setup. On
 Apple Silicon and other unified-memory machines, this avoids loading the

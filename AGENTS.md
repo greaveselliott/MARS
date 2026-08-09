@@ -209,7 +209,23 @@ First-time install: hardware detection, llama-server binary, and model download.
 mars setup
 ```
 
-Flags: `--skip-download`, `--skip-github`, `--github`, `--test-mode`, `--dry-run`
+Flags: `--inference local|cloud|defer`, `--local-bundle <bundle>`, `--download`,
+`--yes`, `--json`, `--plain`, `--skip-download`, `--skip-github`, `--github`,
+`--test-mode`, `--dry-run`
+
+Before local setup requests or writes a missing llama.cpp archive or GGUF, it
+shows one stable plan with the concrete bundle, immutable artifact identity,
+exact byte size, license ID/URL, and applicable terms/notice URLs. Interactive
+setup confirms that plan once. Non-interactive and JSON setup require the exact
+`--download --yes` acknowledgement; JSON writes a complete `download_plan`
+preflight event to stderr before requests and includes the same plan in the
+final stdout object. Decline, missing acknowledgement, or incomplete provenance
+causes no download request or download-artifact write, and acceptance is not
+persisted as a legal attestation. `--skip-download`, `--test-mode`,
+`--inference defer`, and cloud routing download nothing and need no
+acknowledgement. Automatic llama.cpp acquisition remains unavailable on Linux;
+use deferred/cloud inference or install a compatible `llama-server`
+independently.
 
 Ordinary setup does not require GitHub credentials. `mars auth github check`
 first makes one exact, no-redirect anonymous request to the official
