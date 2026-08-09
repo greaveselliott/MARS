@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** None — T-073 is parked on owner/legal input; create T-074 next
+**Current Ticket:** T-074 — close GitHub App setup and telemetry listener boundaries
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Commit the T-073 legal-hold sequencing exception, create T-074 through `ticket_create`, and close only its bounded private network-entry-point scope.
+- **Next Primary Action:** Implement and commit T-074 checkpoint A: make the reachable telemetry collector literal-loopback-only with bounded fail-closed requests and no remote-service expansion.
 
 ## Starting Baseline
 
@@ -168,6 +168,21 @@ parked in backlog on the two owner-only/legal inputs above; it is not complete
 and F-017-S001 does not pass. The active plan routes bounded private
 T-074 through T-079 work. T-073 must resume and pass before T-080 receives any
 release, signing, upload, or publication authority.
+
+## Next Walking Skeleton — T-074
+
+T-074 was created through `ticket_create` after bounded COO, CTO-weekly, and
+Security review. Checkpoint A closes the directly reachable telemetry wildcard
+bind and request-boundary defects before any database or listener state.
+Checkpoint B hardens the GitHub manifest flow, which has no production callsite
+at `4cdcc87`, with
+literal-loopback binding, one-time state, single-use callback admission,
+timeouts, and fixed redacted errors without wiring a new CLI command.
+
+Remote telemetry, a generalized HTTP framework, dashboard/webhook changes, and
+all T-075 through T-077 surfaces remain out of scope. T-074 cannot close
+F-017-S002 by itself, and it grants no release, settings, visibility, or
+publication authority.
 
 ## Completion Gates By Ticket
 
