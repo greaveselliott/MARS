@@ -33,9 +33,10 @@ Then PAT mode, App mode, default base URLs, and unknown modes are validated with
 
 ### F-011-S002: App Setup Flow
 
-Given a user runs GitHub setup
-When the setup page, manifest, callback, and code exchange are exercised
-Then the app credentials are preserved or populated without timing out silently
+Given the source-only GitHub App manifest flow is invoked by a future integration
+When the setup page, manifest, state-bound callback, and code exchange are exercised
+Then it binds only to a literal loopback IP, consumes one cryptographic state before one bounded exchange, persists full credentials owner-only, returns only non-secret App identity, and shuts down after success, failure, cancellation, or timeout
+And the hardened internal flow does not itself add a CLI command or create a live GitHub App
 
 ### F-011-S003: Verified Webhooks
 
@@ -90,7 +91,7 @@ None.
 ## Evidence
 
 - F-011-S001: `go test ./internal/github -run TestNewClient`
-- F-011-S002: `go test ./internal/github -run 'TestRunSetup|TestAppManifest|TestExchangeManifestCode'`
+- F-011-S002: focused normal/race tests cover literal bind and RNG admission, the official manifest state form, exact Host/method/path/body/query checks, one concurrent callback winner, replay, exchange failure/timeout, owner-only persistence, and secret-free results. `RunSetup` remains source-only with no production callsite.
 - F-011-S002 secret containment: T-057 Engineer tests prove setup stores the GitHub-generated webhook secret only in regular owner-only 0600 credentials, never returns it after success/write failure, bounds fallback reads, and gives MARS_WEBHOOK_SECRET precedence.
 - F-011-S003: T-057 corrected Engineer evidence implements >=32-byte exact-body HMAC, centrally validated numeric actor authority, hardened exact normalized repository and case-sensitive branch, complete event-specific same-repo/fork metadata (including top-level check-suite repository), disabled issue comments, bounded 10,000-entry/24-hour replay, callback rollback, durable TTL/failed-job behavior, and transactional SQLite delivery/body receipts across completion/restart. Independent QA/Security and installed-binary evidence remain pending.
 - F-011-S004: `go test ./internal/github -run 'TestCreatePR|TestCreateCheckRun|TestUpdateCheckRun|TestPostComment'`

@@ -46,6 +46,20 @@ files are removed. Loading performs `lstat`, then open and `fstat`, and requires
 `SameFile` plus regular `0600` mode before reading, so a path swap or symlink
 cannot redirect the bounded credentials read.
 
+The internal GitHub App manifest flow has no production callsite. Before any
+future CLI wiring, `RunSetup` defaults to `127.0.0.1:9999`, accepts only a
+literal loopback IP, and generates a fresh 32-byte one-time state before it
+listens. The setup form carries that state only through GitHub's documented
+manifest `state` query parameter. The callback requires the exact local Host,
+GET method, path, empty bounded body, one bounded code, and the matching state.
+A matching state is consumed before exchange so concurrent callbacks, replay,
+and post-failure retries cannot exchange or persist twice. Server, overall
+flow, exchange, response-body, and header limits are fixed; browser and
+function errors are redacted. Full credentials are written only to the
+owner-only credentials file, while `RunSetup` returns only non-secret App ID
+and client ID. This hardening does not expose a new command or create a live
+GitHub App.
+
 After HMAC-SHA256 verification over the exact bounded body, supported events
 must prove their own authority boundary:
 
@@ -100,6 +114,6 @@ and mirror-only behavior are separate and unchanged.
 
 ## Deferred Work
 
-Dashboard authentication, CSRF/Origin/Host/CSP/XSS controls, GitHub App setup
-state/nonce, telemetry authentication, and non-loopback gateway support remain
-separate F-017 tickets.
+Dashboard authentication, CSRF/Origin/Host/CSP/XSS controls, GitHub App CLI
+wiring, authenticated remote telemetry, and non-loopback gateway support
+remain separate F-017 tickets.

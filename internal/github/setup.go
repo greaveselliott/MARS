@@ -12,26 +12,45 @@ package github
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/network"
 )
 
 const (
-	defaultListenAddr    = ":9999"
+	defaultListenAddr    = "127.0.0.1:9999"
 	defaultSetupTimeout  = 5 * time.Minute
 	credentialsFileName  = "github-app.json"
 	credentialsDirName   = ".mars"
 	manifestCallbackPath = "/callback"
 	manifestSetupPath    = "/setup"
+	setupStateBytes      = 32
+	maxSetupBodyBytes    = 1
+	maxConversionBytes   = 1 << 20
+	maxManifestCodeBytes = 256
+	manifestExchangeWait = 30 * time.Second
 )
+
+var setupPageTemplate = template.Must(template.New("github-setup").Parse(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MARS GitHub App setup</title></head>
+<body><main><h1>Register the MARS GitHub App</h1>
+<form method="post" action="{{.Action}}"><input type="hidden" name="manifest" value="{{.Manifest}}">
+<button type="submit">Register MARS GitHub App</button></form></main></body></html>`))
 
 // SetupConfig controls the App manifest flow.
 type SetupConfig struct {
@@ -89,96 +108,257 @@ type manifestConversionResponse struct {
 	WebhookSecret string `json:"webhook_secret"`
 }
 
-// RunSetup performs the GitHub App manifest flow. It starts a temporary local
-// HTTP server, prints a URL for the user to visit, and waits for the callback.
-// Returns AppCredentials on success or a timeout error.
+type setupDependencies struct {
+	random   io.Reader
+	listen   func(string, string) (net.Listener, error)
+	exchange func(context.Context, string, string) (*AppCredentials, error)
+	persist  func(*AppCredentials) (*AppCredentials, error)
+	output   io.Writer
+}
+
+func defaultSetupDependencies() setupDependencies {
+	return setupDependencies{
+		random:   rand.Reader,
+		listen:   net.Listen,
+		exchange: exchangeManifestCode,
+		persist:  persistSetupCredentials,
+		output:   os.Stdout,
+	}
+}
+
+type setupOutcome struct {
+	credentials *AppCredentials
+	err         error
+}
+
+type setupAdmission struct {
+	mu       sync.Mutex
+	state    string
+	consumed bool
+	terminal bool
+}
+
+func (a *setupAdmission) claim(candidate string) (matched, unavailable bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.terminal || a.consumed {
+		return false, true
+	}
+	if len(candidate) != len(a.state) || subtle.ConstantTimeCompare([]byte(candidate), []byte(a.state)) != 1 {
+		return false, false
+	}
+	a.consumed = true
+	return true, false
+}
+
+func (a *setupAdmission) finish() {
+	a.mu.Lock()
+	a.terminal = true
+	a.state = ""
+	a.mu.Unlock()
+}
+
+// RunSetup performs the GitHub App manifest flow through a single-use,
+// literal-loopback callback. Only non-secret App identity is returned.
 func RunSetup(ctx context.Context, cfg SetupConfig) (*AppCredentials, error) {
+	return runSetup(ctx, cfg, defaultSetupDependencies())
+}
+
+func runSetup(ctx context.Context, cfg SetupConfig, deps setupDependencies) (*AppCredentials, error) {
 	cfg = cfg.withDefaults()
-
-	resultCh := make(chan *AppCredentials, 1)
-	errCh := make(chan error, 1)
-
-	mux := http.NewServeMux()
-
-	callbackURL := fmt.Sprintf("http://localhost%s%s", cfg.ListenAddr, manifestCallbackPath)
-	manifest := appManifest(callbackURL)
-	manifestJSON, err := json.Marshal(manifest)
-	if err != nil {
-		return nil, fmt.Errorf("github setup: marshal manifest: %w", err)
+	if err := network.ValidateLiteralLoopbackAddress("GitHub App setup listener", cfg.ListenAddr); err != nil {
+		return nil, err
 	}
 
-	mux.HandleFunc(manifestSetupPath, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		page := fmt.Sprintf(`<!DOCTYPE html>
-<html><body>
-<form method="post" action="%s/settings/apps/new">
-<input type="hidden" name="manifest" value='%s'>
-<button type="submit" style="font-size:1.2em;padding:12px 24px;cursor:pointer">
-Register MARS GitHub App
-</button>
-</form>
-</body></html>`, cfg.GitHubURL, strings.ReplaceAll(string(manifestJSON), "'", "&#39;"))
-		fmt.Fprint(w, page)
-	})
+	stateBytes := make([]byte, setupStateBytes)
+	if _, err := io.ReadFull(deps.random, stateBytes); err != nil {
+		return nil, errors.New("github setup: could not generate one-time callback state; retry on a healthy operating system")
+	}
+	state := hex.EncodeToString(stateBytes)
 
-	mux.HandleFunc(manifestCallbackPath, func(w http.ResponseWriter, r *http.Request) {
-		code := r.URL.Query().Get("code")
-		if code == "" {
-			http.Error(w, "Missing 'code' parameter — the GitHub callback must include a manifest exchange code", http.StatusBadRequest)
-			return
-		}
+	listener, err := deps.listen("tcp", cfg.ListenAddr)
+	if err != nil {
+		return nil, errors.New("github setup: could not start the loopback callback listener; ensure the configured port is available and retry")
+	}
+	defer listener.Close()
 
-		creds, err := exchangeManifestCode(ctx, cfg.GitHubURL, code)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to exchange code: %v", err), http.StatusInternalServerError)
-			errCh <- err
-			return
-		}
+	flowCtx, cancel := context.WithTimeout(ctx, cfg.Timeout)
+	defer cancel()
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, `<!DOCTYPE html><html><body><h2>MARS GitHub App registered successfully!</h2><p>You can close this window.</p></body></html>`)
-		resultCh <- creds
-	})
+	outcomes := make(chan setupOutcome, 1)
+	admission := &setupAdmission{state: state}
+	handler, err := newSetupHandler(flowCtx, cfg, admission, outcomes, deps)
+	if err != nil {
+		admission.finish()
+		return nil, err
+	}
 
 	srv := &http.Server{
-		Addr:    cfg.ListenAddr,
-		Handler: mux,
+		Addr:              cfg.ListenAddr,
+		Handler:           handler,
+		MaxHeaderBytes:    64 << 10,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       30 * time.Second,
 	}
-
+	serverErrors := make(chan error, 1)
 	go func() {
-		slog.Info("github setup: starting manifest flow server", "addr", cfg.ListenAddr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("github setup: server failed: %w", err)
+		if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			select {
+			case serverErrors <- errors.New("github setup: the loopback callback server stopped; restart setup and try again"):
+			default:
+			}
 		}
 	}()
 
-	setupURL := fmt.Sprintf("http://localhost%s%s", cfg.ListenAddr, manifestSetupPath)
-	slog.Info("github setup: visit this URL to register your GitHub App", "url", setupURL)
-	fmt.Printf("\n  Open this URL to register your GitHub App:\n  %s\n\n", setupURL)
+	setupURL := "http://" + cfg.ListenAddr + manifestSetupPath
+	slog.Info("github setup: manifest flow is ready on loopback")
+	if deps.output != nil {
+		_, _ = fmt.Fprintf(deps.output, "\n  Open this URL to register your GitHub App:\n  %s\n\n", setupURL)
+	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, cfg.Timeout)
-	defer cancel()
-
-	var creds *AppCredentials
+	var outcome setupOutcome
 	select {
-	case creds = <-resultCh:
-	case err := <-errCh:
+	case outcome = <-outcomes:
+	case err := <-serverErrors:
+		admission.finish()
 		shutdownSrv(srv)
 		return nil, err
-	case <-timeoutCtx.Done():
+	case <-flowCtx.Done():
+		admission.finish()
 		shutdownSrv(srv)
-		return nil, fmt.Errorf("github setup: timed out after %s waiting for manifest callback — restart and try again", cfg.Timeout)
+		return nil, errors.New("github setup: timed out waiting for the one-time callback; restart setup and try again")
 	}
 
+	admission.finish()
 	shutdownSrv(srv)
-
-	creds, err = persistSetupCredentials(creds)
-	if err != nil {
-		slog.Warn("github setup: credentials obtained but failed to write to disk", "error", err)
-		return creds, err
+	if outcome.err != nil {
+		return nil, outcome.err
 	}
-	slog.Info("github setup: credentials saved", "path", credentialsPath())
-	return creds, nil
+	return outcome.credentials, nil
+}
+
+func newSetupHandler(ctx context.Context, cfg SetupConfig, admission *setupAdmission, outcomes chan<- setupOutcome, deps setupDependencies) (http.Handler, error) {
+	callbackURL := "http://" + cfg.ListenAddr + manifestCallbackPath
+	manifestJSON, err := json.Marshal(appManifest(callbackURL))
+	if err != nil {
+		return nil, errors.New("github setup: could not prepare the GitHub App manifest; retry setup")
+	}
+	action := cfg.GitHubURL + "/settings/apps/new?state=" + url.QueryEscape(admission.state)
+	githubOrigin, err := url.Parse(cfg.GitHubURL)
+	if err != nil || githubOrigin.Scheme != "https" || githubOrigin.Host == "" || githubOrigin.User != nil || githubOrigin.RawQuery != "" || githubOrigin.Fragment != "" {
+		return nil, errors.New("github setup: GitHub URL must be an HTTPS origin")
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		setSetupSecurityHeaders(w, githubOrigin.Scheme+"://"+githubOrigin.Host)
+		if r.Host != cfg.ListenAddr {
+			http.Error(w, "GitHub App setup rejected the request.", http.StatusForbidden)
+			return
+		}
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", http.MethodGet)
+			http.Error(w, "GitHub App setup requires GET.", http.StatusMethodNotAllowed)
+			return
+		}
+		if !emptySetupBody(w, r) {
+			http.Error(w, "GitHub App setup requires an empty request body.", http.StatusBadRequest)
+			return
+		}
+
+		switch r.URL.Path {
+		case manifestSetupPath:
+			if r.URL.RawQuery != "" {
+				http.Error(w, "GitHub App setup rejected the request.", http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if err := setupPageTemplate.Execute(w, struct {
+				Action   string
+				Manifest string
+			}{Action: action, Manifest: string(manifestJSON)}); err != nil {
+				http.Error(w, "GitHub App setup could not render the registration page.", http.StatusInternalServerError)
+			}
+		case manifestCallbackPath:
+			handleManifestCallback(ctx, w, r, cfg, admission, outcomes, deps)
+		default:
+			http.Error(w, "GitHub App setup route not found.", http.StatusNotFound)
+		}
+	}), nil
+}
+
+func handleManifestCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, cfg SetupConfig, admission *setupAdmission, outcomes chan<- setupOutcome, deps setupDependencies) {
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(query) != 2 || len(query["code"]) != 1 || !validManifestCode(query.Get("code")) || len(query["state"]) != 1 || query.Get("state") == "" {
+		http.Error(w, "GitHub App setup callback is invalid.", http.StatusBadRequest)
+		return
+	}
+	matched, unavailable := admission.claim(query.Get("state"))
+	if unavailable {
+		http.Error(w, "GitHub App setup callback is no longer available.", http.StatusConflict)
+		return
+	}
+	if !matched {
+		http.Error(w, "GitHub App setup callback state is invalid.", http.StatusForbidden)
+		return
+	}
+
+	exchangeCtx, cancel := context.WithTimeout(ctx, manifestExchangeWait)
+	defer cancel()
+	creds, err := deps.exchange(exchangeCtx, cfg.GitHubURL, query.Get("code"))
+	if err != nil {
+		admission.finish()
+		outcome := setupOutcome{err: errors.New("github setup: GitHub did not complete the one-time manifest exchange; restart setup and try again")}
+		outcomes <- outcome
+		http.Error(w, "GitHub App setup failed. Close this window and retry.", http.StatusBadGateway)
+		return
+	}
+	identity, err := deps.persist(creds)
+	if err != nil {
+		admission.finish()
+		outcome := setupOutcome{err: errors.New("github setup: could not save GitHub App credentials; check owner-only access to the MARS config directory and retry")}
+		outcomes <- outcome
+		http.Error(w, "GitHub App setup failed. Close this window and retry.", http.StatusInternalServerError)
+		return
+	}
+	identity = sanitizedAppIdentity(identity)
+	admission.finish()
+	outcomes <- setupOutcome{credentials: identity}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, "<!doctype html><html><body><h1>MARS GitHub App registered.</h1><p>You can close this window.</p></body></html>")
+}
+
+func validManifestCode(code string) bool {
+	if len(code) == 0 || len(code) > maxManifestCodeBytes {
+		return false
+	}
+	for i := 0; i < len(code); i++ {
+		c := code[i]
+		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func emptySetupBody(w http.ResponseWriter, r *http.Request) bool {
+	if r.ContentLength > 0 {
+		return false
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxSetupBodyBytes)
+	body, err := io.ReadAll(r.Body)
+	return err == nil && len(body) == 0
+}
+
+func setSetupSecurityHeaders(w http.ResponseWriter, githubOrigin string) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; form-action "+githubOrigin+"; frame-ancestors 'none'")
+	w.Header().Set("Permissions-Policy", "camera=(), geolocation=(), microphone=()")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
 }
 
 func persistSetupCredentials(creds *AppCredentials) (*AppCredentials, error) {
@@ -186,38 +366,54 @@ func persistSetupCredentials(creds *AppCredentials) (*AppCredentials, error) {
 		return nil, fmt.Errorf("github setup: credentials are missing")
 	}
 	if err := writeCredentials(creds); err != nil {
-		creds.WebhookSecret = ""
-		return creds, fmt.Errorf("github setup: save credentials: %w; the webhook secret was not returned", err)
+		return sanitizedAppIdentity(creds), fmt.Errorf("github setup: save credentials: %w; no secret credential was returned", err)
 	}
-	creds.WebhookSecret = ""
-	return creds, nil
+	return sanitizedAppIdentity(creds), nil
+}
+
+func sanitizedAppIdentity(creds *AppCredentials) *AppCredentials {
+	if creds == nil {
+		return nil
+	}
+	return &AppCredentials{AppID: creds.AppID, ClientID: creds.ClientID}
 }
 
 // exchangeManifestCode POSTs to /app-manifests/{code}/conversions and returns credentials.
 func exchangeManifestCode(ctx context.Context, githubURL, code string) (*AppCredentials, error) {
-	apiBase := strings.Replace(githubURL, "https://github.com", "https://api.github.com", 1)
-	url := fmt.Sprintf("%s/app-manifests/%s/conversions", apiBase, code)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	conversionURL, err := manifestConversionURL(githubURL, code)
 	if err != nil {
-		return nil, fmt.Errorf("build conversion request: %w", err)
+		return nil, errors.New("github manifest exchange: invalid GitHub origin")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, conversionURL, nil)
+	if err != nil {
+		return nil, errors.New("github manifest exchange: could not prepare the request")
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: manifestExchangeWait,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("POST %s: %w", url, err)
+		return nil, errors.New("github manifest exchange: request failed")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
-		return nil, fmt.Errorf("conversion returned %s: %s — verify the code is valid and hasn't been used", resp.Status, strings.TrimSpace(string(b)))
+		return nil, errors.New("github manifest exchange: GitHub rejected the one-time code")
 	}
 
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxConversionBytes+1))
+	if err != nil || len(body) > maxConversionBytes {
+		return nil, errors.New("github manifest exchange: response was invalid")
+	}
 	var conv manifestConversionResponse
-	if err := json.NewDecoder(resp.Body).Decode(&conv); err != nil {
-		return nil, fmt.Errorf("decode conversion response: %w", err)
+	if err := json.Unmarshal(body, &conv); err != nil || conv.ID <= 0 || conv.ClientID == "" || conv.ClientSecret == "" || conv.PEM == "" || conv.WebhookSecret == "" {
+		return nil, errors.New("github manifest exchange: response was incomplete")
 	}
 
 	return &AppCredentials{
@@ -227,6 +423,20 @@ func exchangeManifestCode(ctx context.Context, githubURL, code string) (*AppCred
 		PEM:           conv.PEM,
 		WebhookSecret: conv.WebhookSecret,
 	}, nil
+}
+
+func manifestConversionURL(githubURL, code string) (string, error) {
+	base, err := url.Parse(strings.TrimRight(githubURL, "/"))
+	if err != nil || base.Scheme != "https" && base.Scheme != "http" || base.Host == "" || base.User != nil || base.RawQuery != "" || base.Fragment != "" {
+		return "", errors.New("invalid GitHub origin")
+	}
+	if strings.EqualFold(base.Hostname(), "github.com") {
+		base.Scheme = "https"
+		base.Host = "api.github.com"
+		base.Path = ""
+	}
+	base.Path = strings.TrimRight(base.Path, "/") + "/app-manifests/" + url.PathEscape(code) + "/conversions"
+	return base.String(), nil
 }
 
 func credentialsPath() string {
