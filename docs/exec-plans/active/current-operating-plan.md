@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-076 — harden execution profiles, child processes, state, and traces
+**Current Ticket:** T-058 — resume the installed dashboard browser and authenticated-control proof
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,9 +13,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — T-074 and T-075 pass; T-076 execution-profile/environment/state/trace hardening and resumed T-058 browser proof remain, while F-017-S001 is independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** T-076 Checkpoint A passed at exact pushed commit `9191182601d79b996f1848a1e867e50b7d6eaf1c`, Checkpoint B1 passed at exact pushed commit `5c23f536fadd9ab18694e3f46ed9b10ca96594da`, and Checkpoint B2 passed at exact pushed commit `473b829efe865630f4942b55af9e0108d7529d0c`; Checkpoint C private-state permissions are the sole next slice.
-**Learning Or MVP Outcome:** Checkpoint A proves the default execution path cannot silently acquire host mutation authority, acknowledged host does not upgrade role trust, and unsupported isolation cannot start work or create state. B1 proves the named reachable child-process seams receive an explicit, name-sanitized environment while preserving ordinary supported toolchain state without claiming containment. B2 proves process records, policy, and bounded cleanup reach only job-owned process groups while foreign listeners and unrelated llama-server-named processes survive. Checkpoint C must next prove MARS-owned private state has owner-only permissions.
+**Current Failing Scenario:** F-017-S002 — T-074 through T-076 pass; T-058's installed browser proof remains, while F-017-S001 is independently blocked on T-073's owner/legal hold.
+**Walking Skeleton Slice:** T-076 passed through exact commits `9191182601d79b996f1848a1e867e50b7d6eaf1c`, `5c23f536fadd9ab18694e3f46ed9b10ca96594da`, `473b829efe865630f4942b55af9e0108d7529d0c`, `9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708`, and `31b00b1ce01cce10df81fc0769f6bdbbc94ff1b5`; resume only T-058's hostile-DOM and no-external-request browser replay.
+**Learning Or MVP Outcome:** T-076 closes the reachable execution-profile, child-environment, job-owned cleanup, persisted-config credential, and public database-path truth gaps without claiming same-user containment. Broader local state, redaction, export, and retention work is deferred rather than blocking source publication.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement only T-076 Checkpoint C's private-state-permissions slice. Checkpoint D remains incomplete and is not current.
+- **Next Primary Action:** Resume T-058 and run only the linked installed hostile-DOM and no-external-request browser replay.
 
 ## Starting Baseline
 
@@ -274,7 +274,8 @@ and installed Dogfood passed. The four build SHA-256 values are
 `5113f1b119a35c46a90fbb93a28877c61213527ee163319960961717ac7d290c`, and
 `844cd84754cc55ffd426a657549b104a89ce2b02a8dbab5ab47b739379bace06`.
 T-075 passes with QA, Security, Dogfood, Release Manager, and Orchestrator GO;
-F-017-S002 remains incomplete pending T-076 and resumed T-058.
+T-076 later passes as recorded below, so F-017-S002 remains incomplete only
+pending resumed T-058.
 
 No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,
@@ -357,19 +358,25 @@ The exact B2 gates were
 `go run ./cmd/mars docsync audit --repo .` with 364 files checked and zero
 findings, and `git diff --check`. QA, Security, and Orchestrator returned GO.
 
-Only Checkpoints A, B1, and B2 are complete. Checkpoint C private-state
-permissions are the sole next action. Checkpoint D, T-076, and F-017-S002
-remain incomplete; resumed T-058 remains later in sequence.
+The final launch-scope config correction is complete at exact pushed commit
+`9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708`: setup and config persistence now
+create or tighten regular config leaves to `0600`, reject links/non-regular
+entries, and preserve custom parent modes. Focused config/setup normal, race,
+vet, formatting, and diff gates pass. An installed clean Go 1.26.5 candidate
+with SHA-256 `dc8033d3024624ae182175fec80362a87e8585048f5cf9d17cb319f0a0420dbe`
+completed setup under `umask 000` and created `~/.mars/config.yaml` at `0600`.
+Commit `31b00b1ce01cce10df81fc0769f6bdbbc94ff1b5` then corrected every live shared
+serve database path claim to the runtime's actual legacy
+`~/.mars-harness/db/mars.db` without migrating state.
 
-The ticket uses one thin child-environment seam, job/session-owned process
-records, one small MARS-state permissions helper, one bounded redaction seam,
-and the existing trace store. It explicitly excludes a VM/container, sandbox
-framework, generalized process supervisor, DLP/vault system, new storage
-engine, T-075 reopening, and all release/settings/visibility/publication work.
-Checkpoints A, B1, and B2 changed no version, legal/rights or installed-App
-disposition, Release, settings, visibility, signing, publication, or
-announcement state. The repository remains private at `VERSION=0.68.49`,
-Primary Status remains `primary_blocked`, and F-017-S002 remains incomplete.
+T-076 is complete under the owner's risk-proportionate launch governor.
+Broader database/log permission normalization, centralized redaction, trace
+export, purge, and retention are deferred post-launch product hardening, not
+publication gates. T-058 is current and F-017-S002 remains incomplete. These
+changes did not alter version, legal/rights or installed-App disposition,
+Release, settings, visibility, signing, publication, or announcement state.
+The repository remains private at `VERSION=0.68.49` and Primary Status remains
+`primary_blocked`.
 
 ## Completion Gates By Ticket
 

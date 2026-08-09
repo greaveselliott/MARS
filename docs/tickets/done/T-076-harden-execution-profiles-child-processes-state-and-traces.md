@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:9191182601d79b996f1848a1e867e50b7d6eaf1c", "commit:5c23f536fadd9ab18694e3f46ed9b10ca96594da", "commit:473b829efe865630f4942b55af9e0108d7529d0c"]
-verified_by: "Checkpoints A and B1: QA, Security, Release Manager, and Orchestrator GO; Checkpoint B2: QA, Security, and Orchestrator GO; T-076 closure still requires Checkpoints C and D and Dogfood"
+evidence_links: ["commit:9191182601d79b996f1848a1e867e50b7d6eaf1c", "commit:5c23f536fadd9ab18694e3f46ed9b10ca96594da", "commit:473b829efe865630f4942b55af9e0108d7529d0c", "commit:9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708", "commit:31b00b1ce01cce10df81fc0769f6bdbbc94ff1b5", "binary-sha256:dc8033d3024624ae182175fec80362a87e8585048f5cf9d17cb319f0a0420dbe"]
+verified_by: "Checkpoint A and B1 reviewer gates, Checkpoint B2 QA/Security/Orchestrator GO, focused config/setup gates, and installed config-mode smoke on 2026-08-09"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint B2 passed and was pushed at 473b829efe865630f4942b55af9e0108d7529d0c"
+last_attempt: "2026-08-09: risk-proportionate launch scope passed through 31b00b1; broader local-state lifecycle work deferred"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-execution-boundary:2026-08-09"
-next_action: "Implement only Checkpoint C's private-state-permissions slice: enforce owner-only modes for MARS-owned canonical and recognized legacy state before agent execution."
+next_action: "Resume T-058's bounded installed browser proof; broader local-state redaction, retention, and permission work is post-launch backlog."
 dedupe_key: "open-source:execution-profile-environment-state-trace"
 metadata:
   classification: "foundation-owned"
@@ -30,11 +30,11 @@ depends_on: [T-075]
 
 ## Context
 
-T-075 closed the descriptor-bound repository-path and exact Git-index secret-scanning gate. Checkpoint A closed the independent execution-profile admission gap, Checkpoint B1 sanitizes the named reachable child-process environment seams, and Checkpoint B2 scopes process records and cleanup to the owning job. F-017-S002 remains current because MARS-owned state is sometimes group/world-readable and traces/logs persist raw values indefinitely. These are reachable launch blockers owned by Checkpoints C and D. The repository remains private and the launch version freeze remains in force.
+T-075 closed the descriptor-bound repository-path and exact Git-index secret-scanning gate. Checkpoint A closed the independent execution-profile admission gap, Checkpoint B1 sanitizes the named reachable child-process environment seams, and Checkpoint B2 scopes process records and cleanup to the owning job. A final narrow config correction closes the concrete local secret exposure: setup and config persistence can no longer leave a GitHub token in a group/world-readable config file. On 2026-08-09 the owner governor removed the remaining generalized local-state, redaction, export, and retention programme from the public-launch critical path. The repository remains private and the launch version freeze remains in force.
 
 ## Outcome
 
-Make observer the non-mutating default, require explicit acknowledgement for same-user host execution, fail isolated mode closed until an enforceable adapter exists, sanitize model-controlled child environments, scope child cleanup to the owning job, enforce owner-only MARS state, redact tested credential forms at display/persistence/export boundaries, and provide redacted trace export plus dry-run-first body retention. Use small standard-library seams and existing stores; do not build a container, sandbox framework, process supervisor, secret-vault/DLP engine, or new storage system.
+Make observer the non-mutating default, require explicit acknowledgement for same-user host execution, fail isolated mode closed until an enforceable adapter exists, sanitize model-controlled child environments, scope child cleanup to the owning job, and keep persisted GitHub credentials owner-only. Correct the public shared-database path without migrating state. Defer broader local database/log modes, centralized redaction, trace export, and retention lifecycle work rather than turning source publication into a general hardening programme.
 
 ## Checkpoint A — Explicit Execution-Profile Admission
 
@@ -109,37 +109,44 @@ passed at the exact pushed semantic checkpoint. Exact B2 gates passed:
 - `go run ./cmd/mars docsync audit --repo .` (`364` files checked, `0` findings)
 - `git diff --check`
 
-QA, Security, and Orchestrator returned GO for B2. This closes
-only Checkpoints A, B1, and B2. Checkpoint C's private-state-permissions slice
-is the sole next action. Checkpoint D, T-076, resumed T-058, and F-017-S002
-remain incomplete. The repository remains private at `VERSION=0.68.49` with
+QA, Security, and Orchestrator returned GO for B2. Together with the bounded
+config correction below, these checkpoints satisfy T-076's revised launch
+scope. Resumed T-058 and F-017-S002 remain incomplete. The repository remains
+private at `VERSION=0.68.49` with
 Primary Status `primary_blocked`; the legal/rights and installed-App no-gos
 remain, and no Release, settings, visibility, signing, publication, or
 announcement authority changed.
 
 Prove that poisoned parent credentials and values are absent from foreground/background child output while ordinary builds still work; concurrent jobs cannot see or kill each other's children; standalone run leaves no owned child; and unrelated listeners or llama-server-named processes survive startup and cleanup. Do not add a generalized supervisor, descendant scanner, container, or namespace layer.
 
-## Checkpoint C — Owner-Only State And Central Redaction
+## Checkpoint C — Persisted Credential Permission
 
-**Status:** Incomplete; the private-state-permissions slice is the sole next action.
+**Status:** Complete at exact pushed commit
+`9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708`.
 
-Deliver two independently green semantic commits inside this checkpoint.
+Setup now writes the default config through the same `0600` save path used by
+later GitHub authentication. Config load/save tightens an existing loose
+regular config leaf before reading or replacing it, rejects symlink and
+non-regular leaves, and leaves custom parent-directory modes unchanged.
+Focused config/setup normal, race, vet, formatting, and diff gates passed.
 
-1. Add one thin permissions helper for MARS-owned canonical and recognized legacy state. Canonical state directories are 0700; config, credential/token, database, WAL/SHM, command/inference log, and trace/export files are 0600. Tighten safe existing MARS-owned modes or fail actionably before agent execution. Preserve the actual legacy shared serve path at ~/.mars-harness/db/mars.db; database migration is deferred and is not a T-076 launch requirement. Do not chmod arbitrary operator-selected parent directories.
-2. Add one small standard-library redactor at the actual display/persistence/export choke points. Remove Authorization/Bearer remainder, credential URLs/query pairs, common token/key-value forms, and private-key bodies from trace turns/tool arguments/final errors, command/inference logs, CLI/TraceWriter and dashboard projections, and exports. Preserve ordinary actionable text and repository-relative locators, render [redacted], never hash candidate values, do not alter content sent to the active model, and do not build an exact-secret registry, home-path scrubber, or generalized DLP system. This is defense in depth, not a claim that acknowledged host code cannot read user files.
+An installed Go 1.26.5 candidate from exact clean commit `9eb3f96` has SHA-256
+`dc8033d3024624ae182175fec80362a87e8585048f5cf9d17cb319f0a0420dbe`.
+Under `umask 000`, `setup --test-mode --skip-download --skip-github
+--inference defer --yes --plain` completed and created
+`~/.mars/config.yaml` with mode `0600`.
 
-Prove exact modes under a permissive umask and after safe migration. Inject one synthetic credential form through assistant content, tool arguments, stdout/stderr, structured log attributes, and an error; it must be absent from every tested persisted JSONL/summary, log, CLI, dashboard, and export byte while ordinary text remains useful.
+Exact pushed commit `31b00b1ce01cce10df81fc0769f6bdbbc94ff1b5`
+also corrects the CLI/help/docs shared-serve default to the runtime's actual
+legacy `~/.mars-harness/db/mars.db` path without moving or rewriting state.
 
-## Checkpoint D — Trace Export, Purge, Retention, And Closure
+## Deferred Post-Launch Hardening
 
-**Status:** Incomplete and not current. T-076 and F-017-S002 remain incomplete.
-
-- Add mars traces export --repo <path> --output <path>. Export a deterministic redacted JSONL projection, require the output to be outside the target repository through the existing runtime-artifact path rule, create a new regular 0600 file exclusively, and reject in-repository, existing, or symlink outputs.
-- Add mars traces purge --repo <path> --older-than <duration>. It is preview-only unless --apply is supplied; preview reports counts without mutation.
-- Preserve the existing public contract with a hard maximum: full trace bodies retain for 30 days by default, a manifest trace_retention_days value in the bounded range 1 through 30 may only shorten retention, and summaries retain indefinitely. Per-repository startup pruning and purge affect only full trace bodies in the selected database. Because current command logs are not repository-attributable, age MARS-owned logs older than 30 days globally at logger startup; do not claim a per-repo purge can identify them.
-- Synchronize only directly owning CLI, generated-target, feature/design, product, README/AGENTS, active-plan/goal, ticket, and DocSync surfaces.
-- Run affected-package normal/race tests and vet, docs consistency/DocSync, four supported CGO-disabled builds, and one installed clean-target smoke covering observer non-mutation, pre-mutation host/isolated refusal, acknowledged-host sanitized child behavior, job-owned cleanup, exact state/export modes, redaction, and dry-run/applied retention.
-- Obtain QA, Security, Dogfood, Release Manager, and Orchestrator GO before closing T-076. F-017-S002 remains incomplete pending the resumed T-058 browser proof.
+The previously proposed database/WAL/SHM and log mode normalization,
+centralized output redaction, trace export, purge, and automatic retention are
+useful local product hardening but are not required to expose this source
+repository or to close a demonstrated remote/publication path. They are
+explicitly deferred; T-076 does not claim those features exist.
 
 ## Acceptance
 
@@ -148,11 +155,11 @@ Prove exact modes under a permissive umask and after safe migration. Inject one 
 - Observer does not initialize, commit, repair, or otherwise mutate an uninitialized or dirty target through command-owned lifecycle behavior.
 - Model-controlled children do not inherit synthetic credential names or values; normal supported toolchains still execute.
 - One job cannot terminate another job's child, standalone cleanup is bounded, and startup never kills an unowned listener/process.
-- New and safely migrated MARS-owned state is owner-only; tested persisted/displayed/exported output contains no synthetic credential form.
-- Export is redacted, outside the target repository, and 0600. Purge is dry-run-first; explicit apply deletes only eligible full bodies in the selected trace database while preserving summaries and recent/unrelated data. Global log aging touches only MARS-owned logs older than 30 days.
-- Focused tests, four builds, installed smoke, DocSync, QA, Security, Dogfood, Release Manager, and Orchestrator pass.
-- T-076 closes only this execution/environment/process/state/redaction/trace slice. Primary Status stays primary_blocked and F-017-S002 remains incomplete pending resumed T-058.
+- Persisted config credentials are owner-only, and the installed permissive-umask setup smoke proves mode `0600`.
+- Live CLI/help/docs name the actual shared serve database path without claiming migration.
+- Focused tests, race, vet, installed config-mode smoke, and DocSync pass for the revised launch scope.
+- T-076 closes only this execution/environment/process/config-secret slice. Primary Status stays primary_blocked and F-017-S002 remains incomplete pending resumed T-058.
 
 ## No-Go
 
-Any default target mutation; host execution without acknowledgement; isolated fallback or containment overclaim; child credential exposure; cross-job or unowned-process kill; group/world-readable MARS state; raw tested credential form in persisted/displayed/exported output; in-repository trace export; purge mutation without apply; retention beyond 30 days; summary/recent/unrelated deletion; generalized sandbox/supervisor/DLP/storage-framework expansion; T-075 reopening; or any VERSION, CHANGELOG, tag, Release, settings, visibility, signing, publication, or announcement action.
+Any default target mutation; host execution without acknowledgement; isolated fallback or containment overclaim; child credential exposure; cross-job or unowned-process kill; group/world-readable persisted config credential; false shared-database path claim; generalized sandbox/supervisor/DLP/storage-framework expansion; T-075 reopening; or any VERSION, CHANGELOG, tag, Release, settings, visibility, signing, publication, or announcement action.

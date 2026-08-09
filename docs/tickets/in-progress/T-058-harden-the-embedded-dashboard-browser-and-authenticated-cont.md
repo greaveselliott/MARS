@@ -10,11 +10,11 @@ evidence_links:
   - docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md#result
 verified_by: "QA and Security source review PASS; Dogfood installed HTTP/SQLite lane PASS; real-browser DOM/network lane BLOCKED"
 owner: "engineer"
-last_attempt: "2026-07-12"
-blocker: "Source implementation and review pass, but the mandatory real-browser hostile-DOM and offline-network lane remains unconfirmed against an installed current candidate."
-blocked_by: [T-076]
+last_attempt: "2026-08-09: T-076 launch scope closed; installed browser replay resumed"
+blocker: "none"
+blocked_by: []
 trace_id: "docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md"
-next_action: "After T-076 closes, resume T-058 from backlog and run the linked report's hostile-DOM and no-external-request replay against the then-current installed candidate; keep F-010-S024 and F-017-S002 incomplete until it passes."
+next_action: "Run the linked report's hostile-DOM and no-external-request replay against the current installed candidate; keep F-010-S024 and F-017-S002 incomplete until it passes."
 dedupe_key: "open-source:dashboard-browser-control-security"
 metadata:
   classification: "foundation-owned,mirrored-doctrine"
