@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +21,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 type Bump string
@@ -78,10 +81,11 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 	if repoRoot == "" {
 		repoRoot = "."
 	}
-	absRepo, err := filepath.Abs(repoRoot)
+	root, err := repofs.Open(repoRoot)
 	if err != nil {
-		return Result{}, fmt.Errorf("release: resolve repo path: %w", err)
+		return Result{}, fmt.Errorf("release: open repository: %w", err)
 	}
+	absRepo := root.Abs()
 	if cfg.Now.IsZero() {
 		cfg.Now = time.Now()
 	}
@@ -89,7 +93,7 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 		cfg.Bump = BumpAuto
 	}
 
-	previous, err := readVersion(absRepo)
+	previous, err := readVersion(root)
 	if err != nil {
 		return Result{}, err
 	}
@@ -128,7 +132,7 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 		return result, nil
 	}
 
-	files, err := writeReleaseFiles(absRepo, next, entry)
+	files, err := writeReleaseFiles(root, next, entry)
 	if err != nil {
 		return Result{}, err
 	}
@@ -136,9 +140,9 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 	return result, nil
 }
 
-func readVersion(repoRoot string) (SemVer, error) {
-	data, err := os.ReadFile(filepath.Join(repoRoot, "VERSION"))
-	if os.IsNotExist(err) {
+func readVersion(root *repofs.Root) (SemVer, error) {
+	data, err := root.ReadFile("VERSION")
+	if errors.Is(err, fs.ErrNotExist) {
 		return SemVer{}, nil
 	}
 	if err != nil {
@@ -652,54 +656,91 @@ func sentence(value string) string {
 	return strings.ToUpper(value[:1]) + value[1:]
 }
 
-func writeReleaseFiles(repoRoot string, next SemVer, entry string) ([]string, error) {
+func writeReleaseFiles(root *repofs.Root, next SemVer, entry string) ([]string, error) {
 	var updated []string
-	versionPath := filepath.Join(repoRoot, "VERSION")
-	if err := os.WriteFile(versionPath, []byte(next.String()+"\n"), 0o644); err != nil {
+	if err := writeReleaseRepositoryFile(root, "VERSION", []byte(next.String()+"\n"), true); err != nil {
 		return nil, fmt.Errorf("release: write VERSION: %w", err)
 	}
 	updated = append(updated, "VERSION")
 
-	if err := updateBuildInfoVersion(repoRoot, next); err != nil {
+	buildInfoUpdated, err := updateBuildInfoVersion(root, next)
+	if err != nil {
 		return nil, err
 	}
-	if _, err := os.Stat(filepath.Join(repoRoot, "internal", "buildinfo", "version.go")); err == nil {
+	if buildInfoUpdated {
 		updated = append(updated, "internal/buildinfo/version.go")
 	}
 
-	changelogPath := filepath.Join(repoRoot, "CHANGELOG.md")
-	existing, err := os.ReadFile(changelogPath)
-	if err != nil && !os.IsNotExist(err) {
+	existing, err := root.ReadFile("CHANGELOG.md")
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("release: read CHANGELOG.md: %w", err)
 	}
 	nextChangelog := insertChangelogEntry(string(existing), entry)
-	if err := os.WriteFile(changelogPath, []byte(nextChangelog), 0o644); err != nil {
+	if err := writeReleaseRepositoryFile(root, "CHANGELOG.md", []byte(nextChangelog), true); err != nil {
 		return nil, fmt.Errorf("release: write CHANGELOG.md: %w", err)
 	}
 	updated = append(updated, "CHANGELOG.md")
 	return updated, nil
 }
 
-func updateBuildInfoVersion(repoRoot string, next SemVer) error {
-	path := filepath.Join(repoRoot, "internal", "buildinfo", "version.go")
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return nil
+func updateBuildInfoVersion(root *repofs.Root, next SemVer) (bool, error) {
+	const path = "internal/buildinfo/version.go"
+	data, err := root.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
 	}
 	if err != nil {
-		return fmt.Errorf("release: read internal/buildinfo/version.go: %w", err)
+		return false, fmt.Errorf("release: read internal/buildinfo/version.go: %w", err)
 	}
 	old := regexp.MustCompile(`(?m)^const DefaultVersion = "[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?"$`)
 	replacement := fmt.Sprintf(`DefaultVersion = "%s"`, next.String())
 	content := string(data)
 	matches := old.FindAllStringIndex(content, -1)
 	if len(matches) != 1 {
-		return fmt.Errorf("release: internal/buildinfo/version.go does not contain a DefaultVersion semantic version")
+		return false, fmt.Errorf("release: internal/buildinfo/version.go does not contain a DefaultVersion semantic version")
 	}
 	content = old.ReplaceAllString(content, "const "+replacement)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("release: write internal/buildinfo/version.go: %w", err)
+	if err := writeReleaseRepositoryFile(root, path, []byte(content), false); err != nil {
+		return false, fmt.Errorf("release: write internal/buildinfo/version.go: %w", err)
 	}
+	return true, nil
+}
+
+func writeReleaseRepositoryFile(root *repofs.Root, rel string, data []byte, allowCreate bool) error {
+	info, err := root.Stat(rel)
+	if err == nil {
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("release: replacement target %s is not a regular file", rel)
+		}
+		return root.AtomicWrite(rel, data, info.Mode().Perm())
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if !allowCreate {
+		return fs.ErrNotExist
+	}
+	file, err := root.CreateExclusive(rel, 0o644)
+	if err != nil {
+		return err
+	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = file.Close()
+			_ = root.Remove(rel)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("release: write new repository file: %w", err)
+	}
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("release: sync new repository file: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("release: close new repository file: %w", err)
+	}
+	cleanup = false
 	return nil
 }
 

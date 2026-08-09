@@ -19,6 +19,7 @@ import (
 func TestBackfillNotesRewritesHistoricalNarrativeAndPreservesBuckets(t *testing.T) {
 	t.Parallel()
 	dir, first, second := backfillFixture(t)
+	require.NoError(t, os.Chmod(filepath.Join(dir, "CHANGELOG.md"), 0o600))
 
 	result, err := BackfillNotes(context.Background(), BackfillConfig{RepoRoot: dir})
 	require.NoError(t, err)
@@ -40,6 +41,21 @@ func TestBackfillNotesRewritesHistoricalNarrativeAndPreservesBuckets(t *testing.
 	require.Contains(t, changelog, "## [0.1.0] - 2026-05-01")
 	require.Contains(t, changelog, "**cli:** Operators gain new capability: add first command.")
 	require.Contains(t, changelog, "- **cli:** Add first command ("+first.short+")")
+	requireReleaseFileMode(t, filepath.Join(dir, "CHANGELOG.md"), 0o600)
+}
+
+func TestBackfillNotesRejectsSymlinkedChangelogWithoutOutsideMutation(t *testing.T) {
+	repo := t.TempDir()
+	sentinel := filepath.Join(t.TempDir(), "CHANGELOG.md")
+	original := []byte("# Outside changelog\n")
+	require.NoError(t, os.WriteFile(sentinel, original, 0o600))
+	require.NoError(t, os.Symlink(sentinel, filepath.Join(repo, "CHANGELOG.md")))
+
+	_, err := BackfillNotes(context.Background(), BackfillConfig{RepoRoot: repo})
+	require.Error(t, err)
+	data, readErr := os.ReadFile(sentinel)
+	require.NoError(t, readErr)
+	require.Equal(t, original, data)
 }
 
 func TestBackfillNotesDryRunDoesNotWrite(t *testing.T) {

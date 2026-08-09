@@ -11,11 +11,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 var (
@@ -60,10 +60,11 @@ func BackfillNotes(ctx context.Context, cfg BackfillConfig) (BackfillResult, err
 	if repoRoot == "" {
 		repoRoot = "."
 	}
-	absRepo, err := filepath.Abs(repoRoot)
+	root, err := repofs.Open(repoRoot)
 	if err != nil {
-		return BackfillResult{}, fmt.Errorf("release backfill-notes: resolve repo path: %w", err)
+		return BackfillResult{}, fmt.Errorf("release backfill-notes: open repository: %w", err)
 	}
+	absRepo := root.Abs()
 	minVersion, hasMin, err := parseOptionalVersion("min-version", cfg.MinVersion)
 	if err != nil {
 		return BackfillResult{}, err
@@ -73,8 +74,7 @@ func BackfillNotes(ctx context.Context, cfg BackfillConfig) (BackfillResult, err
 		return BackfillResult{}, err
 	}
 
-	changelogPath := filepath.Join(absRepo, "CHANGELOG.md")
-	data, err := os.ReadFile(changelogPath)
+	data, err := root.ReadFile("CHANGELOG.md")
 	if err != nil {
 		return BackfillResult{}, fmt.Errorf("release backfill-notes: read CHANGELOG.md: %w", err)
 	}
@@ -154,7 +154,7 @@ func BackfillNotes(ctx context.Context, cfg BackfillConfig) (BackfillResult, err
 	if cfg.DryRun {
 		return result, nil
 	}
-	if err := os.WriteFile(changelogPath, []byte(result.Changelog), 0o644); err != nil {
+	if err := writeReleaseRepositoryFile(root, "CHANGELOG.md", []byte(result.Changelog), false); err != nil {
 		return BackfillResult{}, fmt.Errorf("release backfill-notes: write CHANGELOG.md: %w", err)
 	}
 	result.UpdatedFiles = []string{"CHANGELOG.md"}

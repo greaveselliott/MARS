@@ -16,15 +16,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/repofs"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPrepareGeneratesVersionAndChangelog(t *testing.T) {
 	t.Parallel()
 	dir := initGitRepo(t)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o600))
+	require.NoError(t, os.Chmod(filepath.Join(dir, "VERSION"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n"), 0o600))
+	require.NoError(t, os.Chmod(filepath.Join(dir, "CHANGELOG.md"), 0o600))
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "internal", "buildinfo"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "buildinfo", "version.go"), []byte("package buildinfo\n\nconst DefaultVersion = \"0.1.0\"\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "buildinfo", "version.go"), []byte("package buildinfo\n\nconst DefaultVersion = \"0.1.0\"\n"), 0o600))
+	require.NoError(t, os.Chmod(filepath.Join(dir, "internal", "buildinfo", "version.go"), 0o600))
 	gitCommit(t, dir, "chore: initial release state")
 
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "feature.txt"), []byte("feature"), 0o644))
@@ -45,10 +50,12 @@ func TestPrepareGeneratesVersionAndChangelog(t *testing.T) {
 	version, err := os.ReadFile(filepath.Join(dir, "VERSION"))
 	require.NoError(t, err)
 	require.Equal(t, "0.2.0\n", string(version))
+	requireReleaseFileMode(t, filepath.Join(dir, "VERSION"), 0o600)
 
 	buildInfo, err := os.ReadFile(filepath.Join(dir, "internal", "buildinfo", "version.go"))
 	require.NoError(t, err)
 	require.Contains(t, string(buildInfo), `DefaultVersion = "0.2.0"`)
+	requireReleaseFileMode(t, filepath.Join(dir, "internal", "buildinfo", "version.go"), 0o600)
 
 	changelog, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
 	require.NoError(t, err)
@@ -66,6 +73,7 @@ func TestPrepareGeneratesVersionAndChangelog(t *testing.T) {
 	require.Contains(t, string(changelog), "**api:** Add search endpoint")
 	require.Contains(t, string(changelog), "### Fixes")
 	require.Contains(t, string(changelog), "Handle empty results")
+	requireReleaseFileMode(t, filepath.Join(dir, "CHANGELOG.md"), 0o600)
 }
 
 func TestUpdateBuildInfoVersionReplacesDevelopmentPrerelease(t *testing.T) {
@@ -75,7 +83,11 @@ func TestUpdateBuildInfoVersionReplacesDevelopmentPrerelease(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte("package buildinfo\n\nconst DefaultVersion = \"0.69.0-dev.cf62513\"\n"), 0o644))
 
-	require.NoError(t, updateBuildInfoVersion(dir, SemVer{Major: 0, Minor: 69, Patch: 0}))
+	root, err := repofs.Open(dir)
+	require.NoError(t, err)
+	updated, err := updateBuildInfoVersion(root, SemVer{Major: 0, Minor: 69, Patch: 0})
+	require.NoError(t, err)
+	require.True(t, updated)
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 	require.Equal(t, "package buildinfo\n\nconst DefaultVersion = \"0.69.0\"\n", string(content))
@@ -126,13 +138,50 @@ func TestUpdateBuildInfoVersionRejectsMalformedDefault(t *testing.T) {
 			original := []byte("package buildinfo\n\n" + declaration + "\n")
 			require.NoError(t, os.WriteFile(path, original, 0o644))
 
-			err := updateBuildInfoVersion(dir, SemVer{Major: 0, Minor: 69, Patch: 0})
+			root, err := repofs.Open(dir)
+			require.NoError(t, err)
+			updated, err := updateBuildInfoVersion(root, SemVer{Major: 0, Minor: 69, Patch: 0})
 			require.ErrorContains(t, err, "does not contain a DefaultVersion semantic version")
+			require.False(t, updated)
 			content, readErr := os.ReadFile(path)
 			require.NoError(t, readErr)
 			require.Equal(t, original, content)
 		})
 	}
+}
+
+func TestPrepareRejectsSymlinkedControlledFilesWithoutOutsideMutation(t *testing.T) {
+	t.Run("VERSION", func(t *testing.T) {
+		repo := t.TempDir()
+		sentinel := filepath.Join(t.TempDir(), "VERSION")
+		original := []byte("0.1.0\n")
+		require.NoError(t, os.WriteFile(sentinel, original, 0o600))
+		require.NoError(t, os.Symlink(sentinel, filepath.Join(repo, "VERSION")))
+
+		_, err := Prepare(context.Background(), Config{RepoRoot: repo, Bump: BumpPatch})
+		require.Error(t, err)
+		data, readErr := os.ReadFile(sentinel)
+		require.NoError(t, readErr)
+		require.Equal(t, original, data)
+	})
+
+	t.Run("CHANGELOG.md", func(t *testing.T) {
+		repo := initGitRepo(t)
+		require.NoError(t, os.WriteFile(filepath.Join(repo, "VERSION"), []byte("0.1.0\n"), 0o644))
+		sentinel := filepath.Join(t.TempDir(), "CHANGELOG.md")
+		original := []byte("# Outside changelog\n")
+		require.NoError(t, os.WriteFile(sentinel, original, 0o600))
+		require.NoError(t, os.Symlink(sentinel, filepath.Join(repo, "CHANGELOG.md")))
+		gitCommit(t, repo, "chore: seed release state")
+		require.NoError(t, os.WriteFile(filepath.Join(repo, "feature.txt"), []byte("feature\n"), 0o644))
+		gitCommit(t, repo, "feat: add feature")
+
+		_, err := Prepare(context.Background(), Config{RepoRoot: repo, Bump: BumpMinor})
+		require.Error(t, err)
+		data, readErr := os.ReadFile(sentinel)
+		require.NoError(t, readErr)
+		require.Equal(t, original, data)
+	})
 }
 
 func TestRenderReleaseNarrativeUsesImpactWhyAndWhat(t *testing.T) {
@@ -333,4 +382,11 @@ func bytesTrimSpace(value []byte) []byte {
 		value = value[:len(value)-1]
 	}
 	return value
+}
+
+func requireReleaseFileMode(t *testing.T, path string, expected os.FileMode) {
+	t.Helper()
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, expected, info.Mode().Perm())
 }
