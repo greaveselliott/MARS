@@ -11,6 +11,7 @@ package docsync
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -162,6 +163,75 @@ package release
 	}
 	if !report.OK() {
 		t.Fatalf("unexpected findings: %#v", report.Findings)
+	}
+}
+
+func TestAuditRejectsSymlinkedSourceWithoutOutsideDisclosure(t *testing.T) {
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.go")
+	const outsideMetadata = "OUTSIDE_DOCSYNC_METADATA_SENTINEL"
+	if err := os.WriteFile(outside, []byte("/* MarsDocSync:\ndocs:\n- docs/"+outsideMetadata+".md\n*/\npackage outside\n"), 0o600); err != nil {
+		t.Fatalf("write outside source: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "internal", "example"), 0o755); err != nil {
+		t.Fatalf("mkdir source parent: %v", err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dir, "internal", "example", "outside.go")); err != nil {
+		t.Fatalf("symlink source: %v", err)
+	}
+
+	_, err := Audit(Config{RepoRoot: dir})
+	if err == nil {
+		t.Fatal("expected symlinked source to fail the audit")
+	}
+	if !strings.Contains(err.Error(), "symbolic link is not allowed: internal/example/outside.go") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(err.Error(), outside) || strings.Contains(err.Error(), outsideMetadata) {
+		t.Fatalf("error disclosed outside source details: %v", err)
+	}
+}
+
+func TestAuditTreatsSymlinkedReferencedDocAsMissing(t *testing.T) {
+	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, "main.go", `/*
+MarsDocSync:
+docs:
+- docs/guide.md
+*/
+package main
+`)
+	outside := filepath.Join(t.TempDir(), "guide.md")
+	original := []byte("OUTSIDE_DOCUMENT_SENTINEL\n")
+	if err := os.WriteFile(outside, original, 0o600); err != nil {
+		t.Fatalf("write outside doc: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "docs"), 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dir, "docs", "guide.md")); err != nil {
+		t.Fatalf("symlink doc: %v", err)
+	}
+
+	report, err := Audit(Config{RepoRoot: dir})
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	found := false
+	for _, finding := range report.Findings {
+		if finding.Path == "main.go" && finding.Message == "metadata references missing doc docs/guide.md" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing symlinked-doc finding: %#v", report.Findings)
+	}
+	after, err := os.ReadFile(outside)
+	if err != nil {
+		t.Fatalf("read outside doc: %v", err)
+	}
+	if string(after) != string(original) {
+		t.Fatalf("outside sentinel changed: %q", string(after))
 	}
 }
 

@@ -11,12 +11,15 @@ package docsync
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 type Config struct {
@@ -57,19 +60,18 @@ func Audit(cfg Config) (Report, error) {
 	if root == "" {
 		root = "."
 	}
-	absRoot, err := filepath.Abs(root)
+	repoRoot, err := repofs.Open(root)
 	if err != nil {
-		return Report{}, fmt.Errorf("docsync: resolve repo path: %w", err)
+		return Report{}, fmt.Errorf("docsync: open repository: %w", err)
 	}
-	files, err := SourceFiles(absRoot)
+	files, err := SourceFiles(repoRoot)
 	if err != nil {
 		return Report{}, err
 	}
-	foundationRoot := isFoundationHarnessRoot(absRoot)
+	foundationRoot := isFoundationHarnessRoot(repoRoot)
 	var report Report
 	for _, rel := range files {
-		abs := filepath.Join(absRoot, filepath.FromSlash(rel))
-		data, err := os.ReadFile(abs)
+		data, err := repoRoot.ReadFile(filepath.FromSlash(rel))
 		if err != nil {
 			return Report{}, fmt.Errorf("docsync: read %s: %w", rel, err)
 		}
@@ -88,7 +90,7 @@ func Audit(cfg Config) (Report, error) {
 				report.Findings = append(report.Findings, Finding{Path: rel, Message: "metadata references non-documentation path " + doc})
 				continue
 			}
-			if _, err := os.Stat(filepath.Join(absRoot, filepath.FromSlash(doc))); err != nil {
+			if _, err := repoRoot.Stat(filepath.FromSlash(doc)); err != nil {
 				report.Findings = append(report.Findings, Finding{Path: rel, Message: "metadata references missing doc " + doc})
 			}
 		}
@@ -101,8 +103,8 @@ func Audit(cfg Config) (Report, error) {
 	return report, nil
 }
 
-func isFoundationHarnessRoot(root string) bool {
-	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
+func isFoundationHarnessRoot(root *repofs.Root) bool {
+	data, err := root.ReadFile("go.mod")
 	if err == nil {
 		for _, line := range strings.Split(string(data), "\n") {
 			if strings.TrimSpace(line) == "module github.com/greaveselliott/mars" {
@@ -110,18 +112,18 @@ func isFoundationHarnessRoot(root string) bool {
 			}
 		}
 	}
-	if _, err := os.Stat(filepath.Join(root, "cmd", "mars", "main.go")); err != nil {
+	if _, err := root.Stat(filepath.Join("cmd", "mars", "main.go")); err != nil {
 		return false
 	}
-	if _, err := os.Stat(filepath.Join(root, "internal", "scanner", "init.go")); err != nil {
+	if _, err := root.Stat(filepath.Join("internal", "scanner", "init.go")); err != nil {
 		return false
 	}
 	return true
 }
 
-func SourceFiles(root string) ([]string, error) {
+func SourceFiles(root *repofs.Root) ([]string, error) {
 	var files []string
-	entries, err := os.ReadDir(root)
+	entries, err := fs.ReadDir(root, ".")
 	if err != nil {
 		return nil, fmt.Errorf("docsync: read repo root: %w", err)
 	}
@@ -130,34 +132,44 @@ func SourceFiles(root string) ([]string, error) {
 			continue
 		}
 		if isSourceExtension(filepath.Ext(entry.Name())) {
+			if entry.Type()&fs.ModeSymlink != 0 {
+				return nil, fmt.Errorf("docsync: symbolic link is not allowed: %s", filepath.ToSlash(entry.Name()))
+			}
 			files = append(files, filepath.ToSlash(entry.Name()))
 		}
 	}
 	sourceRoots := []string{"cmd", "internal", "pkg", "examples", "src", "app", "pages", "public", "web", "static"}
 	for _, sourceRoot := range sourceRoots {
-		absSourceRoot := filepath.Join(root, filepath.FromSlash(sourceRoot))
-		if _, err := os.Stat(absSourceRoot); os.IsNotExist(err) {
+		info, err := root.Lstat(filepath.FromSlash(sourceRoot))
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		err := filepath.WalkDir(absSourceRoot, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return nil, fmt.Errorf("docsync: inspect source root %s: %w", sourceRoot, err)
+		}
+		if info.Mode()&fs.ModeSymlink != 0 {
+			return nil, fmt.Errorf("docsync: symbolic link is not allowed: %s", sourceRoot)
+		}
+		err = fs.WalkDir(root, sourceRoot, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if entry.IsDir() {
-				switch entry.Name() {
-				case ".git", "build", "dist", "vendor":
-					return filepath.SkipDir
+			if isDocSyncSkippedDir(entry.Name()) {
+				if entry.IsDir() {
+					return fs.SkipDir
 				}
+				return nil
+			}
+			if entry.Type()&fs.ModeSymlink != 0 {
+				return fmt.Errorf("docsync: symbolic link is not allowed: %s", filepath.ToSlash(path))
+			}
+			if entry.IsDir() {
 				return nil
 			}
 			if !isSourceExtension(filepath.Ext(path)) {
 				return nil
 			}
-			rel, err := filepath.Rel(root, path)
-			if err != nil {
-				return err
-			}
-			files = append(files, filepath.ToSlash(rel))
+			files = append(files, filepath.ToSlash(path))
 			return nil
 		})
 		if err != nil {
@@ -166,6 +178,15 @@ func SourceFiles(root string) ([]string, error) {
 	}
 	sort.Strings(files)
 	return files, nil
+}
+
+func isDocSyncSkippedDir(name string) bool {
+	switch name {
+	case ".git", "build", "dist", "vendor":
+		return true
+	default:
+		return false
+	}
 }
 
 func isSourceExtension(ext string) bool {
