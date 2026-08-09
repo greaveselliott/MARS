@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars/internal/integrations"
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 const (
@@ -84,13 +85,17 @@ func mirrorIssue(ctx context.Context, repo Repository, issue Issue) (MirrorResul
 		result.Reason = reason
 		return result, nil
 	}
+	root, err := repofs.Open(repo.Path)
+	if err != nil {
+		return result, fmt.Errorf("jira: open repository: %w", err)
+	}
 
 	existing, err := findTicketByJiraKey(repo.Path, issue.Key)
 	if err != nil {
 		return result, err
 	}
 	if existing == "" {
-		rel, err := createMirroredTicket(repo.Path, issue)
+		rel, err := createMirroredTicket(root, repo.Path, issue)
 		if err != nil {
 			return result, err
 		}
@@ -100,7 +105,7 @@ func mirrorIssue(ctx context.Context, repo Repository, issue Issue) (MirrorResul
 		return result, nil
 	}
 
-	rel, err := reconcileMirroredTicket(repo.Path, existing, issue)
+	rel, err := reconcileMirroredTicket(root, existing, issue)
 	if err != nil {
 		return result, err
 	}
@@ -224,7 +229,7 @@ func findTicketByJiraKey(repoRoot, jiraKey string) (string, error) {
 	return matches[0], nil
 }
 
-func createMirroredTicket(repoRoot string, issue Issue) (string, error) {
+func createMirroredTicket(root *repofs.Root, repoRoot string, issue Issue) (string, error) {
 	id, err := nextTicketID(repoRoot)
 	if err != nil {
 		return "", err
@@ -235,8 +240,7 @@ func createMirroredTicket(repoRoot string, issue Issue) (string, error) {
 	}
 	filename := fmt.Sprintf("%s-%s.md", id, slugify(title))
 	rel := filepath.ToSlash(filepath.Join("docs", "tickets", "backlog", filename))
-	abs := filepath.Join(repoRoot, filepath.FromSlash(rel))
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+	if err := root.MkdirAll("docs/tickets/backlog", 0o755); err != nil {
 		return "", fmt.Errorf("jira: create ticket dir: %w", err)
 	}
 	var b strings.Builder
@@ -252,17 +256,35 @@ func createMirroredTicket(repoRoot string, issue Issue) (string, error) {
 	b.WriteString(scopedMarker)
 	b.WriteString("\nNot scoped yet. `cto-weekly` owns scoping after board selection.\n\n")
 	b.WriteString("## Agent Notes\n\n")
-	if err := os.WriteFile(abs, []byte(b.String()), 0o644); err != nil {
-		return "", fmt.Errorf("jira: write ticket %s: %w", abs, err)
+	file, err := root.CreateExclusive(filepath.FromSlash(rel), 0o644)
+	if err != nil {
+		return "", fmt.Errorf("jira: write ticket %s: %w", rel, err)
 	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = file.Close()
+			_ = root.Remove(filepath.FromSlash(rel))
+		}
+	}()
+	if _, err := file.Write([]byte(b.String())); err != nil {
+		return "", fmt.Errorf("jira: write ticket %s: %w", rel, err)
+	}
+	if err := file.Sync(); err != nil {
+		return "", fmt.Errorf("jira: sync ticket %s: %w", rel, err)
+	}
+	if err := file.Close(); err != nil {
+		return "", fmt.Errorf("jira: close ticket %s: %w", rel, err)
+	}
+	cleanup = false
 	return rel, nil
 }
 
-func reconcileMirroredTicket(repoRoot, rel string, issue Issue) (string, error) {
-	abs := filepath.Join(repoRoot, filepath.FromSlash(rel))
-	data, err := os.ReadFile(abs)
+func reconcileMirroredTicket(root *repofs.Root, rel string, issue Issue) (string, error) {
+	rel = filepath.FromSlash(rel)
+	data, err := root.ReadFile(rel)
 	if err != nil {
-		return "", fmt.Errorf("jira: read mirrored ticket %s: %w", abs, err)
+		return "", fmt.Errorf("jira: read mirrored ticket %s: %w", filepath.ToSlash(rel), err)
 	}
 	updated, err := updateFrontmatter(data, jiraFrontmatter(issue))
 	if err != nil {
@@ -270,12 +292,19 @@ func reconcileMirroredTicket(repoRoot, rel string, issue Issue) (string, error) 
 	}
 	updated = updateJiraSection(updated, issue)
 	if bytes.Equal(data, updated) {
-		return rel, nil
+		return filepath.ToSlash(rel), nil
 	}
-	if err := os.WriteFile(abs, updated, 0o644); err != nil {
-		return "", fmt.Errorf("jira: update mirrored ticket %s: %w", abs, err)
+	info, err := root.Stat(rel)
+	if err != nil {
+		return "", fmt.Errorf("jira: inspect mirrored ticket %s: %w", filepath.ToSlash(rel), err)
 	}
-	return rel, nil
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("jira: mirrored ticket %s is not a regular file", filepath.ToSlash(rel))
+	}
+	if err := root.AtomicWrite(rel, updated, info.Mode().Perm()); err != nil {
+		return "", fmt.Errorf("jira: update mirrored ticket %s: %w", filepath.ToSlash(rel), err)
+	}
+	return filepath.ToSlash(rel), nil
 }
 
 func nextTicketID(repoRoot string) (string, error) {

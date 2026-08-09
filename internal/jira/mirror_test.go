@@ -122,6 +122,13 @@ func TestMirrorIssueCreatesAndReconcilesSingleBacklogTicket(t *testing.T) {
 		t.Fatalf("jira ingestion must not enqueue LLM jobs, got %d", result.LLMJobsEnqueued)
 	}
 	ticketPath := filepath.Join(repoRoot, filepath.FromSlash(result.TicketPath))
+	ticketInfo, err := os.Stat(ticketPath)
+	if err != nil {
+		t.Fatalf("stat created ticket: %v", err)
+	}
+	if got := ticketInfo.Mode().Perm(); got != 0o644 {
+		t.Fatalf("created ticket mode = %o, want 644", got)
+	}
 	content := readFile(t, ticketPath)
 	for _, want := range []string{
 		`jira_key: "DEMO-10"`,
@@ -170,6 +177,59 @@ func TestMirrorIssueCreatesAndReconcilesSingleBacklogTicket(t *testing.T) {
 		if !strings.Contains(content, want) {
 			t.Fatalf("reconciled ticket missing %q:\n%s", want, content)
 		}
+	}
+}
+
+func TestMirrorIssueCreateRejectsSymlinkedBacklogParent(t *testing.T) {
+	repoRoot := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repoRoot, "docs", "tickets"), 0o755); err != nil {
+		t.Fatalf("mkdir ticket parent: %v", err)
+	}
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "keep.txt")
+	if err := os.WriteFile(sentinel, []byte("unchanged\n"), 0o600); err != nil {
+		t.Fatalf("write sentinel: %v", err)
+	}
+	if err := os.Symlink(outside, filepath.Join(repoRoot, "docs", "tickets", "backlog")); err != nil {
+		t.Fatalf("symlink backlog: %v", err)
+	}
+	cfg := boardDrivenConfig(filepath.Base(repoRoot))
+
+	result, err := MirrorIssue(context.Background(), []Repository{{ID: "repo-1", Path: repoRoot, Config: cfg}}, Issue{
+		Key: "DEMO-901", Project: "DEMO", Summary: "Contained ticket",
+	})
+	if err == nil {
+		t.Fatalf("expected symlinked backlog rejection, got %#v", result)
+	}
+	if got := readFile(t, sentinel); got != "unchanged\n" {
+		t.Fatalf("outside sentinel changed: %q", got)
+	}
+}
+
+func TestMirrorIssueReconcileRejectsSymlinkedTicketLeaf(t *testing.T) {
+	repoRoot := t.TempDir()
+	backlog := filepath.Join(repoRoot, "docs", "tickets", "backlog")
+	if err := os.MkdirAll(backlog, 0o755); err != nil {
+		t.Fatalf("mkdir backlog: %v", err)
+	}
+	sentinel := filepath.Join(t.TempDir(), "outside-ticket.md")
+	original := "---\nid: T-901\njira_key: \"DEMO-901\"\n---\n\n# Outside ticket\n"
+	if err := os.WriteFile(sentinel, []byte(original), 0o600); err != nil {
+		t.Fatalf("write sentinel: %v", err)
+	}
+	if err := os.Symlink(sentinel, filepath.Join(backlog, "T-901-outside-ticket.md")); err != nil {
+		t.Fatalf("symlink ticket: %v", err)
+	}
+	cfg := boardDrivenConfig(filepath.Base(repoRoot))
+
+	result, err := MirrorIssue(context.Background(), []Repository{{ID: "repo-1", Path: repoRoot, Config: cfg}}, Issue{
+		Key: "DEMO-901", Project: "DEMO", Summary: "Updated ticket",
+	})
+	if err == nil {
+		t.Fatalf("expected symlinked ticket rejection, got %#v", result)
+	}
+	if got := readFile(t, sentinel); got != original {
+		t.Fatalf("outside sentinel changed:\n%s", got)
 	}
 }
 
@@ -306,8 +366,11 @@ SCOPED BLOCK MUST STAY BYTE IDENTICAL
 - Engineer note with exact spacing.
 - QA note with evidence.
 `
-	if err := os.WriteFile(ticketPath, []byte(original), 0o644); err != nil {
+	if err := os.WriteFile(ticketPath, []byte(original), 0o600); err != nil {
 		t.Fatalf("write ticket: %v", err)
+	}
+	if err := os.Chmod(ticketPath, 0o600); err != nil {
+		t.Fatalf("chmod ticket: %v", err)
 	}
 	ownedBefore := harnessOwnedSlice(original)
 	evidenceBefore := frontmatterLines(original, []string{
@@ -367,6 +430,13 @@ SCOPED BLOCK MUST STAY BYTE IDENTICAL
 		if !strings.Contains(updated, want) {
 			t.Fatalf("updated ticket missing %q:\n%s", want, updated)
 		}
+	}
+	info, err := os.Stat(ticketPath)
+	if err != nil {
+		t.Fatalf("stat reconciled ticket: %v", err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("reconciled ticket mode = %o, want 600", got)
 	}
 }
 
