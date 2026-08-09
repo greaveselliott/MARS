@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-058 — resume the installed dashboard browser and authenticated-control proof
+**Current Ticket:** None — T-058 passed; create T-077 through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,9 +13,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — T-074 through T-076 pass; T-058's installed browser proof remains, while F-017-S001 is independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** T-076 passed through exact commits `9191182601d79b996f1848a1e867e50b7d6eaf1c`, `5c23f536fadd9ab18694e3f46ed9b10ca96594da`, `473b829efe865630f4942b55af9e0108d7529d0c`, `9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708`, and `31b00b1ce01cce10df81fc0769f6bdbbc94ff1b5`; resume only T-058's hostile-DOM and no-external-request browser replay.
-**Learning Or MVP Outcome:** T-076 closes the reachable execution-profile, child-environment, job-owned cleanup, persisted-config credential, and public database-path truth gaps without claiming same-user containment. Broader local state, redaction, export, and retention work is deferred rather than blocking source publication.
+**Current Failing Scenario:** F-017-S003 — T-077 has not yet been created; F-017-S001 is independently blocked on T-073's owner/legal hold.
+**Walking Skeleton Slice:** T-058 passed at exact pushed commit `57d7851d9c82975256761b0134d20e91382e9bcd`: the corrected installed in-app-browser replay proves hostile runtime text inert, all observed assets same-origin, login bounded, and logout free of cached privileged DOM.
+**Learning Or MVP Outcome:** T-074 through T-076 plus resumed T-058 close F-017-S002. Broader local state, redaction, export, and retention work remains deferred rather than blocking source publication.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Resume T-058 and run only the linked installed hostile-DOM and no-external-request browser replay.
+- **Next Primary Action:** Create T-077 through `ticket_create` and prove anonymous exact-tag bootstrap/setup while the repository remains private.
 
 ## Starting Baseline
 
@@ -45,7 +45,7 @@
 | Current hosted-surface counts remain stable | T-072 acquisition, UI confirmation, and post-evidence run delta reconcile with zero scan error or unresolved secret candidate | 1.0 | Complete — T-072 |
 | Elliott's authority can be converted into a complete publication attestation | Owner stated authority; exact prompt/AI/automation/media and conflict clauses remain unsigned | 0.70 | T-073 committed owner attestation and provenance review |
 | The `MARS` product name can be retained for launch | Owner directed retention; a live U.S. exact-word registration directly overlaps AI agent and process-automation services and UK/EU/WIPO also contain exact software marks | 0.10 | Obtain qualified trademark counsel's written disposition for the intended use and launch territories; absent/adverse evidence is `no_go` |
-| No reachable runtime P0/P1 remains after scheduled hardening | Existing webhook/dashboard evidence is partial | 0.60 | T-074 through T-076 and resumed T-058 |
+| No reachable runtime P0/P1 remains after scheduled hardening | T-074 through T-076 and the exact-current T-058 browser replay pass | 1.0 | Complete — F-017-S002 |
 | Exact-tag Go/SumDB bootstrap is non-circular on clean macOS/Linux | Design is selected; fresh packaged lifecycle proof is absent | 0.65 | T-077 clean-HOME macOS/Linux lifecycle |
 | GoReleaser v2.17.1, Syft v1.50.0, and Cosign v3.0.6 can satisfy the producer gate | Official versions are selected; exact admission is pending | 0.80 | T-078 provenance, binary scan, and two-root proof |
 | Required GitHub controls can be configured with owner authority | Owner has repository administration; controls were disabled on 2026-08-08 | 0.80 | T-079 disposable rehearsal and private configuration |
@@ -85,7 +85,7 @@ recreated.
 | 4 | T-074 — close remaining network entry points | F-017-S002 | T-072 and T-073 machine checkpoints |
 | 5 | T-075 — descriptor-safe repository filesystem and secret scanning | F-017-S002 | T-074 |
 | 6 | T-076 — execution profiles, environment, state, and traces | F-017-S002 | T-075 |
-| 7 | Resume T-058 — current-candidate browser proof | F-017-S002 and F-010-S024 | T-076 |
+| 7 | Resume T-058 — passed 2026-08-09 | F-017-S002 and F-010-S024 | T-076 |
 | 8 | T-077 — anonymous access, trusted bootstrap, and setup | F-017-S003 | T-058 |
 | 9 | T-078 — production signing and legacy-asset sanitation | F-017-S003 and F-018-S004 | T-077 |
 | 10 | T-079 — community, fork-safe CI, Pages, and GitHub controls | F-017-S004 | T-078 |
@@ -274,15 +274,15 @@ and installed Dogfood passed. The four build SHA-256 values are
 `5113f1b119a35c46a90fbb93a28877c61213527ee163319960961717ac7d290c`, and
 `844cd84754cc55ffd426a657549b104a89ce2b02a8dbab5ab47b739379bace06`.
 T-075 passes with QA, Security, Dogfood, Release Manager, and Orchestrator GO;
-T-076 later passes as recorded below, so F-017-S002 remains incomplete only
-pending resumed T-058.
+T-076 later passed as recorded below, and resumed T-058 subsequently passed at
+`57d7851`, so F-017-S002 is complete.
 
 No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,
 settings, visibility, or publication mutation is authorized. T-075 cannot
 close F-017-S002 by itself.
 
-## Current Walking Skeleton — T-076
+## Completed Walking Skeleton — T-076 And Resumed T-058
 
 T-076 was created through `ticket_create` after bounded CTO-weekly, QA, and
 Security review at clean synchronized `c04a172`. Four conventional checkpoints
@@ -359,7 +359,7 @@ The exact B2 gates were
 findings, and `git diff --check`. QA, Security, and Orchestrator returned GO.
 
 The final launch-scope config correction is complete at exact pushed commit
-`9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708`: setup and config persistence now
+`9eb3f96d1de9f91ba54ee4f2dd70d0cdf98b8708`: setup and config persistence
 create or tighten regular config leaves to `0600`, reject links/non-regular
 entries, and preserve custom parent modes. Focused config/setup normal, race,
 vet, formatting, and diff gates pass. An installed clean Go 1.26.5 candidate
@@ -372,7 +372,13 @@ serve database path claim to the runtime's actual legacy
 T-076 is complete under the owner's risk-proportionate launch governor.
 Broader database/log permission normalization, centralized redaction, trace
 export, purge, and retention are deferred post-launch product hardening, not
-publication gates. T-058 is current and F-017-S002 remains incomplete. These
+publication gates. T-058 then passed at exact pushed commit
+`57d7851d9c82975256761b0134d20e91382e9bcd`: the installed in-app browser
+confirmed hostile runtime data as inert text and eight observed assets from the
+exact loopback origin with zero external origins or console errors. The replay
+found and corrected one cached-DOM logout disclosure; the corrected logout
+returned to an anonymous page with no privileged rows or target data.
+F-010-S024 and F-017-S002 pass. These
 changes did not alter version, legal/rights or installed-App disposition,
 Release, settings, visibility, signing, publication, or announcement state.
 The repository remains private at `VERSION=0.68.49` and Primary Status remains
@@ -384,8 +390,8 @@ The repository remains private at `VERSION=0.68.49` and Primary Status remains
 - **T-073:** Authority, predecessor/AI/media/model/llama.cpp/dependency provenance, name searches, notices, product claims, and `preserve_audited_history` disposition are complete with no deferred finding.
 - **T-074:** GitHub App callback and telemetry collection are literal-loopback, bounded, replay-safe, and fail closed.
 - **T-075 — passed 2026-08-09:** All named model/agent-controlled repository paths use the descriptor-relative no-follow interface; index-only and force-added secrets are scanned without reproducing values; four builds and installed Dogfood pass.
-- **T-076:** Observer is non-mutating by default; host requires acknowledgement; isolated is unavailable; child environments, owned processes, state permissions, centralized redaction, export, purge, and retention pass.
-- **T-058:** A real browser proves hostile DOM/SSE strings inert, browser controls protected, and embedded assets fully offline against an installed current candidate.
+- **T-076 — passed 2026-08-09:** Observer is non-mutating by default; host requires acknowledgement; isolated is unavailable; child environments, job-owned processes, persisted-config credential modes, and shared-database path truth pass. Broader local-state, redaction, export, purge, and retention work is deferred.
+- **T-058 — passed 2026-08-09:** A real browser proved hostile runtime strings inert, browser controls protected, all observed assets same-origin, and logout free of cached privileged DOM against exact current commit `57d7851`.
 - **T-077:** Anonymous-first access, clear-local, exact-tag bootstrap, license-aware setup, and clean macOS/Linux operation without GitHub credentials pass.
 - **T-078:** The protected exact-ten signing/publishing workflow passes; all 500 exact legacy assets and exact obsolete hosted objects are removed from active surfaces; immutable releases are enabled only after reconciliation.
 - **T-079:** Community files, fork-safe CI, CodeQL/dependency/security controls, rulesets, Pages, Issues, Discussions, and hostile-fork rehearsal pass.

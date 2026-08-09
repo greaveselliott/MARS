@@ -8,13 +8,13 @@ bdd_scenarios: ["F-017-S002", "F-010-S024"]
 end_to_end_evidence: required
 evidence_links:
   - docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md#result
-verified_by: "QA and Security source review PASS; Dogfood installed HTTP/SQLite lane PASS; real-browser DOM/network lane BLOCKED"
+verified_by: "QA and Security source review PASS; Dogfood installed HTTP/SQLite and real-browser lanes PASS; Security and Orchestrator GO"
 owner: "engineer"
-last_attempt: "2026-08-09: T-076 launch scope closed; installed browser replay resumed"
+last_attempt: "2026-08-09: exact current candidate passed the corrected installed in-app-browser replay"
 blocker: "none"
 blocked_by: []
 trace_id: "docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md"
-next_action: "Run the linked report's hostile-DOM and no-external-request replay against the current installed candidate; keep F-010-S024 and F-017-S002 incomplete until it passes."
+next_action: "Complete; create T-077 through ticket_create while the repository remains private."
 dedupe_key: "open-source:dashboard-browser-control-security"
 metadata:
   classification: "foundation-owned,mirrored-doctrine"
@@ -105,10 +105,9 @@ Update dashboard design/API/operations/observability/CLI/quickstart/troubleshoot
 - Vendored assets match pinned hashes/licenses and the dashboard works with outbound networking disabled.
 - Full tests, race, vet, fuzz, vulnerability, DocSync, docs consistency, link/forbidden-content, and diff gates pass.
 - Installed AD-284 static-browser clean target plus real browser negative/positive smoke records docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md.
-- F-010-S024 remains incomplete until the real-browser lane passes;
-  F-017-S002 remains independently incomplete because later runtime P0 slices
-  are still scheduled; F-010-S012 remains the separate future TanStack
-  contract.
+- F-010-S024 and F-017-S002 complete only after the installed real-browser lane
+  and the later runtime slices pass; F-010-S012 remains the separate future
+  TanStack contract.
 
 ## Stop Conditions
 
@@ -208,14 +207,46 @@ Stop if any HTTP mutation is anonymous, any hostile Host/cross-origin request or
 - QA and Security success is supporting source evidence only and does not
   substitute for the blocked installed real-browser lane.
 
-## Orchestrator Disposition — 2026-07-12
+## Historical Orchestrator Disposition — 2026-07-12
 
-T-058 remains in backlog with its source implementation and reviewer gates
+At that checkpoint T-058 remained in backlog with its source implementation and reviewer gates
 complete; the installed static-browser HTTP/SQLite security matrix also passes
 as historical supporting evidence.
 F-010-S024 cannot pass until an available in-app browser confirms hostile
 strings remain inert in the real DOM and the vendored dashboard renders with
 outbound networking disabled and zero external request attempts.
 Resume only after T-076 against the then-current installed candidate.
-`primary_blocked`, F-010-S024, and F-017-S002 remain unchanged until that replay
-passes.
+`primary_blocked`, F-010-S024, and F-017-S002 remained unchanged until that
+replay passed. The final installed evidence below supersedes this historical
+disposition.
+
+## Final Installed Browser Evidence — 2026-08-09
+
+- Exact pushed source commit
+  `57d7851d9c82975256761b0134d20e91382e9bcd`, Go 1.26.5, and
+  installed-candidate SHA-256
+  `ef5258e3b135c1e03a53635655b565c0e069fd16a3ca67af7631c76f9fa9e2bc`
+  identify the corrected replay candidate.
+- The first real-browser replay found one bounded foundation defect: successful
+  logout removed server authority but left previously rendered privileged job
+  rows in the DOM. Commit `57d7851` now reloads the current same-origin page
+  after successful logout; `go test ./internal/dashboard -count=1` and the
+  adjacent logout/static regression pass, and Security returned GO.
+- Against the corrected installed candidate, anonymous DOMs showed no target
+  name/path or privileged controls; authenticated login worked and cleared the
+  submitted secret field; hostile runtime data appeared only as text with no
+  executing marker, handler node, or nested SVG.
+- The real-browser asset inventory observed eight assets, all from the exact
+  loopback page origin, with zero external origins and zero browser console
+  warnings/errors. Logout reloaded to the anonymous page with no privileged job
+  cells, hostile marker, or target data retained.
+- Observer startup created two expected deferred-model failures and two
+  aggregate telemetry rows in the isolated database, zero traces, and no target
+  worktree change. Both listeners stopped and all ephemeral files were removed.
+  No credential, cookie, CSRF token, or hostile fixture is retained.
+
+T-058 and F-010-S024 pass. Together with T-074 through T-076, this closes
+F-017-S002 under the owner governor. The repository remains private at
+`VERSION=0.68.49` and Primary Status `primary_blocked`; T-073 and T-077 through
+T-081 remain launch blockers, and this ticket grants no release, settings,
+visibility, signing, publication, or announcement authority.

@@ -14,13 +14,10 @@ P0s are closed; public artifacts are licensed, signed, and traceable.
 **Primary Status:** `primary_blocked`
 **Current Primary Blocker:** Legal ownership/licensing clearance and the
 remaining F-017 runtime, release, public-access, community, audit, and cutover
-gates are incomplete. T-058's installed HTTP/SQLite boundary passes, but the
-required in-app browser surface is unavailable, so real DOM hostile-string and
-offline browser-network acceptance remain unconfirmed.
-**Next Primary Action:** Open the in-app browser and rerun the final hostile-DOM
-and no-external-request matrix against installed private v0.68.48; keep T-058
-and F-010-S024 incomplete until that browser evidence passes. F-017-S002 remains
-independently incomplete across later runtime slices.
+gates are incomplete. T-058 and F-010-S024 pass; T-073's owner/legal hold and
+T-077 through T-081 remain launch blockers.
+**Next Primary Action:** Create T-077 through `ticket_create` and prove the
+anonymous bootstrap/setup lifecycle while the repository remains private.
 **Supporting Evidence:** Private v0.68.48 is published with nine local and nine
 remote assets verified and a clean rolling release audit. Its exact installed
 binary passed the clean-target loopback, anonymous/authenticated HTTP, request
@@ -30,8 +27,7 @@ source implementation.
 
 ## Result
 
-**T-058 Dogfood result: BLOCKED (installed HTTP/SQLite lane PASS; mandatory
-real-browser lane BLOCKED).**
+**T-058 Dogfood result: PASS.**
 
 The earlier loopback-bind and clean-seed blockers are cleared. Installed
 private v0.68.48 bound only to two explicit loopback sockets and ran against a
@@ -41,15 +37,47 @@ Host/Origin/session/CSRF/method/type/body/value/rate requests, and left the job
 count at zero. HTTP warm restart closed the active SSE stream and invalidated
 the session; logout invalidated a replacement session.
 
-The required in-app browser connection was initialized and troubleshot through
-the mandated browser surface, but browser discovery returned an empty
-inventory. No unrelated browser backend or source-only simulation was used.
-Consequently, this report does **not** claim that hostile runtime strings were
-observed as inert text in a real DOM, that the vendored assets rendered with
-outbound networking disabled, or that a real browser emitted zero external
-requests. Those are the sole remaining T-058 Dogfood blockers.
+The 2026-08-09 replay used the in-app browser against the exact current private
+candidate. It confirmed hostile runtime text remained inert, every observed
+asset was same-origin, login cleared the submitted secret field, and logout
+returned to an anonymous page without cached privileged DOM. The replay found
+one concrete cached-DOM disclosure before completion; commit
+`57d7851d9c82975256761b0134d20e91382e9bcd` fixed it with a same-origin reload
+after successful logout, and the corrected candidate passed the same browser
+case.
 
-## Resumed Installed Run — 2026-07-12 21:31 BST
+## Final Installed Browser Replay — 2026-08-09
+
+- **Source/candidate:** exact pushed commit
+  `57d7851d9c82975256761b0134d20e91382e9bcd`; Go 1.26.5;
+  `vcs.modified=false`; installed-candidate SHA-256
+  `ef5258e3b135c1e03a53635655b565c0e069fd16a3ca67af7631c76f9fa9e2bc`.
+- **Selected matrix:** one initialized AD-284 static-browser target, one
+  isolated SQLite database, and explicit loopback dashboard/control listeners.
+- **Observer boundary:** before login and after logout, the real DOM exposed no
+  target name, absolute target path, repository controls, or privileged job
+  cells. Login succeeded, the submitted secret field was empty afterward, and
+  privileged repository controls appeared only for the authenticated session.
+- **Hostile DOM:** a synthetic runtime value was visible in the throughput
+  table as text. The execution marker remained unset; no handler-bearing node
+  and no nested SVG appeared in the row.
+- **Page assets/no external origin:** the browser page-asset inventory contained eight assets,
+  all from `http://127.0.0.1:19890`; external origins were zero. Browser console
+  warning/error count was zero, including zero external-source errors.
+- **Logout regression and correction:** the first replay proved server-side
+  logout invalidated authority but left already-rendered job rows in the DOM.
+  The bounded correction at `57d7851` reloads the current same-origin page only
+  after successful logout. The corrected replay showed the anonymous login
+  prompt, zero privileged error cells, no hostile marker, and no target data.
+- **State and cleanup:** observer startup produced two expected deferred-model
+  failures in the isolated database, two aggregate telemetry events, and zero
+  traces; neither run changed the target worktree. Both listeners stopped and
+  all temporary binaries, database/log files, and the ephemeral credential were
+  removed.
+- **Evidence hygiene:** no credential, cookie, CSRF token, or hostile fixture
+  value is retained in this report or repository.
+
+## Historical Resumed Installed Run — 2026-07-12 21:31 BST
 
 ### Matrix Selection And Candidate Identity
 
@@ -143,7 +171,7 @@ MARS_DASHBOARD_PORT=19790 \
 The credential value is deliberately omitted. The raw cookie and CSRF values
 were neither printed nor retained.
 
-### Exact Remaining Browser Rerun
+### Browser Rerun Contract (completed 2026-08-09)
 
 With an in-app browser surface open, start the same installed tagged binary and
 isolated target using a new ephemeral credential. In the in-app browser only:
@@ -168,18 +196,18 @@ The initial pre-release attempt installed the uncommitted 0.68.47 candidate
 but the environment denied localhost binding and clean-seed creation, while
 browser discovery returned no surface. It still proved fail-closed rejection
 of wildcard binding and a malformed short control-secret fixture. The resumed
-run above supersedes the bind/seed blockers; the original browser-unavailable
-classification remains current.
+run above superseded the bind/seed blockers; the final 2026-08-09 replay
+supersedes the original browser-unavailable classification.
 
 ## Failure Ownership And Disposition
 
-- **Environment/evidence-only:** the in-app browser backend is unavailable
-  after mandated initialization, troubleshooting, and one inventory read.
-- **Foundation-owned product finding:** none established. The installed
-  HTTP/SQLite security matrix passed without a new failure class.
-- **Deployed-owned finding:** none. The clean target was not mutated after
-  initialization and produced no job, trace, telemetry, decision, or
-  intervention debt.
-- **Disposition:** keep T-058 in progress and F-010-S024 unconfirmed only for
-  the remaining real-browser DOM and network cases. The installed HTTP/SQLite
-  result is durable supporting evidence, not a waiver for those cases.
+- **Foundation-owned:** successful logout left authenticated data already
+  rendered in the browser DOM. Commit `57d7851` corrected only that disclosure
+  and passed focused dashboard tests, Security review, and installed replay.
+- **Environment/evidence-only:** the earlier unavailable-browser result is
+  superseded by the completed in-app browser run above.
+- **Deployed-owned:** none. The clean target worktree remained unchanged.
+- **Disposition:** T-058 and F-010-S024 pass. F-017-S002 passes through T-074,
+  T-075, T-076, and this resumed browser proof. This authorizes no version,
+  release, signing, visibility, publication, or announcement action; Primary
+  Status remains `primary_blocked` on T-073 and T-077 through T-081.
