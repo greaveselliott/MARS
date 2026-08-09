@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/validation/reports/2026-08-08-github-hosted-publication-surface-audit.md", "docs/validation/reports/2026-08-09-rights-media-and-name-review.md", "docs/tickets/done/T-072-audit-every-github-hosted-publication-surface.md"]
 verified_by: "pending repository owner, QA, Security, Release Manager, and Orchestrator"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: browser/llama provenance, product claims, deterministic notices, truthful prompt lineage, and current-tree PNG removal are pushed and verified"
-blocker: "Qualified trademark disposition and owner authority over first-party/AI/automation and retained-history PNG material remain required; default-model artifact provenance is the current machine checkpoint."
+last_attempt: "2026-08-09: all machine-verifiable provenance, claims, notices, prompt lineage, current-tree media, and default-model admission checkpoints are pushed and verified"
+blocker: "Qualified trademark disposition and owner authority over first-party/AI/automation and retained-history PNG material remain required."
 blocked_by: []
 trace_id: "launch-rights-provenance:2026-08-08"
-next_action: "Bind the six default model artifacts to exact artifact identities and truthful publisher/base/license/quantizer evidence, then complete the bounded owner and trademark dispositions; do not close T-073 or publish early."
+next_action: "Complete the bounded owner authority/history attestation and obtain qualified trademark counsel's written disposition for retaining MARS; do not close T-073 or publish early."
 dedupe_key: "open-source:rights-provenance-owner-disposition"
 metadata:
   classification: "mixed-unclear-until-disposition"
@@ -110,12 +110,19 @@ checkpoint D, any later ticket, or any remote/publication action.
   `12faa47e8298d73fe492a47d6923b98cc6015c6e` removes the sole PNG and both
   live references from current `main` in favor of browser-verified semantic
   HTML/CSS.
+- `cf95b39a24037ccc41b39fb8e839f0f4ac055b18` binds the six unique default
+  GGUFs to exact artifact commits, filenames, byte sizes, SHA-256 values, and
+  declared publisher/base/license/terms/quantizer/tool facts.
+  `b8d934978c88b91fa4717dc2049ff946f8e53571` rejects incomplete records before
+  model-download-step mutation or a model-download network request and applies
+  the same validation in doctor.
+  GitHub run `31289522986` passes every source-compatibility lane at that
+  commit; model bytes and routing behavior are unchanged.
 
-Checkpoint C's machine work is complete. Checkpoint B remains open only for
-the six default model artifact-level provenance records. The risk-calibrated
+Checkpoints B and C's machine work is complete. The risk-calibrated model
 contract does not pretend that publishers recorded unavailable conversion-input
 revisions: exact output identity, declared base/license/quantizer evidence, and
-the download-only boundary are required instead. Checkpoint A and D remain open
+the download-only boundary are required instead. Checkpoints A and D remain open
 for the owner authority/AI/automation/history-PNG attestation and qualified
 trademark disposition; none of the commits above clears retained history,
 changes visibility, or authorizes publication.

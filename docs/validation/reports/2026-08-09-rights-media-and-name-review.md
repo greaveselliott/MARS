@@ -20,11 +20,9 @@ community surfaces, and the 48-hour canary pass.
 **Current Primary Blocker:** T-073 checkpoint A found a live exact-word `MARS`
 registration in directly overlapping AI-agent/process-automation services;
 owner authority over retained prompt/AI/automation and historical PNG material
-also remains unsigned, and six default model artifact records remain incomplete.
-**Next Primary Action:** bind the six default model artifact identities and
-truthful publisher/base/license/quantizer evidence while the owner obtains the
-qualified trademark disposition and completes the bounded authority/history
-attestation without changing visibility.
+also remains unsigned.
+**Next Primary Action:** obtain the qualified trademark disposition and complete
+the bounded owner authority/history attestation without changing visibility.
 **Supporting Evidence:** the immutable publication-root, prompt, predecessor,
 AI-attribution, media, and official-register evidence recorded below.
 
@@ -66,11 +64,18 @@ Current-tree and machine-verifiable T-073 work completed on 2026-08-09:
   that textual-port evidence was not established, and leaves owner
   disposition pending. `12faa47` removes the sole PNG and both live references
   from current `main` in favor of browser-verified semantic HTML/CSS.
+- `cf95b39` binds all six unique default GGUFs to exact artifact commits,
+  filenames, byte sizes, SHA-256 values, and declared publisher/base/license/
+  terms/quantizer/tool facts. `b8d9349` rejects incomplete records before
+  model-download-step mutation or a model-download network request and applies
+  the same validation in doctor. Exact
+  GitHub run `31289522986` passes every source-compatibility lane at that commit;
+  model bytes and routing behavior are unchanged.
 
 These changes close the machine portions of dependency notices, public claims,
 browser-asset provenance, llama.cpp provenance, prompt-lineage truth, and
-current-tree media removal. They do not establish owner authority, clear the
-historical PNG, complete the six default model artifact provenance records, or
+current-tree media removal, plus the default-model artifact and admission
+contract. They do not establish owner authority, clear the historical PNG, or
 clear the `MARS` name.
 
 ## Publication Scope
@@ -208,4 +213,4 @@ Checkpoint A can continue only after the repository owner records:
    an explicit `no_go` if that disposition cannot be obtained.
 
 The final `preserve_audited_history` decision remains unavailable until these
-findings and checkpoints B through D are complete.
+owner and trademark findings close in checkpoint D.

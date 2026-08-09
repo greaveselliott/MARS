@@ -13,8 +13,8 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; T-080; T-081.
-**Current Failing Scenario:** F-017-S001 — a live U.S. `MARS` registration directly overlaps AI-agent/process-automation software; six exact default-model artifact records, owner authority over first-party/AI/automation and retained-history PNG material, and final owner disposition remain incomplete.
-**Walking Skeleton Slice:** Bind the six default-model artifacts to exact bytes and truthful publisher/base/license/quantizer evidence, retain `MARS` only after qualified trademark counsel's written disposition, and complete the bounded owner authority/history attestation; `preserve_audited_history` remains unavailable until every finding closes.
+**Current Failing Scenario:** F-017-S001 — a live U.S. `MARS` registration directly overlaps AI-agent/process-automation software; owner authority over first-party/AI/automation and retained-history PNG material plus the final history disposition remain incomplete.
+**Walking Skeleton Slice:** Retain `MARS` only after qualified trademark counsel's written disposition and complete the bounded owner authority/history attestation; `preserve_audited_history` remains unavailable until both gates close.
 **Learning Or MVP Outcome:** Establish whether every retained source, prompt, document, dependency, model, binary, and asset is authorized and notice-complete for publication.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. Checkpoint B still lacks exact artifact-level records for six default GGUFs. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Bind the six default GGUFs to exact artifact identities and truthful publisher/base/license/quantizer evidence without changing model bytes or behavior, then complete the bounded owner and trademark dispositions; keep publication and visibility blocked.
+- **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
+- **Next Primary Action:** Complete the bounded owner authority/history attestation and obtain qualified trademark counsel's written disposition for retaining `MARS`; keep publication and visibility blocked.
 
 ## Starting Baseline
 
@@ -145,13 +145,16 @@ not establish rights over the retained prompts, AI/automation contributions,
 predecessor material, or historical PNG blob. The materially overlapping live
 U.S. `MARS` registration also remains. Checkpoint C's dependency notices and
 product claims are complete through `dc0dbe0` and exact run `31288019067`;
-checkpoint B's browser-asset and llama.cpp chains are complete, while the six
-default model artifact-level records remain. Because MARS links to rather than
-redistributes the weights, unpublished conversion-input revisions are recorded
-as unavailable and never inferred; exact artifact commits/hashes plus declared
-base, license/terms, publisher, and quantizer facts are the risk-calibrated
-launch gate. The owner attestation and
-qualified trademark counsel disposition remain launch no-go gates.
+checkpoint B is complete. Commits `cf95b39` and `b8d9349` bind all six unique
+default GGUFs to exact artifact commits, filenames, sizes, hashes, declared
+publisher/base/license/terms/quantizer/tool facts, and reject incomplete
+records before model-download-step mutation or a model-download network
+request. Unpublished conversion-input
+revisions are recorded as unavailable and never inferred. Exact GitHub run
+`31289522986` passes both supported Go lanes, the below-minimum rejection, and
+the dependency-notice job at `b8d9349`; no model bytes or routing behavior
+changed. The owner attestation and qualified trademark counsel disposition
+remain launch no-go gates.
 
 ## Completion Gates By Ticket
 
