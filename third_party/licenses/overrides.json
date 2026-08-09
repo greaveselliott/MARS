@@ -12,6 +12,20 @@
     "BSD-3-Clause",
     "MIT"
   ],
+  "browser_assets": [
+    {
+      "name": "htmx 2.0.4",
+      "license": "Zero-Clause BSD",
+      "path": "internal/dashboard/static/vendor/htmx-LICENSE.txt",
+      "sha256": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38"
+    },
+    {
+      "name": "Chart.js 4.4.7",
+      "license": "MIT",
+      "path": "internal/dashboard/static/vendor/chartjs-LICENSE.md",
+      "sha256": "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce"
+    }
+  ],
   "toolchain": {
     "version": "go1.26.5",
     "license_path": "third_party/licenses/go-1.26.5/LICENSE",

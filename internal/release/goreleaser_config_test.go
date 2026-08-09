@@ -426,7 +426,18 @@ func TestSourceCompatibilityWorkflowContract(t *testing.T) {
 	require.Equal(t, "source-compatibility", workflow.Name)
 	require.Equal(t, []string{"pull_request", "push", "workflow_dispatch"}, sortedKeys(workflow.On))
 	require.Equal(t, map[string]string{"contents": "read"}, workflow.Permissions)
-	require.Equal(t, []string{"below-minimum", "supported-source"}, sortedKeys(workflow.Jobs))
+	require.Equal(t, []string{"below-minimum", "dependency-notices", "supported-source"}, sortedKeys(workflow.Jobs))
+
+	notices := workflow.Jobs["dependency-notices"]
+	require.Equal(t, "ubuntu-24.04", notices.RunsOn)
+	require.Equal(t, 15, notices.TimeoutMinutes)
+	require.Len(t, notices.Steps, 4)
+	require.Equal(t, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", notices.Steps[0].Uses)
+	require.Equal(t, map[string]any{"fetch-depth": 0, "persist-credentials": false}, notices.Steps[0].With)
+	require.Equal(t, "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e", notices.Steps[1].Uses)
+	require.Equal(t, map[string]any{"go-version": "1.26.5", "cache": false}, notices.Steps[1].With)
+	require.Contains(t, notices.Steps[2].Run, "go mod download")
+	require.Equal(t, "make dependency-notices", strings.TrimSpace(notices.Steps[3].Run))
 
 	supported := workflow.Jobs["supported-source"]
 	require.Equal(t, "ubuntu-24.04", supported.RunsOn)

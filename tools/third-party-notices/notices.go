@@ -28,7 +28,7 @@ import (
 
 const (
 	policyPath   = "third_party/licenses/overrides.json"
-	policySHA256 = "d97749ffdaa7525cf4455e4e6562addfc8544e0cd675edf05556e4e418984b21"
+	policySHA256 = "352a6555a6a2991ad9735f8ea5a9d122c57aa5727f03b1e96873af0d086f4a4d"
 	maxInputSize = 1 << 20
 )
 
@@ -41,6 +41,10 @@ var expectedPolicy = Policy{
 		ModuleSum:    "h1:ti+9bi5o7DKbeeg5eBb/uZTgsaPNoJaLCh93cRcXsW8=",
 	},
 	AllowedGoLicenses: []string{"Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "MIT"},
+	BrowserAssets: []BrowserAsset{
+		{Name: "htmx 2.0.4", License: "Zero-Clause BSD", Path: "internal/dashboard/static/vendor/htmx-LICENSE.txt", SHA256: "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38"},
+		{Name: "Chart.js 4.4.7", License: "MIT", Path: "internal/dashboard/static/vendor/chartjs-LICENSE.md", SHA256: "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce"},
+	},
 	Toolchain: ToolchainInput{
 		Version:       "go1.26.5",
 		LicensePath:   "third_party/licenses/go-1.26.5/LICENSE",
@@ -75,10 +79,18 @@ type Policy struct {
 	SchemaVersion     int            `json:"schema_version"`
 	GoLicenses        ToolPin        `json:"go_licenses"`
 	AllowedGoLicenses []string       `json:"allowed_go_licenses"`
+	BrowserAssets     []BrowserAsset `json:"browser_assets"`
 	Toolchain         ToolchainInput `json:"toolchain"`
 	Overrides         []Override     `json:"overrides"`
 
 	inputs map[string]string
+}
+
+type BrowserAsset struct {
+	Name    string `json:"name"`
+	License string `json:"license"`
+	Path    string `json:"path"`
+	SHA256  string `json:"sha256"`
 }
 
 type ToolPin struct {
@@ -113,6 +125,7 @@ type Dependency struct {
 	Library     string
 	Module      string
 	Version     string
+	Identity    string
 	Packages    []string
 	License     string
 	LicenseText string
@@ -143,7 +156,14 @@ func LoadPolicy(repoRoot string) (Policy, error) {
 	if err := validateExactPolicy(p); err != nil {
 		return Policy{}, err
 	}
-	p.inputs = make(map[string]string, len(p.Overrides)+2)
+	p.inputs = make(map[string]string, len(p.Overrides)+len(p.BrowserAssets)+2)
+	for _, item := range p.BrowserAssets {
+		text, err := readBoundedText(repoRoot, item.Path, item.SHA256)
+		if err != nil {
+			return Policy{}, fmt.Errorf("browser asset %s: %w", item.Name, err)
+		}
+		p.inputs[item.Path] = text
+	}
 	for _, item := range p.Overrides {
 		text, err := readBoundedText(repoRoot, item.LicensePath, item.LicenseSHA256)
 		if err != nil {
@@ -178,7 +198,7 @@ func validateExactPolicy(got Policy) error {
 	got.inputs = nil
 	want := expectedPolicy
 	if got.SchemaVersion != want.SchemaVersion || got.GoLicenses != want.GoLicenses || got.Toolchain != want.Toolchain ||
-		!slices.Equal(got.AllowedGoLicenses, want.AllowedGoLicenses) || !slices.Equal(got.Overrides, want.Overrides) {
+		!slices.Equal(got.AllowedGoLicenses, want.AllowedGoLicenses) || !slices.Equal(got.BrowserAssets, want.BrowserAssets) || !slices.Equal(got.Overrides, want.Overrides) {
 		return errors.New("dependency notice policy differs from the reviewed exact tool, license, toolchain, or override contract")
 	}
 	return nil
@@ -258,7 +278,7 @@ func Render(p Policy, dependencies []Dependency) ([]byte, error) {
 	items := slices.Clone(dependencies)
 	sort.Slice(items, func(i, j int) bool {
 		a, b := items[i], items[j]
-		return a.Module+"\x00"+a.Version+"\x00"+a.Library < b.Module+"\x00"+b.Version+"\x00"+b.Library
+		return a.Module+"\x00"+a.Version+"\x00"+a.Library+"\x00"+a.Identity < b.Module+"\x00"+b.Version+"\x00"+b.Library+"\x00"+b.Identity
 	})
 	var out strings.Builder
 	out.WriteString("MARS Go Dependency Notices\n==========================\n\n")
@@ -268,7 +288,7 @@ func Render(p Policy, dependencies []Dependency) ([]byte, error) {
 		if err := validateDependency(item, allowed); err != nil {
 			return nil, err
 		}
-		key := item.Module + "@" + item.Version + "\x00" + item.Library
+		key := item.Module + "@" + item.Version + "\x00" + item.Library + "\x00" + item.Identity
 		if key == lastKey {
 			return nil, fmt.Errorf("duplicate dependency notice row %s@%s (%s)", item.Module, item.Version, item.Library)
 		}
@@ -309,8 +329,10 @@ func validateDependency(item Dependency, allowed map[string]struct{}) error {
 	if strings.TrimSpace(item.Library) == "" || strings.TrimSpace(item.Module) == "" || strings.TrimSpace(item.Version) == "" || len(item.Packages) == 0 {
 		return errors.New("dependency notice row is missing library, module, version, or package identity")
 	}
-	if _, ok := allowed[item.License]; !ok {
-		return fmt.Errorf("dependency %s@%s has unreviewed license %q", item.Module, item.Version, item.License)
+	for _, name := range strings.Split(item.License, " AND ") {
+		if _, ok := allowed[name]; !ok {
+			return fmt.Errorf("dependency %s@%s has unreviewed license %q", item.Module, item.Version, item.License)
+		}
 	}
 	if strings.TrimSpace(item.LicenseText) == "" || !utf8.ValidString(item.LicenseText) || len(item.LicenseText) > maxInputSize {
 		return fmt.Errorf("dependency %s@%s has invalid or oversized license text", item.Module, item.Version)

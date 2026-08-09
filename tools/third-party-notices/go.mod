@@ -7,6 +7,7 @@ toolchain go1.26.5
 require (
 	github.com/google/go-licenses/v2 v2.0.1
 	golang.org/x/sys v0.46.0
+	k8s.io/klog/v2 v2.90.1
 )
 
 require (
@@ -20,5 +21,4 @@ require (
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
-	k8s.io/klog/v2 v2.90.1 // indirect
 )

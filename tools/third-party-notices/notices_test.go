@@ -23,8 +23,61 @@ func TestRepositoryPolicyInputsAreExact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load repository policy: %v", err)
 	}
-	if p.GoLicenses.Version != "v2.0.1" || p.Toolchain.Version != "go1.26.5" || len(p.Overrides) != 3 {
+	if p.GoLicenses.Version != "v2.0.1" || p.Toolchain.Version != "go1.26.5" || len(p.BrowserAssets) != 2 || len(p.Overrides) != 3 {
 		t.Fatalf("unexpected exact policy: %+v", p)
+	}
+}
+
+func TestRenderThirdPartyNoticesUsesCanonicalBrowserLicenses(t *testing.T) {
+	p := expectedPolicy
+	p.inputs = map[string]string{
+		p.BrowserAssets[0].Path: "canonical htmx license\n",
+		p.BrowserAssets[1].Path: "canonical chart license\n",
+		p.Toolchain.LicensePath: "tool license\n",
+		p.Toolchain.PatentsPath: "tool patents\n",
+	}
+	row := Dependency{
+		Library: "example.test/pkg", Module: "example.test/mod", Version: "v1.0.0",
+		Packages: []string{"example.test/pkg"}, License: "Apache-2.0 AND BSD-3-Clause", LicenseText: "combined license\n",
+	}
+	got, err := RenderThirdPartyNotices(p, []Dependency{row})
+	if err != nil {
+		t.Fatalf("RenderThirdPartyNotices: %v", err)
+	}
+	for _, want := range []string{"htmx 2.0.4", "canonical htmx license", "Chart.js 4.4.7", "canonical chart license", "combined license"} {
+		if !strings.Contains(string(got), want) {
+			t.Fatalf("output missing %q", want)
+		}
+	}
+	if strings.Contains(strings.ToLower(string(got)), "provisional") {
+		t.Fatal("output retained provisional wording")
+	}
+}
+
+func TestRequireOverridesUsedRejectsMissingExtraAndStale(t *testing.T) {
+	p := expectedPolicy
+	all := map[string]bool{}
+	for _, item := range p.Overrides {
+		all[item.Module+"@"+item.Version] = true
+	}
+	if err := requireOverridesUsed(p, all); err != nil {
+		t.Fatalf("exact overrides rejected: %v", err)
+	}
+	missing := map[string]bool{}
+	for key := range all {
+		missing[key] = true
+		break
+	}
+	if err := requireOverridesUsed(p, missing); err == nil {
+		t.Fatal("missing overrides accepted")
+	}
+	extra := map[string]bool{}
+	for key := range all {
+		extra[key] = true
+	}
+	extra["example.test/unreviewed@v1.0.0"] = true
+	if err := requireOverridesUsed(p, extra); err == nil {
+		t.Fatal("extra override use accepted")
 	}
 }
 
@@ -196,6 +249,29 @@ func TestRenderRejectsUnreviewedLicensesAndDuplicateRows(t *testing.T) {
 				t.Fatal("invalid NOTICE accepted")
 			}
 		})
+	}
+}
+
+func TestRenderPreservesDistinctLicenseRowsWithSameLibraryName(t *testing.T) {
+	p := expectedPolicy
+	p.inputs = map[string]string{
+		p.Toolchain.LicensePath: "tool license\n",
+		p.Toolchain.PatentsPath: "tool patents\n",
+	}
+	first := Dependency{
+		Library: "example.test/shared", Module: "example.test/mod", Version: "v1.0.0", Identity: "LICENSE",
+		Packages: []string{"example.test/shared/a"}, License: "MIT", LicenseText: "first license\n",
+	}
+	second := Dependency{
+		Library: "example.test/shared", Module: "example.test/mod", Version: "v1.0.0", Identity: "sub/LICENSE",
+		Packages: []string{"example.test/shared/b"}, License: "MIT", LicenseText: "second license\n",
+	}
+	got, err := Render(p, []Dependency{first, second})
+	if err != nil {
+		t.Fatalf("Render distinct rows: %v", err)
+	}
+	if strings.Count(string(got), "example.test/mod@v1.0.0 — MIT") != 2 {
+		t.Fatalf("distinct license identities collapsed:\n%s", got)
 	}
 }
 

@@ -10,7 +10,7 @@ GOVULNCHECK_VERSION := v1.6.0
 GOVULNCHECK ?= $(INSTALL_BIN)/govulncheck
 export GOVULNCHECK
 
-.PHONY: build install update-tool test vet lint check coverage-check vuln fuzz-smoke dogfood clean
+.PHONY: build install update-tool test vet lint check coverage-check vuln fuzz-smoke dependency-notices dogfood clean
 
 build:
 	CGO_ENABLED=0 $(GO) build -o $(BUILD_DIR)/$(BINARY) ./cmd/mars
@@ -64,6 +64,18 @@ fuzz-smoke:
 	$(GO) test ./internal/tools -run '^$$' -fuzz FuzzDecodeStringSliceArg -fuzztime $(FUZZTIME)
 	$(GO) test ./internal/tools -run '^$$' -fuzz FuzzParsePythonStyleStringList -fuzztime $(FUZZTIME)
 	$(GO) test ./internal/tools -run '^$$' -fuzz FuzzNormalizeShellExecArgv -fuzztime $(FUZZTIME)
+
+dependency-notices:
+	@set -eu; \
+		goroot="$$($(GO) env GOROOT)"; \
+		toolgo="$$goroot/bin/go"; \
+		test "$$($$toolgo env GOVERSION)" = "go1.26.5"; \
+		tmp="$$(mktemp -d "$${TMPDIR:-/tmp}/mars-notices.XXXXXX")"; \
+		trap 'rm -rf "$$tmp"' EXIT; \
+		cd tools/third-party-notices; \
+		GOTOOLCHAIN=local "$$toolgo" mod verify; \
+		GOCACHE="$$tmp/build-cache" GOROOT="$$goroot" GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off "$$toolgo" build -trimpath -o "$$tmp/generate" ./cmd/generate; \
+		GOROOT="$$goroot" GOCACHE="$$tmp/graph-cache" GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off "$$tmp/generate" --repo "$(CURDIR)"
 
 dogfood: build
 	$(BUILD_DIR)/$(BINARY) version
