@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "go_licenses": {
+    "module": "github.com/google/go-licenses/v2",
+    "version": "v2.0.1",
+    "source_commit": "3e084b0caf710f7bfead967567539214f598c0a2",
+    "module_sum": "h1:ti+9bi5o7DKbeeg5eBb/uZTgsaPNoJaLCh93cRcXsW8="
+  },
+  "allowed_go_licenses": [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "MIT"
+  ],
+  "toolchain": {
+    "version": "go1.26.5",
+    "license_path": "third_party/licenses/go-1.26.5/LICENSE",
+    "license_sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "patents_path": "third_party/licenses/go-1.26.5/PATENTS",
+    "patents_sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+  },
+  "overrides": [
+    {
+      "module": "github.com/cyberphone/json-canonicalization",
+      "version": "v0.0.0-20241213102144-19d51d7fe467",
+      "source_commit": "19d51d7fe467d4706a3ff08adf8a748f29fc21e0",
+      "module_sum": "h1:uX1JmpONuD549D73r6cgnxyUu18Zb7yHAy5AYU0Pm4Q=",
+      "license": "Apache-2.0",
+      "license_path": "third_party/licenses/json-canonicalization/LICENSE",
+      "license_sha256": "6821faaddedf2d78c95bb6d98b127e9e616097afd2f6bcc34389f000d13ab12d"
+    },
+    {
+      "module": "github.com/in-toto/attestation",
+      "version": "v1.2.0",
+      "source_commit": "df02077bf97218a8860a5c534eff1f1381f56984",
+      "module_sum": "h1:aPRUZ3azbqD7yEBD5fP3TD8Dszf+YHo284SOcpahjQk=",
+      "license": "Apache-2.0",
+      "license_path": "third_party/licenses/in-toto-attestation/LICENSE",
+      "license_sha256": "b3a6ac899861c2c28a1abd5c7ea8733fefaed6938d730e099c42671386032aeb"
+    },
+    {
+      "module": "github.com/in-toto/in-toto-golang",
+      "version": "v0.11.0",
+      "source_commit": "36d782ffb2ca3adbffcdce1fd971c23319dd4469",
+      "module_sum": "h1:nfidMYBFx+E0lnmX5KUnN2Pdm8zdNKal1ayjJuzzRoA=",
+      "license": "Apache-2.0",
+      "license_path": "third_party/licenses/in-toto-golang/LICENSE",
+      "license_sha256": "b5c26c8a2ad6dd7cac6646e470a32ee42d23c36124caac4e66c989b6545b2a44"
+    }
+  ]
+}
