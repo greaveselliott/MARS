@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-074 — close GitHub App setup and telemetry listener boundaries
+**Current Ticket:** None — T-074 is complete; T-075 has not yet been created
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,9 +13,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — GitHub App setup and telemetry entry points do not yet meet the launch loopback, state, and request-boundary contract; F-017-S001 remains independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** Create T-074 and close the two remaining network entry points without changing release, visibility, or publication state.
-**Learning Or MVP Outcome:** Prove setup callbacks and telemetry collection fail closed at the intended local boundary.
+**Current Failing Scenario:** F-017-S002 — T-074 network entry points pass, while descriptor-safe repository filesystem and complete staged/index secret scanning remain pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
+**Walking Skeleton Slice:** Create T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
+**Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement and commit T-074 checkpoint B: harden the source-only GitHub manifest callback with literal-loopback, one-time state, single-use admission, timeouts, and fixed redacted results without wiring a new CLI command.
+- **Next Primary Action:** Create T-075 through `ticket_create`, freeze its smallest descriptor-safe repository-filesystem and staged-secret-scanning contract, and commit the planning handoff before source work.
 
 ## Starting Baseline
 
@@ -169,22 +169,25 @@ and F-017-S001 does not pass. The active plan routes bounded private
 T-074 through T-079 work. T-073 must resume and pass before T-080 receives any
 release, signing, upload, or publication authority.
 
-## Next Walking Skeleton — T-074
+## Completed Walking Skeleton — T-074
 
 T-074 was created through `ticket_create` after bounded COO, CTO-weekly, and
 Security review. Checkpoint A passed at exact commit `596524e`: the directly
 reachable telemetry collector is literal-loopback-only, rejects invalid binds
 before database creation, bounds request admission, and passed focused
 normal/race, four-platform build, and clean commit-bound installed smoke gates.
-Checkpoint B hardens the GitHub manifest flow, which has no production callsite
-at `4cdcc87`, with
-literal-loopback binding, one-time state, single-use callback admission,
-timeouts, and fixed redacted errors without wiring a new CLI command.
+Checkpoint B passed at exact commit `f77fac6`: the source-only GitHub manifest
+flow, which has no production callsite, uses literal-loopback binding,
+cryptographic one-time state, single-use callback admission, bounded exchange
+and server behavior, owner-only credential persistence, and fixed redacted
+results without wiring a new CLI command. Focused normal/race tests, vet,
+docs-consistency, DocSync, and four CGO-disabled builds passed. QA, Security,
+Release Manager, and Orchestrator approved the frozen checkpoint.
 
 Remote telemetry, a generalized HTTP framework, dashboard/webhook changes, and
-all T-075 through T-077 surfaces remain out of scope. T-074 cannot close
-F-017-S002 by itself, and it grants no release, settings, visibility, or
-publication authority.
+all T-075 through T-077 surfaces remained out of scope. T-074 is complete but
+does not close F-017-S002 by itself, and it grants no release, settings,
+visibility, or publication authority.
 
 ## Completion Gates By Ticket
 

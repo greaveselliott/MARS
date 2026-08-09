@@ -6,14 +6,14 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:596524ebaa0fd08718fe2630861a0b0c241a674a", "binary-sha256:b66394b7a44c2784e0eb662f91d68352844c92cb6bc8a4a51bc4da81e863ded7"]
-verified_by: "Checkpoint A: QA, Security, Dogfood, Release Manager, and Orchestrator; Checkpoint B pending"
+evidence_links: ["commit:596524ebaa0fd08718fe2630861a0b0c241a674a", "commit:f77fac6b3f028dfb285455c296edcceecdfcb1c0", "binary-sha256:b66394b7a44c2784e0eb662f91d68352844c92cb6bc8a4a51bc4da81e863ded7"]
+verified_by: "QA, Security, Dogfood, Release Manager, and Orchestrator on 2026-08-09"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint A passed at 596524e; Checkpoint B is next"
+last_attempt: "2026-08-09: Checkpoints A and B passed at 596524e and f77fac6; T-074 closed"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-network-boundaries:2026-08-09"
-next_action: "Implement and validate only the source-only GitHub manifest callback checkpoint, then record T-074 closure evidence."
+next_action: "Create T-075 through ticket_create and begin the bounded repository-filesystem and staged-secret-scanning gate."
 dedupe_key: "open-source:network-entry-point-hardening"
 metadata:
   classification: "foundation-owned"
@@ -65,6 +65,15 @@ the Orchestrator approved this checkpoint.
 - Bound server headers and read/write/idle timeouts plus the exchange context and response body.
 - Return only fixed redacted error classes. The setup form and GitHub redirect are the sole permitted exposure of state; state and code never enter CLI output, logs, traces, function results, or success/error messages. Provider response bodies, PEM, client secrets, and webhook secrets never enter any of those surfaces.
 - Preserve the existing owner-only atomic credential persistence. Do not wire RunSetup into the CLI in this ticket.
+
+Checkpoint B passed at exact commit
+`f77fac6b3f028dfb285455c296edcceecdfcb1c0`. Focused normal and race tests,
+`go vet`, docs-consistency, DocSync, and all four CGO-disabled Darwin/Linux
+builds passed. QA and Security found no reachable defect in the frozen flow;
+Release Manager confirmed the source-only seam has no production or CLI
+callsite and changes no version, Release, signing, visibility, or publication
+surface. A fake conversion service exercised the official manifest state
+protocol without creating a live GitHub App.
 
 ## Affected Interfaces And DocSync
 
