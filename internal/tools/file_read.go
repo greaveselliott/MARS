@@ -58,11 +58,7 @@ func handleFileRead(_ context.Context, root Root, raw json.RawMessage) (ToolResu
 	if strings.TrimSpace(args.Path) == "" {
 		return ToolResult{}, fmt.Errorf("file_read: field path is required")
 	}
-	path, err := root.ResolvePath(args.Path)
-	if err != nil {
-		return ToolResult{}, err
-	}
-	f, err := os.Open(path)
+	f, err := root.RepoFS().OpenFile(args.Path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return ToolResult{}, fmt.Errorf("file_read: open %q: %w", args.Path, err)

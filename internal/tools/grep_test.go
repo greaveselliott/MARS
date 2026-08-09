@@ -9,6 +9,7 @@ package tools
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -37,4 +38,17 @@ func TestGrep_invalidRegex(t *testing.T) {
 	_, err = handleGrep(context.Background(), root, []byte(`{"pattern":"("}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid regex")
+}
+
+func TestGrep_rejectsSymlinkedInput(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.go")
+	require.NoError(t, os.WriteFile(outside, []byte("outside-secret\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "linked.go")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	result, err := handleGrep(context.Background(), root, []byte(`{"pattern":"outside","glob":"*.go"}`))
+	require.Error(t, err)
+	require.NotContains(t, result.Output, "outside-secret")
 }

@@ -97,6 +97,7 @@ source file exists in the worktree.
 | `internal/network/` | `docs/design-docs/dashboard.md`, `docs/design-docs/github-app-integration.md` | F-010, F-017 |
 | `internal/queue/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/github-app-integration.md` | F-006, F-011, F-017 |
 | `internal/remediation/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
+| `internal/repofs/` | `docs/design-docs/tools-glossary.md` | F-005, F-017 |
 | `internal/release/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/roleregistry/` | `docs/design-docs/harness-operating-model.md` | F-001 |
 | `internal/safety/` | `docs/design-docs/guardrails.md` | F-007 |

@@ -9,6 +9,7 @@ package tools
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -28,4 +29,17 @@ func TestFileSearch_glob(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, res.Output, "a.go")
 	require.NotContains(t, res.Output, "b.txt")
+}
+
+func TestFileSearch_rejectsSymlinkedMatch(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.go")
+	require.NoError(t, os.WriteFile(outside, []byte("outside\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "linked.go")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	result, err := handleFileSearch(context.Background(), root, []byte(`{"pattern":"*.go"}`))
+	require.Error(t, err)
+	require.NotContains(t, result.Output, "outside.go")
 }

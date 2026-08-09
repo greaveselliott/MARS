@@ -13,12 +13,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 // Root is an absolute, cleaned workspace directory; all tool file paths must resolve under it.
 type Root struct {
 	abs    string
 	dbPath string
+	repo   *repofs.Root
 }
 
 // NewRoot resolves dir to an absolute path with symlinks evaluated where possible.
@@ -31,14 +34,11 @@ func NewRoot(dir string) (Root, error) {
 	if err == nil {
 		abs = eval
 	}
-	fi, err := os.Stat(abs)
+	repo, err := repofs.Open(abs)
 	if err != nil {
-		return Root{}, fmt.Errorf("tools: stat workdir: %w", err)
+		return Root{}, fmt.Errorf("tools: open workdir: %w", err)
 	}
-	if !fi.IsDir() {
-		return Root{}, fmt.Errorf("tools: workdir %q is not a directory", abs)
-	}
-	return Root{abs: filepath.Clean(abs)}, nil
+	return Root{abs: repo.Abs(), repo: repo}, nil
 }
 
 // Abs returns the absolute root path.
@@ -54,6 +54,10 @@ func (r Root) WithDBPath(dbPath string) Root {
 // DBPath returns the active Mars SQLite database path, when the caller supplied
 // one. Empty means tools should use their package default.
 func (r Root) DBPath() string { return r.dbPath }
+
+// RepoFS returns the descriptor-bound repository filesystem used by tool file
+// operations.
+func (r Root) RepoFS() *repofs.Root { return r.repo }
 
 // ResolvePath joins root with rel and ensures the result stays within root.
 // rel may use platform separators; leading slashes are stripped.
@@ -87,7 +91,10 @@ func (r Root) OpenFile(rel string, flag int, perm fs.FileMode) (*os.File, string
 	if err != nil {
 		return nil, "", err
 	}
-	f, err := os.OpenFile(p, flag, perm)
+	if flag != os.O_RDONLY {
+		return nil, p, fmt.Errorf("tools: unsafe generic repository open flags are not supported")
+	}
+	f, err := r.repo.OpenFile(rel)
 	if err != nil {
 		return nil, p, err
 	}

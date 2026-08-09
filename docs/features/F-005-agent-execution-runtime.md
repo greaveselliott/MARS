@@ -115,6 +115,14 @@ Given a role has an allowlist and trust level
 When it asks to call a tool
 Then unknown tools, disallowed tools, invalid JSON, observer mutations, path escapes, secret writes, destructive shell commands, and mutating shell commands in already-over-budget repos fail closed, while known read-only shell inspection remains available for diagnosis
 
+Given a target repository contains a symlink as the parent or leaf of a requested `file_read`, `file_write`, `file_search`, or `grep` path
+When the universal file tool resolves or opens that repository entry
+Then the operation is bound through the standard-library repository descriptor, rejects the observed symlink, and neither reads nor mutates the symlink target outside the selected repository
+
+Given `file_write` is admitted for a repository-relative path
+When it creates or replaces the file
+Then it creates missing real directories inside the repository and installs the new bytes through an exclusive same-directory temporary file, file sync, atomic rename, and directory sync with the requested `0644` mode
+
 Given `docs/features/F-001-product-walking-skeleton.md` already exists
 When a role attempts to create any second `docs/features/F-001*.md` contract with `file_write`
 Then the tool policy blocks the write and instructs the role to update the canonical feature contract

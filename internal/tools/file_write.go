@@ -11,7 +11,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -43,14 +42,11 @@ func handleFileWrite(_ context.Context, root Root, raw json.RawMessage) (ToolRes
 	if strings.TrimSpace(args.Path) == "" {
 		return ToolResult{}, fmt.Errorf("file_write: field path is required")
 	}
-	path, err := root.ResolvePath(args.Path)
-	if err != nil {
-		return ToolResult{}, err
+	parent := filepath.Dir(filepath.Clean(args.Path))
+	if err := root.RepoFS().MkdirAll(parent, 0o755); err != nil {
+		return ToolResult{}, fmt.Errorf("file_write: create parent directory: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return ToolResult{}, fmt.Errorf("file_write: mkdir %q: %w", filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, []byte(args.Content), 0o644); err != nil {
+	if err := root.RepoFS().AtomicWrite(args.Path, []byte(args.Content), 0o644); err != nil {
 		return ToolResult{}, fmt.Errorf("file_write: write %q: %w", args.Path, err)
 	}
 	return ToolResult{Output: fmt.Sprintf("wrote %d bytes to %s", len(args.Content), args.Path)}, nil

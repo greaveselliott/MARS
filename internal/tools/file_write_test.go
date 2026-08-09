@@ -50,3 +50,22 @@ func TestFileWrite_rejectsEscape(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "escapes")
 }
+
+func TestFileWrite_rejectsSymlinkParentAndLeaf(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	outsideDir := t.TempDir()
+	sentinel := filepath.Join(outsideDir, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("outside\n"), 0o600))
+	require.NoError(t, os.Symlink(outsideDir, filepath.Join(dir, "parent")))
+	require.NoError(t, os.Symlink(sentinel, filepath.Join(dir, "leaf")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	for _, path := range []string{"parent/sentinel.txt", "leaf"} {
+		_, err := handleFileWrite(context.Background(), root, []byte(`{"path":"`+path+`","content":"mutated"}`))
+		require.Error(t, err)
+	}
+	data, err := os.ReadFile(sentinel)
+	require.NoError(t, err)
+	require.Equal(t, "outside\n", string(data))
+}

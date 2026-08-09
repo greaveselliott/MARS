@@ -47,6 +47,7 @@ github.com/greaveselliott/mars/internal/qualityscore 70
 github.com/greaveselliott/mars/internal/queue 70
 github.com/greaveselliott/mars/internal/release 61
 github.com/greaveselliott/mars/internal/remediation 70
+github.com/greaveselliott/mars/internal/repofs 70
 github.com/greaveselliott/mars/internal/roleregistry 70
 github.com/greaveselliott/mars/internal/safety 70
 github.com/greaveselliott/mars/internal/sandbox 70

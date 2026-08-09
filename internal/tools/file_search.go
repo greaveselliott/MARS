@@ -44,17 +44,12 @@ func handleFileSearch(_ context.Context, root Root, raw json.RawMessage) (ToolRe
 	if filepath.IsAbs(pat) {
 		return ToolResult{}, fmt.Errorf("file_search: pattern must be relative to repository root")
 	}
-	base := root.Abs()
-	matches, err := filepath.Glob(filepath.Join(base, pat))
+	matches, err := root.RepoFS().Glob(pat)
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("file_search: glob %q: %w", pat, err)
 	}
 	var rels []string
-	for _, m := range matches {
-		rel, err := filepath.Rel(base, m)
-		if err != nil || strings.HasPrefix(rel, "..") {
-			continue
-		}
+	for _, rel := range matches {
 		rel = filepath.ToSlash(rel)
 		if IsGeneratedWorkspacePath(rel) {
 			continue

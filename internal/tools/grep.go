@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -68,7 +67,7 @@ func handleGrep(_ context.Context, root Root, raw json.RawMessage) (ToolResult, 
 		return ToolResult{}, fmt.Errorf("grep: glob must be relative to repository root")
 	}
 
-	matches, err := filepath.Glob(filepath.Join(root.Abs(), globPat))
+	matches, err := root.RepoFS().Glob(globPat)
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("grep: glob %q: %w", globPat, err)
 	}
@@ -77,25 +76,27 @@ func handleGrep(_ context.Context, root Root, raw json.RawMessage) (ToolResult, 
 	matchCount := 0
 	truncated := false
 	const maxBytes = DefaultMaxToolOutputBytes
-	for _, file := range matches {
+	for _, rel := range matches {
 		if matchCount >= max {
 			break
 		}
-		rel, _ := filepath.Rel(root.Abs(), file)
 		rel = filepath.ToSlash(rel)
 		if IsGeneratedWorkspacePath(rel) {
 			continue
 		}
-		fi, err := os.Stat(file)
-		if err != nil || fi.IsDir() {
+		fi, err := root.RepoFS().Stat(rel)
+		if err != nil {
+			return ToolResult{}, fmt.Errorf("grep: inspect %s: %w", rel, err)
+		}
+		if fi.IsDir() {
 			continue
 		}
 		if fi.Size() > 4<<20 {
 			continue
 		}
-		f, err := os.Open(file)
+		f, err := root.RepoFS().OpenFile(rel)
 		if err != nil {
-			continue
+			return ToolResult{}, fmt.Errorf("grep: open %s: %w", rel, err)
 		}
 		head := make([]byte, 512)
 		n, _ := f.Read(head)

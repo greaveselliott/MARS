@@ -63,3 +63,20 @@ func TestFileReadPolicyBlocksGeneratedWorkspaceOutput(t *testing.T) {
 	require.Contains(t, err.Error(), "generated dependency/build output")
 	require.Contains(t, err.Error(), "dist/assets/index.js")
 }
+
+func TestFileRead_rejectsSymlinkParentAndLeaf(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	outsideDir := t.TempDir()
+	sentinel := filepath.Join(outsideDir, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("outside-secret\n"), 0o600))
+	require.NoError(t, os.Symlink(outsideDir, filepath.Join(dir, "parent")))
+	require.NoError(t, os.Symlink(sentinel, filepath.Join(dir, "leaf")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	for _, path := range []string{"parent/sentinel.txt", "leaf"} {
+		result, err := handleFileRead(context.Background(), root, []byte(`{"path":"`+path+`"}`))
+		require.Error(t, err)
+		require.NotContains(t, result.Output, "outside-secret")
+	}
+}
