@@ -294,7 +294,11 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 			if err != nil {
 				return false, err
 			}
-			for _, spec := range hardware.UniqueModels(bundle.Models) {
+			unique := hardware.UniqueModels(bundle.Models)
+			if err := validateDownloadModelProvenance(unique); err != nil {
+				return false, err
+			}
+			for _, spec := range unique {
 				if _, err := os.Stat(filepath.Join(modelsDir, spec.File)); err != nil {
 					return false, nil
 				}
@@ -302,16 +306,18 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 			return true, nil
 		},
 		Execute: func() error {
-			if err := os.MkdirAll(modelsDir, 0o755); err != nil {
-				return fmt.Errorf("create models dir: %w — check directory permissions", err)
-			}
-
 			hw := hardware.Detect()
 			bundle, _, err := models.ResolveLocalBundle(hw, localBundle)
 			if err != nil {
 				return err
 			}
 			unique := hardware.UniqueModels(bundle.Models)
+			if err := validateDownloadModelProvenance(unique); err != nil {
+				return err
+			}
+			if err := os.MkdirAll(modelsDir, 0o755); err != nil {
+				return fmt.Errorf("create models dir: %w — check directory permissions", err)
+			}
 
 			slog.Info("model download plan",
 				"profile", string(hw.Profile),
@@ -320,9 +326,6 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 			)
 
 			for i, spec := range unique {
-				if spec.Revision == "" || spec.SHA256 == "" {
-					return fmt.Errorf("model %s is not pinned with both revision and SHA256 — update the model registry or run setup with --skip-download for local-only configuration", spec.Name)
-				}
 				destPath := filepath.Join(modelsDir, spec.File)
 				if _, err := os.Stat(destPath); err == nil {
 					slog.Info("model already present, skipping",
@@ -377,6 +380,18 @@ func downloadModelsStep(baseDir, localBundle string) Step {
 			return os.WriteFile(markerPath, []byte("ok\n"), 0o644)
 		},
 	}
+}
+
+func validateDownloadModelProvenance(specs []hardware.ModelSpec) error {
+	if len(specs) == 0 {
+		return fmt.Errorf("model download has no artifacts — update the model registry or run setup with --skip-download")
+	}
+	for _, spec := range specs {
+		if err := spec.ValidateProvenance(); err != nil {
+			return fmt.Errorf("model %s has incomplete provenance: %w — update the model registry or run setup with --skip-download", spec.Name, err)
+		}
+	}
+	return nil
 }
 
 func githubPlaceholderStep(baseDir string) Step {

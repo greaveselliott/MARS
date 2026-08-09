@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -129,6 +130,24 @@ func TestBuildSteps_githubOptIn(t *testing.T) {
 		names[i] = s.Name
 	}
 	assert.Contains(t, names, "github-setup")
+}
+
+func TestValidateDownloadModelProvenance(t *testing.T) {
+	t.Parallel()
+
+	valid := hardware.DefaultModels(hardware.ProfileMedium)[hardware.TierCoding]
+	require.NoError(t, validateDownloadModelProvenance([]hardware.ModelSpec{valid}))
+
+	invalid := valid
+	invalid.Provenance.TermsURL = ""
+	err := validateDownloadModelProvenance([]hardware.ModelSpec{invalid})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "incomplete provenance")
+	assert.Contains(t, err.Error(), "--skip-download")
+
+	err = validateDownloadModelProvenance(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no artifacts")
 }
 
 func TestCreateDirectoriesStep_execute(t *testing.T) {

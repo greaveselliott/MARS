@@ -59,6 +59,15 @@ func TestCheckPrivateReleaseAuthSkipsWithSkipRemote(t *testing.T) {
 	assert.Contains(t, result.Message, "skipped")
 }
 
+func TestCheckModelRegistryRequiresExactProvenance(t *testing.T) {
+	t.Parallel()
+
+	result := checkModelRegistry(Config{})
+	assert.Equal(t, "model-registry", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "exact artifact and publisher provenance")
+}
+
 func TestCheckGoVersionDoesNotRunOutsideMarsSource(t *testing.T) {
 	t.Parallel()
 	target := t.TempDir()

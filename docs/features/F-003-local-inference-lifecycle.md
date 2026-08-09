@@ -46,6 +46,8 @@ evidence
 And an unavailable publisher conversion-input revision is recorded as
 `not_published` rather than inferred or described as reproducible
 And MARS release archives do not redistribute the model weights
+And incomplete provenance fails before the download step contacts the
+publisher or writes model data and its completion marker
 
 ### F-003-S003: Supervised llama.cpp Server
 

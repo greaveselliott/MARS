@@ -41,6 +41,8 @@ downloads those third-party weights from their publisher and does not include
 them in MARS release archives. Where a publisher did not record the exact
 conversion-input revision, the registry says `not_published`; it does not infer
 one or claim that the conversion is reproducible from incomplete evidence.
+Setup and doctor validate this record before the download step contacts the
+publisher or writes model data and its completion marker.
 
 ### AD-031: Inference resilience — timeouts, context headroom, and health verification
 

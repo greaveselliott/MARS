@@ -435,22 +435,13 @@ func checkModelRegistry(_ Config) CheckResult {
 	name := "model-registry"
 	for _, profile := range []hardware.Profile{hardware.ProfileCPU, hardware.ProfileLow, hardware.ProfileMedium, hardware.ProfileHigh, hardware.ProfileMulti} {
 		for tier, spec := range hardware.DefaultModels(profile) {
-			if strings.TrimSpace(spec.Revision) == "" || spec.Revision == "main" || strings.TrimSpace(spec.SHA256) == "" {
+			if err := spec.ValidateProvenance(); err != nil {
 				return CheckResult{
 					Name:     name,
 					Status:   statusFail,
-					Message:  fmt.Sprintf("%s/%s is not pinned with immutable revision and SHA256", profile, tier),
+					Message:  fmt.Sprintf("%s/%s has incomplete model provenance: %v", profile, tier, err),
 					Duration: time.Since(start),
-					Fix:      "update internal/hardware/registry.go with a non-main revision and SHA256 for every default model",
-				}
-			}
-			if strings.Contains(spec.DownloadURL(), "/resolve/main/") {
-				return CheckResult{
-					Name:     name,
-					Status:   statusFail,
-					Message:  fmt.Sprintf("%s/%s still downloads from resolve/main", profile, tier),
-					Duration: time.Since(start),
-					Fix:      "pin the model revision before running setup",
+					Fix:      "update internal/hardware/registry.go with the exact artifact and publisher provenance before running setup",
 				}
 			}
 		}
@@ -458,7 +449,7 @@ func checkModelRegistry(_ Config) CheckResult {
 	return CheckResult{
 		Name:     name,
 		Status:   statusOK,
-		Message:  "default models pinned by revision and SHA256",
+		Message:  "default models have exact artifact and publisher provenance",
 		Duration: time.Since(start),
 	}
 }
