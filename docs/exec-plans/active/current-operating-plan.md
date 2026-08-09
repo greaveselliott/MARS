@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement and commit T-074 checkpoint A: make the reachable telemetry collector literal-loopback-only with bounded fail-closed requests and no remote-service expansion.
+- **Next Primary Action:** Implement and commit T-074 checkpoint B: harden the source-only GitHub manifest callback with literal-loopback, one-time state, single-use admission, timeouts, and fixed redacted results without wiring a new CLI command.
 
 ## Starting Baseline
 
@@ -172,8 +172,10 @@ release, signing, upload, or publication authority.
 ## Next Walking Skeleton — T-074
 
 T-074 was created through `ticket_create` after bounded COO, CTO-weekly, and
-Security review. Checkpoint A closes the directly reachable telemetry wildcard
-bind and request-boundary defects before any database or listener state.
+Security review. Checkpoint A passed at exact commit `596524e`: the directly
+reachable telemetry collector is literal-loopback-only, rejects invalid binds
+before database creation, bounds request admission, and passed focused
+normal/race, four-platform build, and clean commit-bound installed smoke gates.
 Checkpoint B hardens the GitHub manifest flow, which has no production callsite
 at `4cdcc87`, with
 literal-loopback binding, one-time state, single-use callback admission,

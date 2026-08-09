@@ -6,14 +6,14 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: []
-verified_by: "pending QA, Security, Dogfood, Release Manager, and Orchestrator"
+evidence_links: ["commit:596524ebaa0fd08718fe2630861a0b0c241a674a", "binary-sha256:b66394b7a44c2784e0eb662f91d68352844c92cb6bc8a4a51bc4da81e863ded7"]
+verified_by: "Checkpoint A: QA, Security, Dogfood, Release Manager, and Orchestrator; Checkpoint B pending"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: COO, CTO-weekly, and Security scope frozen"
+last_attempt: "2026-08-09: Checkpoint A passed at 596524e; Checkpoint B is next"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-network-boundaries:2026-08-09"
-next_action: "Implement the reachable telemetry loopback and bounded-request checkpoint first, commit and push it, then harden the source-only GitHub manifest callback and close with installed telemetry smoke."
+next_action: "Implement and validate only the source-only GitHub manifest callback checkpoint, then record T-074 closure evidence."
 dedupe_key: "open-source:network-entry-point-hardening"
 metadata:
   classification: "foundation-owned"
@@ -44,6 +44,16 @@ Make telemetry collection a literal-loopback-only local service and make the exi
 - Enforce an exact 2 MiB body limit, one JSON value plus EOF, and fixed redacted status responses. Method, Host, Origin, media-type, oversized, trailing, nil-store, and already-canceled-context failures make zero store calls. An admitted request whose store later fails returns a fixed 500, is never reported accepted, leaks no store detail, and remains safe to retry through existing deduplication.
 - Add conventional header/read/write/idle timeouts and bounded graceful shutdown.
 - Preserve the existing intake schema and opt-in outbound reporting. Remote collection remains unavailable.
+
+Checkpoint A passed at exact commit `596524ebaa0fd08718fe2630861a0b0c241a674a`.
+Focused normal/race tests, vet, docs-consistency, DocSync, mirrored CLI checks,
+and four CGO-disabled Darwin/Linux builds passed. A clean commit-bound
+Darwin/arm64 binary built with Go 1.26.5, `vcs.modified=false`, and SHA-256
+`b66394b7a44c2784e0eb662f91d68352844c92cb6bc8a4a51bc4da81e863ded7`
+accepted one synthetic loopback report and persisted exactly one report and one
+pattern. The same installed candidate rejected a wildcard bind before creating
+the requested database directory. QA, Security, Dogfood, Release Manager, and
+the Orchestrator approved this checkpoint.
 
 ## Checkpoint B — Source-Only GitHub App Manifest Flow
 
