@@ -89,6 +89,32 @@ func TestExampleRolePromptLineage(t *testing.T) {
 	}
 }
 
+func TestCurrentPublicationMediaIsSourceNative(t *testing.T) {
+	root := repoRoot(t)
+	asset := filepath.Join(root, "docs", "harness-ecosystem", "assets", "harness-network.png")
+	if _, err := os.Stat(asset); err == nil || !os.IsNotExist(err) {
+		t.Fatalf("retired binary publication asset remains accessible: %v", err)
+	}
+
+	surfaces := []string{
+		"docs/index.html",
+		"docs/site.css",
+		"docs/harness-ecosystem/index.html",
+		"docs/harness-ecosystem/styles.css",
+	}
+	for _, rel := range surfaces {
+		body := readPromptLineageFile(t, filepath.Join(root, filepath.FromSlash(rel)))
+		if strings.Contains(body, "harness-network.png") {
+			t.Errorf("%s retains the retired binary publication asset", rel)
+		}
+	}
+
+	index := readPromptLineageFile(t, filepath.Join(root, "docs", "index.html"))
+	if !strings.Contains(index, `class="hero-flow"`) || !strings.Contains(index, "MARS foundation runtime, deployed harness, target repository, and feedback loop") {
+		t.Error("docs landing page is missing the semantic source-native system map")
+	}
+}
+
 func readPromptLineageFile(t *testing.T, path string) string {
 	t.Helper()
 	body, err := os.ReadFile(path)

@@ -127,6 +127,17 @@ Finding `686ebdcc-fa37-44b8-b064-b66a899c6a94` remains open. The exact blob
 must receive an owner creation/assignment/tool-terms attestation or be removed
 or replaced together with both current references.
 
+### Current-Tree Media Remediation — 2026-08-09
+
+T-073 replaces both live uses of the PNG with source-native HTML and CSS and
+removes the binary asset from current `main`. Future Pages output and release
+archives therefore do not require this image. This remediation does not erase
+the blob from retained commits or tags and does not establish its historical
+rights. Finding `686ebdcc-fa37-44b8-b064-b66a899c6a94` remains open for the
+final history disposition: the owner must attest creation, assignment, and
+applicable tool terms for the exact historical blob, or separately authorize a
+history strategy that excludes it.
+
 ## Official-Register Name Screen
 
 The following knockout searches were performed on 2026-08-08 for exact or

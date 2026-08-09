@@ -242,7 +242,15 @@ button {
 .hero-bg {
   background:
     linear-gradient(90deg, rgba(9, 8, 7, 0.9), rgba(9, 8, 7, 0.56), rgba(9, 8, 7, 0.82)),
-    url("assets/harness-network.png") center / cover no-repeat;
+    radial-gradient(circle at 14% 24%, rgba(212, 107, 56, 0.9) 0 6px, transparent 7px),
+    radial-gradient(circle at 39% 58%, rgba(79, 183, 170, 0.9) 0 7px, transparent 8px),
+    radial-gradient(circle at 68% 30%, rgba(135, 102, 204, 0.88) 0 6px, transparent 7px),
+    radial-gradient(circle at 86% 72%, rgba(243, 177, 79, 0.88) 0 7px, transparent 8px),
+    linear-gradient(28deg, transparent 49.7%, rgba(79, 183, 170, 0.2) 49.85% 50.15%, transparent 50.3%),
+    linear-gradient(146deg, transparent 49.7%, rgba(212, 107, 56, 0.2) 49.85% 50.15%, transparent 50.3%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 72px),
+    #090807;
   transform: scale(1.01);
 }
 
