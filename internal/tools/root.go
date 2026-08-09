@@ -8,6 +8,7 @@ docs:
 package tools
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -99,4 +100,56 @@ func (r Root) OpenFile(rel string, flag int, perm fs.FileMode) (*os.File, string
 		return nil, p, err
 	}
 	return f, p, nil
+}
+
+func createExclusiveRepositoryFile(root Root, rel string, data []byte, perm fs.FileMode) error {
+	repo := root.RepoFS()
+	if repo == nil {
+		return fmt.Errorf("tools: repository filesystem is unavailable")
+	}
+	if err := repo.MkdirAll(filepath.Dir(rel), 0o755); err != nil {
+		return err
+	}
+	file, err := repo.CreateExclusive(rel, perm)
+	if err != nil {
+		return err
+	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = file.Close()
+			_ = repo.Remove(rel)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return err
+	}
+	if err := file.Sync(); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	cleanup = false
+	return nil
+}
+
+func atomicWriteRepositoryFile(root Root, rel string, data []byte, perm fs.FileMode) error {
+	repo := root.RepoFS()
+	if repo == nil {
+		return fmt.Errorf("tools: repository filesystem is unavailable")
+	}
+	if err := repo.MkdirAll(filepath.Dir(rel), 0o755); err != nil {
+		return err
+	}
+	mode := perm
+	if info, err := repo.Stat(rel); err == nil {
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("tools: repository replacement target is not a regular file")
+		}
+		mode = info.Mode().Perm()
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return repo.AtomicWrite(rel, data, mode)
 }

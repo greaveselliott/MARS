@@ -13,6 +13,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -489,11 +490,7 @@ func requiredGeneratedIgnores(root Root) []string {
 }
 
 func loadGitignoreCoverage(root Root) []string {
-	abs, err := root.ResolvePath(".gitignore")
-	if err != nil {
-		return nil
-	}
-	data, err := os.ReadFile(abs)
+	data, err := root.RepoFS().ReadFile(".gitignore")
 	if err != nil {
 		return nil
 	}
@@ -511,12 +508,9 @@ func loadGitignoreCoverage(root Root) []string {
 }
 
 func appendGeneratedGitignoreEntries(root Root, dirs []string) error {
-	abs, err := root.ResolvePath(".gitignore")
-	if err != nil {
-		return err
-	}
-	data, err := os.ReadFile(abs)
-	if err != nil && !os.IsNotExist(err) {
+	data, err := root.RepoFS().ReadFile(".gitignore")
+	exists := err == nil
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	content := string(data)
@@ -543,7 +537,10 @@ func appendGeneratedGitignoreEntries(root Root, dirs []string) error {
 		b.WriteString(hints[0])
 		b.WriteString("\n")
 	}
-	return os.WriteFile(abs, []byte(b.String()), 0o644)
+	if exists {
+		return atomicWriteRepositoryFile(root, ".gitignore", []byte(b.String()), 0o644)
+	}
+	return createExclusiveRepositoryFile(root, ".gitignore", []byte(b.String()), 0o644)
 }
 
 func gitignoreDirty(ctx context.Context, root Root) (bool, error) {

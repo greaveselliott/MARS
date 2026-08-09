@@ -104,3 +104,33 @@ func TestPersonaCreateRejectsMissingRequiredManualSections(t *testing.T) {
 	}`))
 	require.ErrorContains(t, err, "owns is required")
 }
+
+func TestPersonaCreateOverwriteRejectsSymlinkLeaf(t *testing.T) {
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "sentinel.md")
+	require.NoError(t, os.WriteFile(outside, []byte("outside\n"), 0o600))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "roles", "personas"), 0o755))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "docs", "roles", "personas", "unsafe.md")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	err = writePersonaFile(root, "docs/roles/personas/unsafe.md", "replacement\n", true)
+	require.Error(t, err)
+	data, readErr := os.ReadFile(outside)
+	require.NoError(t, readErr)
+	require.Equal(t, "outside\n", string(data))
+}
+
+func TestPersonaCreateOverwritePreservesExistingMode(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "docs", "roles", "personas", "private.md")
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("old\n"), 0o600))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	require.NoError(t, writePersonaFile(root, "docs/roles/personas/private.md", "new\n", true))
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+}

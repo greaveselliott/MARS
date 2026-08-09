@@ -41,6 +41,23 @@ func initGitRepo(t *testing.T, dir string) {
 	run("config", "user.name", "Harness Test")
 }
 
+func TestRunGitRejectsReplacedRepositoryRoot(t *testing.T) {
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	moved := dir + "-moved"
+	require.NoError(t, os.Rename(dir, moved))
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	initGitRepo(t, dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("replacement\n"), 0o644))
+
+	_, err = runGit(context.Background(), root, "add", ".gitignore")
+	require.EqualError(t, err, "git: repository identity verification failed")
+	require.Empty(t, strings.TrimSpace(testGitOutput(t, dir, "diff", "--cached", "--name-only")))
+}
+
 func TestGitStatus_cleanRepo(t *testing.T) {
 	t.Parallel()
 	requireGit(t)

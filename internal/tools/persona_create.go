@@ -11,6 +11,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -169,36 +170,34 @@ dispatch disposition rules here before activating the role.
 }
 
 func writePersonaFile(root Root, rel, content string, overwrite bool) error {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return err
-	}
-	if _, err := os.Stat(abs); err == nil && !overwrite {
-		return fmt.Errorf("persona_create: %s already exists; pass overwrite true to replace it", rel)
-	} else if err != nil && !os.IsNotExist(err) {
+	exists := false
+	if _, err := root.RepoFS().Stat(rel); err == nil {
+		exists = true
+		if !overwrite {
+			return fmt.Errorf("persona_create: %s already exists; pass overwrite true to replace it", rel)
+		}
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("persona_create: stat %s: %w", rel, err)
 	}
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return fmt.Errorf("persona_create: mkdir %s: %w", filepath.Dir(rel), err)
+	if exists {
+		if err := atomicWriteRepositoryFile(root, rel, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("persona_create: write %s: %w", rel, err)
+		}
+		return nil
 	}
-	if err := os.WriteFile(abs, []byte(content), 0o644); err != nil {
+	if err := createExclusiveRepositoryFile(root, rel, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("persona_create: write %s: %w", rel, err)
 	}
 	return nil
 }
 
 func upsertPersonaRegistryRow(root Root, p personas.Persona, scope string) error {
-	abs, err := root.ResolvePath(roleregistry.RegistryPath)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return fmt.Errorf("persona_create: mkdir %s: %w", filepath.Dir(roleregistry.RegistryPath), err)
-	}
 	content := ""
-	if data, err := os.ReadFile(abs); err == nil {
+	exists := false
+	if data, err := root.RepoFS().ReadFile(roleregistry.RegistryPath); err == nil {
+		exists = true
 		content = string(data)
-	} else if os.IsNotExist(err) {
+	} else if errors.Is(err, os.ErrNotExist) {
 		content = roleregistry.DefaultMarkdown()
 	} else {
 		return fmt.Errorf("persona_create: read %s: %w", roleregistry.RegistryPath, err)
@@ -212,18 +211,21 @@ func upsertPersonaRegistryRow(root Root, p personas.Persona, scope string) error
 		content += "\n"
 	}
 	content += row
-	if err := os.WriteFile(abs, []byte(content), 0o644); err != nil {
+	var err error
+	if exists {
+		err = atomicWriteRepositoryFile(root, roleregistry.RegistryPath, []byte(content), 0o644)
+	} else {
+		err = createExclusiveRepositoryFile(root, roleregistry.RegistryPath, []byte(content), 0o644)
+	}
+	if err != nil {
 		return fmt.Errorf("persona_create: write %s: %w", roleregistry.RegistryPath, err)
 	}
 	return nil
 }
 
 func upsertManifestRole(root Root, p personas.Persona, args personaCreateArgs) error {
-	abs, err := root.ResolvePath(filepath.Join(".harness", "manifest.yaml"))
-	if err != nil {
-		return err
-	}
-	data, err := os.ReadFile(abs)
+	const manifestPath = ".harness/manifest.yaml"
+	data, err := root.RepoFS().ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("persona_create: read .harness/manifest.yaml: %w", err)
 	}
@@ -261,7 +263,7 @@ func upsertManifestRole(root Root, p personas.Persona, args personaCreateArgs) e
 	if err != nil {
 		return fmt.Errorf("persona_create: render .harness/manifest.yaml: %w", err)
 	}
-	if err := os.WriteFile(abs, out, 0o644); err != nil {
+	if err := atomicWriteRepositoryFile(root, manifestPath, out, 0o644); err != nil {
 		return fmt.Errorf("persona_create: write .harness/manifest.yaml: %w", err)
 	}
 	return nil

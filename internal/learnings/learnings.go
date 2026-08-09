@@ -8,6 +8,7 @@ docs:
 package learnings
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/repofs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -60,17 +62,26 @@ type Decision struct {
 
 // Store manages reading and writing the per-repo learnings file.
 type Store struct {
-	mu       sync.Mutex
-	repoRoot string
+	mu           sync.Mutex
+	repoFS       *repofs.Root
+	admissionErr error
 }
 
 // NewStore creates a store rooted at the given repo path.
 func NewStore(repoRoot string) *Store {
-	return &Store{repoRoot: repoRoot}
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return &Store{admissionErr: errors.New("learnings: repository filesystem admission failed")}
+	}
+	return NewRepositoryStore(root)
 }
 
-func (s *Store) path() string {
-	return filepath.Join(s.repoRoot, ".harness", fileName)
+// NewRepositoryStore creates a descriptor-backed store from an admitted root.
+func NewRepositoryStore(root *repofs.Root) *Store {
+	if root == nil {
+		return &Store{admissionErr: errors.New("learnings: repository filesystem admission failed")}
+	}
+	return &Store{repoFS: root}
 }
 
 // Load reads the learnings file, returning an empty Learnings if it doesn't exist.
@@ -81,16 +92,23 @@ func (s *Store) Load() (*Learnings, error) {
 }
 
 func (s *Store) loadUnsafe() (*Learnings, error) {
-	data, err := os.ReadFile(s.path())
-	if os.IsNotExist(err) {
+	if s.admissionErr != nil {
+		return nil, s.admissionErr
+	}
+	if s.repoFS == nil {
+		return nil, errors.New("learnings: repository filesystem admission failed")
+	}
+	rel := filepath.Join(".harness", fileName)
+	data, err := s.repoFS.ReadFile(rel)
+	if errors.Is(err, os.ErrNotExist) {
 		return &Learnings{}, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("learnings: read %s: %w", s.path(), err)
+		return nil, fmt.Errorf("learnings: read %s: %w", rel, err)
 	}
 	var l Learnings
 	if err := yaml.Unmarshal(data, &l); err != nil {
-		return nil, fmt.Errorf("learnings: parse %s: %w", s.path(), err)
+		return nil, fmt.Errorf("learnings: parse %s: %w", rel, err)
 	}
 	return &l, nil
 }
@@ -103,17 +121,52 @@ func (s *Store) Save(l *Learnings) error {
 }
 
 func (s *Store) saveUnsafe(l *Learnings) error {
+	if s.admissionErr != nil {
+		return s.admissionErr
+	}
+	if s.repoFS == nil {
+		return errors.New("learnings: repository filesystem admission failed")
+	}
 	data, err := yaml.Marshal(l)
 	if err != nil {
 		return fmt.Errorf("learnings: marshal: %w", err)
 	}
-	dir := filepath.Dir(s.path())
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("learnings: mkdir %s: %w", dir, err)
+	rel := filepath.Join(".harness", fileName)
+	if err := s.repoFS.MkdirAll(filepath.Dir(rel), 0o755); err != nil {
+		return fmt.Errorf("learnings: mkdir %s: %w", filepath.Dir(rel), err)
 	}
-	if err := os.WriteFile(s.path(), data, 0o644); err != nil {
-		return fmt.Errorf("learnings: write %s: %w", s.path(), err)
+	if info, err := s.repoFS.Stat(rel); err == nil {
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("learnings: inspect %s: replacement target is not a regular file", rel)
+		}
+		if err := s.repoFS.AtomicWrite(rel, data, info.Mode().Perm()); err != nil {
+			return fmt.Errorf("learnings: write %s: %w", rel, err)
+		}
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("learnings: inspect %s: %w", rel, err)
 	}
+	file, err := s.repoFS.CreateExclusive(rel, 0o644)
+	if err != nil {
+		return fmt.Errorf("learnings: write %s: %w", rel, err)
+	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = file.Close()
+			_ = s.repoFS.Remove(rel)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("learnings: write %s: %w", rel, err)
+	}
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("learnings: write %s: %w", rel, err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("learnings: write %s: %w", rel, err)
+	}
+	cleanup = false
 	return nil
 }
 

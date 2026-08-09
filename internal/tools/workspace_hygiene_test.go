@@ -142,6 +142,19 @@ func TestWorkspaceHygieneRepairSkipsTrackedGeneratedPaths(t *testing.T) {
 	require.NoFileExists(t, filepath.Join(dir, ".gitignore"))
 }
 
+func TestWorkspaceHygieneRepairRejectsSymlinkedGitignore(t *testing.T) {
+	dir, root := setupWorkspaceHygieneRepo(t)
+	outside := filepath.Join(t.TempDir(), "sentinel.gitignore")
+	require.NoError(t, os.WriteFile(outside, []byte("outside/\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, ".gitignore")))
+
+	err := appendGeneratedGitignoreEntries(root, []string{"node_modules"})
+	require.Error(t, err)
+	data, readErr := os.ReadFile(outside)
+	require.NoError(t, readErr)
+	require.Equal(t, "outside/\n", string(data))
+}
+
 func setupWorkspaceHygieneRepo(t *testing.T) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()

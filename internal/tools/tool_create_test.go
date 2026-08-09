@@ -92,6 +92,25 @@ func TestToolCreate_refusesOverwrite(t *testing.T) {
 	require.Contains(t, err.Error(), "already exists")
 }
 
+func TestToolCreateRejectsSymlinkedToolParent(t *testing.T) {
+	dir := t.TempDir()
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("outside\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/greaveselliott/mars\n"), 0o644))
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "internal"), 0o755))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "internal", "tools")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	_, err = handleToolCreate(context.Background(), root, []byte(`{"name":"unsafe_tool","description":"Must remain contained."}`))
+	require.Error(t, err)
+	data, readErr := os.ReadFile(sentinel)
+	require.NoError(t, readErr)
+	require.Equal(t, "outside\n", string(data))
+	require.NoFileExists(t, filepath.Join(outside, "unsafe_tool.go"))
+}
+
 func TestDefaultRegistry_includesToolCreate(t *testing.T) {
 	t.Parallel()
 	reg, err := DefaultRegistry()

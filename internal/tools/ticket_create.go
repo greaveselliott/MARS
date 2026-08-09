@@ -457,14 +457,7 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	fmt.Fprintf(&content, "# %s: %s\n\n", id, title)
 	fmt.Fprintf(&content, "%s\n", sanitizeTicketBody(input.Body, id, title))
 
-	absPath, err := root.ResolvePath(relPath)
-	if err != nil {
-		return ToolResult{}, err
-	}
-	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
-		return ToolResult{}, fmt.Errorf("ticket_create: mkdir: %w", err)
-	}
-	if err := os.WriteFile(absPath, []byte(content.String()), 0o644); err != nil {
+	if err := createExclusiveRepositoryFile(root, relPath, []byte(content.String()), 0o644); err != nil {
 		return ToolResult{}, fmt.Errorf("ticket_create: write: %w", err)
 	}
 
@@ -765,11 +758,7 @@ func scenarioSetsOverlap(a, b []string) bool {
 
 func updateExistingTicket(root Root, existing existingTicket, input TicketInput) (bool, error) {
 	source := strings.TrimSpace(input.Source)
-	absPath, err := root.ResolvePath(existing.Path)
-	if err != nil {
-		return false, err
-	}
-	data, err := os.ReadFile(absPath)
+	data, err := root.RepoFS().ReadFile(existing.Path)
 	if err != nil {
 		return false, fmt.Errorf("ticket_create: read existing ticket: %w", err)
 	}
@@ -802,7 +791,7 @@ func updateExistingTicket(root Root, existing existingTicket, input TicketInput)
 	}
 
 	updated := compactTriageUpdates(string(data) + update.String())
-	if err := os.WriteFile(absPath, []byte(updated), 0o644); err != nil {
+	if err := atomicWriteRepositoryFile(root, existing.Path, []byte(updated), 0o644); err != nil {
 		return false, fmt.Errorf("ticket_create: update existing ticket: %w", err)
 	}
 	return true, nil

@@ -10,6 +10,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -85,13 +86,9 @@ func handleToolCreate(_ context.Context, root Root, raw json.RawMessage) (ToolRe
 	registerPath := filepath.Join("internal", "tools", "register_default.go")
 
 	for _, rel := range []string{toolPath, testPath} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			return ToolResult{}, err
-		}
-		if _, err := os.Stat(abs); err == nil {
+		if _, err := root.RepoFS().Stat(rel); err == nil {
 			return ToolResult{}, fmt.Errorf("tool_create: %s already exists; refusing to overwrite", rel)
-		} else if !os.IsNotExist(err) {
+		} else if !errors.Is(err, os.ErrNotExist) {
 			return ToolResult{}, fmt.Errorf("tool_create: stat %s: %w", rel, err)
 		}
 	}
@@ -201,12 +198,8 @@ func ensureHarnessToolRoot(root Root) error {
 		filepath.Join("internal", "tools", "register_default.go"),
 		"go.mod",
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			return err
-		}
-		if _, err := os.Stat(abs); err != nil {
-			if os.IsNotExist(err) {
+		if _, err := root.RepoFS().Stat(rel); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
 				return fmt.Errorf("tool_create: %s is missing; this tool only scaffolds mars built-in tools", rel)
 			}
 			return fmt.Errorf("tool_create: stat %s: %w", rel, err)
@@ -216,14 +209,7 @@ func ensureHarnessToolRoot(root Root) error {
 }
 
 func writeFileUnderRoot(root Root, rel, content string) error {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return fmt.Errorf("tool_create: mkdir %s: %w", filepath.Dir(rel), err)
-	}
-	if err := os.WriteFile(abs, []byte(content), 0o644); err != nil {
+	if err := createExclusiveRepositoryFile(root, rel, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("tool_create: write %s: %w", rel, err)
 	}
 	return nil

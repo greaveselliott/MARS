@@ -463,12 +463,19 @@ func runGitExit0(ctx context.Context, root Root, args ...string) error {
 }
 
 func runGit(ctx context.Context, root Root, args ...string) (ToolResult, error) {
+	repo := root.RepoFS()
+	if repo == nil || repo.VerifyPath() != nil {
+		return ToolResult{}, errors.New("git: repository identity verification failed")
+	}
 	full := append([]string{"-C", root.Abs()}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...)
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
+	if repo.VerifyPath() != nil {
+		return ToolResult{}, errors.New("git: repository identity verification failed")
+	}
 	exit := 0
 	if err != nil {
 		var ee *exec.ExitError

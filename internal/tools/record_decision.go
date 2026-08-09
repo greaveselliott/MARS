@@ -50,7 +50,7 @@ func handleRecordDecision(ctx context.Context, root Root, raw json.RawMessage) (
 		return ToolResult{}, fmt.Errorf("record_decision: summary is required")
 	}
 
-	store := learnings.NewStore(root.Abs())
+	store := learnings.NewRepositoryStore(root.RepoFS())
 	role := "unknown"
 	if session, ok := SessionFromContext(ctx); ok && strings.TrimSpace(session.Role) != "" {
 		role = strings.TrimSpace(session.Role)

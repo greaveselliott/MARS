@@ -70,6 +70,42 @@ func TestTicketCreate_basic(t *testing.T) {
 	assert.Contains(t, string(data), "## Context")
 }
 
+func TestTicketCreateRejectsSymlinkedBacklogParent(t *testing.T) {
+	dir, root := setupTicketDir(t)
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "sentinel.md")
+	require.NoError(t, os.WriteFile(sentinel, []byte("outside\n"), 0o600))
+	require.NoError(t, os.Remove(filepath.Join(dir, "docs", "tickets", "backlog")))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "docs", "tickets", "backlog")))
+
+	_, err := CreateTicket(root, TicketInput{
+		Title:    "Remain contained",
+		Priority: "high",
+		Body:     "## Context\nContain writes.\n\n## Requirements\nReject links.\n\n## Acceptance criteria\n- [ ] Outside stays unchanged",
+	})
+	require.Error(t, err)
+	data, readErr := os.ReadFile(sentinel)
+	require.NoError(t, readErr)
+	require.Equal(t, "outside\n", string(data))
+	entries, readDirErr := os.ReadDir(outside)
+	require.NoError(t, readDirErr)
+	require.Len(t, entries, 1)
+}
+
+func TestUpdateExistingTicketRejectsSymlinkLeaf(t *testing.T) {
+	dir, root := setupTicketDir(t)
+	outside := filepath.Join(t.TempDir(), "sentinel.md")
+	require.NoError(t, os.WriteFile(outside, []byte("outside\n"), 0o600))
+	rel := filepath.Join("docs", "tickets", "backlog", "T-001-unsafe.md")
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, rel)))
+
+	_, err := updateExistingTicket(root, existingTicket{Path: rel}, TicketInput{Source: "security review"})
+	require.Error(t, err)
+	data, readErr := os.ReadFile(outside)
+	require.NoError(t, readErr)
+	require.Equal(t, "outside\n", string(data))
+}
+
 func TestTicketCreate_writesBDDOperatingModelMetadata(t *testing.T) {
 	t.Parallel()
 	dir, root := setupTicketDir(t)
