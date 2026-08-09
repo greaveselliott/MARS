@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-075 — make repository paths descriptor-safe and scan exact Git index blobs
+**Current Ticket:** None — T-075 passed; T-076 must be created through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,8 +13,8 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — T-074 network entry points and T-075 Checkpoints A through C's direct file-tool, exact Git-index, named writer, and target-lifecycle boundaries pass, while the deferred read-side inventory and closure gates remain pending Checkpoint D; F-017-S001 remains independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** Deliver T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
+**Current Failing Scenario:** F-017-S002 — T-074 and T-075 pass; T-076 execution-profile/environment/state/trace hardening and resumed T-058 browser proof remain, while F-017-S001 is independently blocked on T-073's owner/legal hold.
+**Walking Skeleton Slice:** T-075 closed the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state; the next bounded slice is T-076.
 **Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Complete T-075 Checkpoint D only: inventory and migrate the deferred bundle/context/tools-policy/scanner/release/Jira general read-side surfaces, then run the bounded closure gates and sign-offs.
+- **Next Primary Action:** Create T-076 through `ticket_create`, then begin only the execution-profile, environment, state, and trace gate.
 
 ## Starting Baseline
 
@@ -189,7 +189,7 @@ all T-075 through T-077 surfaces remained out of scope. T-074 is complete but
 does not close F-017-S002 by itself, and it grants no release, settings,
 visibility, or publication authority.
 
-## Next Walking Skeleton — T-075
+## Completed Walking Skeleton — T-075
 
 T-075 was created through `ticket_create` after bounded COO, CTO-weekly, QA,
 and Security scope review. Two reachable gaps define the ticket: universal
@@ -260,8 +260,21 @@ is exclusive and reconciliation is atomic and mode-preserving. Focused
 normal/race tests, affected caller tests, package vet, formatting, and diff
 checks pass; QA, Security, Release Manager, and Orchestrator returned GO.
 Checkpoint C's named mutation/writer portion is complete. Checkpoint D's
-deferred read-side inventory and closure gates are the sole next action;
-T-075 and F-017-S002 remain incomplete.
+deferred read-side inventory passed through exact commits
+`228d859511fb2f7c93e0162424c2e6dc95107e44`,
+`7578549bdd0dde90857f9652e651832d484abdb2`,
+`ff69aaa1bab3680d169e8889866ba73cccb397c9`,
+`16b5527bbe48e8afea82bb70127d383d6f280ed7`, and
+`c18030edb44d1b869a03d30e4339ff457641c6e4`; final DocSync containment passed
+at `9ba8156942a584f301888a3675942923739993d6`. Focused normal/race tests,
+affected-package vet, full DocSync/docs-consistency, four CGO-disabled builds,
+and installed Dogfood passed. The four build SHA-256 values are
+`dedcecb5e05416fdb6614e7c9d8010f446a51ff3e4fbafe2429435fc46bf4ed0`,
+`c1137731531fded59e600e36ba8f77cd7ef1d6759262ddc223a3b7235831a28f`,
+`5113f1b119a35c46a90fbb93a28877c61213527ee163319960961717ac7d290c`, and
+`844cd84754cc55ffd426a657549b104a89ce2b02a8dbab5ab47b739379bace06`.
+T-075 passes with QA, Security, Dogfood, Release Manager, and Orchestrator GO;
+F-017-S002 remains incomplete pending T-076 and resumed T-058.
 
 No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,
@@ -273,7 +286,7 @@ close F-017-S002 by itself.
 - **T-072 — passed 2026-08-08:** Every retained GitHub-hosted surface is collected, confirmed empty, or not applicable; scanners have zero errors, skips, and unresolved secret candidates; exact cleanup IDs are frozen. Two installed-App access findings remain explicit T-079/T-080 launch no-go items.
 - **T-073:** Authority, predecessor/AI/media/model/llama.cpp/dependency provenance, name searches, notices, product claims, and `preserve_audited_history` disposition are complete with no deferred finding.
 - **T-074:** GitHub App callback and telemetry collection are literal-loopback, bounded, replay-safe, and fail closed.
-- **T-075:** All model/agent-controlled repository paths use one descriptor-relative no-follow interface; index-only and force-added secrets are scanned without reproducing values.
+- **T-075 — passed 2026-08-09:** All named model/agent-controlled repository paths use the descriptor-relative no-follow interface; index-only and force-added secrets are scanned without reproducing values; four builds and installed Dogfood pass.
 - **T-076:** Observer is non-mutating by default; host requires acknowledgement; isolated is unavailable; child environments, owned processes, state permissions, centralized redaction, export, purge, and retention pass.
 - **T-058:** A real browser proves hostile DOM/SSE strings inert, browser controls protected, and embedded assets fully offline against an installed current candidate.
 - **T-077:** Anonymous-first access, clear-local, exact-tag bootstrap, license-aware setup, and clean macOS/Linux operation without GitHub credentials pass.

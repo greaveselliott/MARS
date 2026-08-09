@@ -34,6 +34,10 @@ When `mars init --repo <path>` runs
 Then the repo receives a usable target harness with manifest, metadata, role prompts, guardrails, knowledge routes, docs, ticket directories, quality score, dogfood evidence report directory, version, changelog, optional integrations example config, and root ignore policy for host OS metadata such as `.DS_Store`
 And `.harness/integrations.yaml` is not written by default
 
+Given an optional README candidate is a symlink outside the selected repository
+When `mars init` derives the initial product brief
+Then it does not read the outside target, uses the generic product-brief fallback, and still produces a usable contained harness
+
 ### F-004-S002: Init Mirrors Doctrine
 
 Given a target harness is generated
@@ -46,6 +50,7 @@ Given a target repo already has user-edited manifest, roles, guardrails, tickets
 When `mars upgrade --repo <path>` runs
 Then missing default files and safe host OS metadata ignore entries are added while existing user-owned files are preserved
 And `.harness/integrations.example.yaml` is restored when missing without creating or overwriting `.harness/integrations.yaml`
+And every generated-target mutation stays relative to the admitted repository descriptor, so a symlink parent or leaf fails without mutating its outside target
 
 ### F-004-S004: Update Check Reports Drift
 
@@ -95,6 +100,7 @@ Then the command reports the files and database it would remove without mutating
 Given the same target repo
 When `mars eject --repo <path> --apply --confirm repo` runs
 Then `.harness/`, generated harness docs, generated ticket/feature/release/report defaults including dogfood reports, root generated guidance/version files, and the associated per-repo database are removed without rewriting git history
+And all repository targets are descriptor-preflighted before removal, so a symlink parent or leaf blocks apply without partially removing contained artifacts or touching its outside target
 
 ## Out of Scope
 
@@ -108,9 +114,9 @@ None.
 
 ## Evidence
 
-- F-004-S001: `go test ./internal/scanner -run TestInit_success`
+- F-004-S001: `go test ./internal/scanner -run 'TestInit_success|TestInitIgnoresSymlinkedReadmeBrief|TestReadHarnessMetadataRejectsSymlink'`
 - F-004-S002: `go test ./internal/scanner -run TestInit_success`
-- F-004-S003: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
+- F-004-S003: `go test ./internal/scanner -run 'TestUpgrade_preservesUserConfiguredManifestAndPrompts|TestUpgradeRejectsSymlinkedPromptLeaf'`
 - F-004-S004: `go test ./internal/updatecheck`
 - F-004-S005: `go test ./internal/doctor -run TestCheck`
 - F-004-S006: `go test ./internal/scanner -run TestEnsureHarness`

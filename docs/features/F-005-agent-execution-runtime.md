@@ -119,6 +119,10 @@ Given a target repository contains a symlink as the parent or leaf of a requeste
 When the universal file tool resolves or opens that repository entry
 Then the operation is bound through the standard-library repository descriptor, rejects the observed symlink, and neither reads nor mutates the symlink target outside the selected repository
 
+Given a model- or agent-controlled operation reads or mutates repository-owned prompts, skills, policy, tickets, learnings, model overrides, local credential routing, release state, Jira mirrors, scanner inputs, or DocSync inputs
+When that operation admits a repository
+Then its related repository reads and writes retain the same descriptor-relative no-follow boundary for the operation, preserve documented optional-input fallbacks, and fail closed on an in-scope symlink or incomplete inventory without consuming outside content
+
 Given `file_write` is admitted for a repository-relative path
 When it creates or replaces the file
 Then it creates missing real directories inside the repository and installs the new bytes through an exclusive same-directory temporary file, file sync, atomic rename, and directory sync with the requested `0644` mode
@@ -967,7 +971,7 @@ None.
 
 - F-005-S001: `go test ./internal/context`
 - F-005-S002: `go test ./internal/agent -run TestRun`
-- F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract|TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance'` and `go test ./internal/serve -run TestFoundationAcceptance`
+- F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract|TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance'`, `go test ./internal/serve -run TestFoundationAcceptance`, the focused T-075 repository-boundary suites, and installed-candidate Dogfood at `c18030e` and `9ba8156`
 - F-005-S004: `go test ./internal/agent -run TestRun_persistsTraceToSQLite`
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
 - F-005-S006: `go test ./cmd/mars -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence

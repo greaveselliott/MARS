@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08", "commit:66d7e412f0c0dade49c037752c8fa3f0000ee94e", "commit:c8c28cbcc709e12554236e92b7c2e7ba19006784", "commit:d67b04278db608c5fb39d61d3fa0b54c4909cbed", "commit:f99964e79047b3e71d3076d1a05c75b3df9c4e95", "commit:e08deb4bd118ff025abf131e7db8cf4eeb4cf333"]
-verified_by: "Checkpoints A, B, C1, C2, and C3: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
+evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08", "commit:66d7e412f0c0dade49c037752c8fa3f0000ee94e", "commit:c8c28cbcc709e12554236e92b7c2e7ba19006784", "commit:d67b04278db608c5fb39d61d3fa0b54c4909cbed", "commit:f99964e79047b3e71d3076d1a05c75b3df9c4e95", "commit:e08deb4bd118ff025abf131e7db8cf4eeb4cf333", "commit:228d859511fb2f7c93e0162424c2e6dc95107e44", "commit:7578549bdd0dde90857f9652e651832d484abdb2", "commit:ff69aaa1bab3680d169e8889866ba73cccb397c9", "commit:16b5527bbe48e8afea82bb70127d383d6f280ed7", "commit:c18030edb44d1b869a03d30e4339ff457641c6e4", "commit:9ba8156942a584f301888a3675942923739993d6", "binary-sha256:c1137731531fded59e600e36ba8f77cd7ef1d6759262ddc223a3b7235831a28f"]
+verified_by: "QA, Security, Dogfood, Release Manager, and Orchestrator on 2026-08-09"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint C3 passed through model/credential d67b042, release f99964e, and Jira e08deb4 containment; Checkpoint D is current"
+last_attempt: "2026-08-09: Checkpoint D and final DocSync correction passed through 9ba8156; T-075 closed"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-repository-boundary:2026-08-09"
-next_action: "Complete Checkpoint D only: inventory and migrate the deferred bundle/context/tools-policy/scanner/release/Jira general read-side surfaces, then run the bounded closure gates and sign-offs."
+next_action: "Create T-076 through ticket_create and begin the execution-profile, environment, state, and trace gate."
 dedupe_key: "open-source:repository-path-and-index-secret-boundary"
 metadata:
   classification: "foundation-owned"
@@ -130,6 +130,46 @@ Use atomic replacement or exclusive creation as appropriate and preserve existin
 - Sync only F-004, F-005, F-007, F-017, guardrails/tools guidance, mirrored CLI/generated doctrine, the active plan, goal, and this ticket where behavior changes.
 - Run focused normal/race tests, docs-consistency and DocSync, four supported CGO-disabled builds, and one installed clean-target smoke proving symlink read/write rejection, exact index-only/force-added secret blocking with no value leakage, and ordinary ignored untracked .harness/.env.local omission.
 - Obtain concurrent QA/Security review plus Dogfood and Release Manager sign-off.
+
+Checkpoint D passed through exact commits
+`228d859511fb2f7c93e0162424c2e6dc95107e44`,
+`7578549bdd0dde90857f9652e651832d484abdb2`,
+`ff69aaa1bab3680d169e8889866ba73cccb397c9`,
+`16b5527bbe48e8afea82bb70127d383d6f280ed7`, and
+`c18030edb44d1b869a03d30e4339ff457641c6e4`. Repository prompt, skill,
+integration, learning, ticket-state, model-policy, tools-policy, scanner,
+release-evidence, and Jira inventory reads now retain the admitted repository
+descriptor. Missing optional inputs keep their prior fallback behavior, while
+non-skipped symlink inputs and inventory failures fail closed without reading
+or reporting an outside target.
+
+The final DocSync correction passed at exact commit
+`9ba8156942a584f301888a3675942923739993d6`: source inventory, source reads,
+foundation admission, and referenced-document checks retain one descriptor;
+a symlinked source produces only a fixed repository-relative error, while a
+symlinked referenced document produces the existing missing-document finding.
+Full `internal/docsync` and `internal/docsconsistency` tests, focused race tests,
+affected-package vet, formatting, and diff checks passed. The exact
+CGO-disabled build hashes were:
+
+- Darwin/amd64: `dedcecb5e05416fdb6614e7c9d8010f446a51ff3e4fbafe2429435fc46bf4ed0`
+- Darwin/arm64: `c1137731531fded59e600e36ba8f77cd7ef1d6759262ddc223a3b7235831a28f`
+- Linux/amd64: `5113f1b119a35c46a90fbb93a28877c61213527ee163319960961717ac7d290c`
+- Linux/arm64: `844cd84754cc55ffd426a657549b104a89ce2b02a8dbab5ab47b739379bace06`
+
+Dogfood installed the exact `c18030e` candidate with SHA-256
+`7fde74b563c0b54f456e6fbecf31e4fecdc2fe75b9444191105ff60a3ee17bd6`
+and passed clean init/Engineer dry-run, role-prompt and file-write symlink
+rejection, exact index-only and force-added ignored-local-env blocking with
+redacted output, and ordinary ignored-untracked-local-env omission. The final
+Darwin/arm64 candidate was installed owner-only with SHA-256
+`c1137731531fded59e600e36ba8f77cd7ef1d6759262ddc223a3b7235831a28f`,
+Go `1.26.5`, revision `9ba8156942a584f301888a3675942923739993d6`,
+and `vcs.modified=false`; its hostile source-link audit disclosed only the
+relative source path, its referenced-doc link produced the missing-doc finding,
+and its live repository audit exited zero with no findings. QA, Security,
+Dogfood, Release Manager, and Orchestrator returned GO. T-075 is complete;
+F-017-S002 remains incomplete pending T-076 and resumed T-058.
 
 ## Acceptance
 

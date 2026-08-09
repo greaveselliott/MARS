@@ -29,6 +29,15 @@ index states and read failures block with locator-only, value-redacted output,
 while a staged deletion is reconciled as a tombstone rather than rescanning the
 removed content.
 
+The repository paths named in T-075 across direct file tools, target lifecycle,
+prompt/policy assembly, ticket and learning persistence, model and credential
+routing, release notes, Jira mirroring, scanning, and DocSync use the retained
+standard-library repository descriptor rather than reopening an admitted path.
+Observed symlink parents and leaves fail closed. Required inventory errors are
+not clean results, while explicitly optional inputs such as an absent README
+retain their documented fallback without following a link outside the selected
+repository.
+
 ### AD-107: Workspace Hygiene Gates Generated Churn Before LLM Work
 
 Generated dependency and build output is a hard guardrail surface because it

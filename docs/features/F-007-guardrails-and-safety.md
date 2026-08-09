@@ -68,6 +68,10 @@ Given a tool call references a file path or shell working directory
 When path resolution occurs
 Then nested repo paths are allowed and absolute paths or parent escapes are rejected unless explicitly supported by the command contract
 
+Given a repository scanner, policy inventory, or DocSync audit encounters a non-skipped symlink or cannot read an in-scope candidate
+When it builds the repository evidence used by a guardrail decision
+Then it fails closed with repository-relative, value-free output instead of following the link, omitting the candidate, or reporting an incomplete inventory as clean
+
 ### F-007-S005: Secret Write Block
 
 Given a tool would write AWS keys, GitHub tokens, private keys, password URLs, or generic API keys
@@ -521,7 +525,7 @@ None.
 - F-007-S001: `go test ./internal/guardrails -run TestEngine_hardRuleBlocksViolation`
 - F-007-S002: `go test ./internal/guardrails -run TestEngine_advisoryInPrompt`
 - F-007-S003: `go test ./internal/guardrails`
-- F-007-S004: `go test ./internal/tools -run TestRoot`
+- F-007-S004: `go test ./internal/repofs`, the focused repository-containment suites in `internal/tools`, `internal/scanner`, `internal/release`, `internal/jira`, and `internal/docsync`, plus installed-candidate Dogfood at `c18030e` and `9ba8156`
 - F-007-S005: `go test ./internal/safety -run TestScanForSecrets` and `go test ./internal/tools -run TestExecutor_secretScannerBlocksFileWrite`
 - F-007-S006: `go test ./internal/sandbox`
 - F-007-S007: `go test ./internal/safety -run TestEmergencyStop` and `go test ./internal/dashboard -run TestDashboard_emergencyStop`

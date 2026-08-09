@@ -48,6 +48,13 @@ and reject observed symlink parents and leaves. `file_write` uses an exclusive
 same-directory temporary entry, file sync, atomic rename, and directory sync
 for admitted replacements.
 
+Repository-backed tool support for tickets, personas, workspace hygiene,
+decisions, learnings, model overrides, credential routes, target lifecycle,
+release evidence, Jira mirrors, scanner inputs, and DocSync inputs uses the same
+descriptor-relative boundary. An in-scope symlink or incomplete required
+inventory fails closed without reading or mutating an outside target; documented
+optional-input fallbacks remain optional.
+
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | `file_read` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. Repository reads are descriptor-contained and reject observed symlink parents and leaves instead of following them outside the selected repository. |
@@ -229,7 +236,7 @@ the behavior has been exercised.
 | `github_release_status` | Inspect optional GitHub release mirror status and decide whether to upload, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | `architecture_audit` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | `harness_doctrine_sync` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
-| `docsync_audit` | Audit source files for `MarsDocSync` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). Foundation source checkouts enforce expected-doc prefix mappings; deployed target repos require valid metadata and existing docs without forcing foundation-only source-doc references. |
+| `docsync_audit` | Audit source files for `MarsDocSync` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). Foundation source checkouts enforce expected-doc prefix mappings; deployed target repos require valid metadata and existing docs without forcing foundation-only source-doc references. Source inventory and referenced-doc checks stay descriptor-contained: non-skipped source links fail with relative, value-free errors, and linked referenced docs are reported missing rather than accepted. |
 | `git_release_guard` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. Fails when a version tag exists but does not point at the current release-note commit. |
 | `tool_inventory_audit` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
 | `tool_creation_guard` | Audit whether built-in tool creation followed the governed `tool_create` and `record_decision` path. | Non-mutating. Use when reviewing new tool work or exception handling. |
