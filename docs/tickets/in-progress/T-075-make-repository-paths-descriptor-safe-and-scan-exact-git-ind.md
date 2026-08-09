@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: []
-verified_by: "pending QA, Security, Dogfood, Release Manager, and Orchestrator"
+evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f"]
+verified_by: "Checkpoint A: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: created through ticket_create after T-074 closure at 227be78; Checkpoint A is current"
+last_attempt: "2026-08-09: Checkpoint A passed and was pushed at f9993b5; Checkpoint B is current"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-repository-boundary:2026-08-09"
-next_action: "Implement and validate Checkpoint A only: the standard-library os.Root repository filesystem and direct file-tool migration."
+next_action: "Implement and validate Checkpoint B only: shared exact Git-index secret scanning for CLI and pre-commit/tool policy."
 dedupe_key: "open-source:repository-path-and-index-secret-boundary"
 metadata:
   classification: "foundation-owned"
@@ -44,6 +44,15 @@ Use Go's standard-library os.Root as one thin descriptor-bound repository filesy
 - Route tools.Root plus file_read, file_write, file_search, and grep through it.
 - Prove ordinary operations, traversal rejection, parent/leaf symlink rejection, unchanged external sentinels, and atomic output/mode without an exhaustive kernel/race matrix.
 - Commit and push this checkpoint before further migration.
+
+Checkpoint A passed at exact commit `f9993b5941e2fcd4f8e77866526f8a9b81946d3f`.
+The retained `os.Root` descriptor stays bound when the admitted repository path
+is renamed and replaced, direct file-tool parent/leaf symlink fixtures leave
+external sentinels unchanged, focused normal/race tests and vet pass,
+`internal/repofs` coverage is 74.3% against a 70% floor, and
+documentation-consistency/DocSync pass. QA, Security, Release Manager, and the
+Orchestrator returned GO. This is checkpoint evidence only; the ticket and
+F-017-S002 remain incomplete.
 
 ## Checkpoint B — Exact Git-Index Secret Coverage
 

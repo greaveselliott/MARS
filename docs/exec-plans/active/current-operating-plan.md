@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — T-074 network entry points pass, while descriptor-safe repository filesystem and complete staged/index secret scanning remain pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
+**Current Failing Scenario:** F-017-S002 — T-074 network entry points and T-075 Checkpoint A's direct file-tool boundary pass, while exact staged/index scanning and the remaining named repository-path migrations remain pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
 **Walking Skeleton Slice:** Deliver T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
 **Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement and validate only T-075 Checkpoint A: a thin standard-library `os.Root` repository filesystem plus the direct file-tool migration, then commit and push it before further scope.
+- **Next Primary Action:** Implement and validate only T-075 Checkpoint B: one shared exact Git-index secret scanner used by the CLI and pre-commit/tool policy, then commit and push it before any named-path migration.
 
 ## Starting Baseline
 
@@ -207,6 +207,15 @@ finite named ticket/tool/persona, target lifecycle, credential/model,
 bundle/context, and release writer surfaces in independently green commits.
 Checkpoint D records one finite callsite inventory, proportionate tests,
 four-platform builds, installed clean-target smoke, and bounded role sign-off.
+
+Checkpoint A passed at exact commit
+`f9993b5941e2fcd4f8e77866526f8a9b81946d3f`. The implementation retains the
+admitted descriptor even when the original repository pathname is replaced,
+rejects observed symlink parents/leaves, installs `file_write` replacements
+atomically, and routes `file_read`, `file_write`, `file_search`, and `grep`
+through that boundary. Focused normal/race tests, vet, the 70% coverage floor,
+documentation consistency, and DocSync pass; QA, Security, Release Manager,
+and Orchestrator returned GO. Checkpoint B is current.
 
 No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,
