@@ -164,7 +164,7 @@ func checkEngineerBrowserPostBuildSmokeOnlyPolicy(ctx context.Context, root Root
 	if counts == nil || counts[buildCommandSuccessKey] == 0 || counts[browserProductSmokeSuccessKey] > 0 {
 		return nil
 	}
-	if shellExecRunsBuildCommand(args) || shellExecRunsBrowserProductSmokeCommand(args) || shellExecStopsTrackedBackgroundPID(args) {
+	if shellExecRunsBuildCommand(args) || shellExecRunsBrowserProductSmokeCommand(args) || shellExecStopsTrackedBackgroundPID(session, args) {
 		return nil
 	}
 	files, err := changedFiles(ctx, root)
@@ -189,7 +189,7 @@ func checkDogfoodBrowserPostBuildSmokeOnlyPolicy(root Root, session Session, has
 	if counts == nil || counts[buildCommandSuccessKey] == 0 || counts[browserProductSmokeSuccessKey] > 0 {
 		return nil
 	}
-	if shellExecRunsBuildCommand(args) || shellExecRunsBrowserProductSmokeCommand(args) || shellExecStopsTrackedBackgroundPID(args) {
+	if shellExecRunsBuildCommand(args) || shellExecRunsBrowserProductSmokeCommand(args) || shellExecStopsTrackedBackgroundPID(session, args) {
 		return nil
 	}
 	return fmt.Errorf(

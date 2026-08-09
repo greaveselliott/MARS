@@ -17,6 +17,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -70,12 +71,18 @@ type rawShellExecArgs struct {
 	ExpectedExitCode *int            `json:"expected_exit_code"`
 }
 
-// bgProcs tracks background processes started by shell_exec so they can
-// be killed when the agent job finishes.
+// bgProcs tracks background processes started by shell_exec so they can be
+// listed, stopped, and cleaned up only by the job that started them.
 var (
 	bgMu    sync.Mutex
-	bgProcs = map[int]*exec.Cmd{}
+	bgProcs = map[int]*backgroundProcess{}
 )
+
+type backgroundProcess struct {
+	jobID string
+	cmd   *exec.Cmd
+	done  chan struct{}
+}
 
 type lockedBuffer struct {
 	mu  sync.Mutex
@@ -107,120 +114,89 @@ func (b *lockedBuffer) String() string {
 	return b.b.String()
 }
 
-// KillBackgroundProcs terminates all tracked background processes. Called
-// by the executor when a job ends to prevent orphan dev servers.
-func KillBackgroundProcs() {
+// CleanupBackgroundProcesses terminates background processes owned by jobID.
+// It never touches another job's process or an untracked host process.
+func CleanupBackgroundProcesses(jobID string) {
+	jobID = strings.TrimSpace(jobID)
+	if jobID == "" {
+		return
+	}
 	bgMu.Lock()
-	procs := make(map[int]*exec.Cmd, len(bgProcs))
-	for pid, cmd := range bgProcs {
-		procs[pid] = cmd
+	procs := make(map[int]*backgroundProcess)
+	for pid, proc := range bgProcs {
+		if proc.jobID != jobID {
+			continue
+		}
+		procs[pid] = proc
 		delete(bgProcs, pid)
 	}
 	bgMu.Unlock()
 
-	for pid, cmd := range procs {
-		slog.Info("shell_exec: killing background process", "pid", pid)
-		killBackgroundProcessTree(pid)
-		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
-		}
+	for pid, proc := range procs {
+		stopBackgroundProcess(pid, proc)
 	}
 }
 
-func maybeHandleTrackedBackgroundKill(args shellExecArgs) (bool, ToolResult) {
-	if len(args.Argv) < 2 || strings.TrimSpace(args.ShellCommand) != "" {
-		return false, ToolResult{}
+func handleTrackedBackgroundKill(jobID string, args shellExecArgs) (ToolResult, error) {
+	pids, err := shellExecKillPIDs(args)
+	if err != nil {
+		return ToolResult{}, err
 	}
-	if filepathBase(args.Argv[0]) != "kill" {
-		return false, ToolResult{}
-	}
-	var killed []string
-	for _, arg := range args.Argv[1:] {
-		arg = strings.TrimSpace(strings.Trim(arg, `"'`))
-		if arg == "" || strings.HasPrefix(arg, "-") {
-			continue
-		}
-		pid, err := strconv.Atoi(arg)
-		if err != nil {
-			continue
-		}
-		if killTrackedBackgroundPID(pid) {
-			killed = append(killed, strconv.Itoa(pid))
-		}
-	}
-	if len(killed) == 0 {
-		return false, ToolResult{}
-	}
-	return true, ToolResult{Output: fmt.Sprintf("Killed background process tree for PID(s): %s", strings.Join(killed, ", "))}
-}
-
-func killTrackedBackgroundPID(pid int) bool {
 	bgMu.Lock()
-	cmd, ok := bgProcs[pid]
-	if ok {
+	procs := make(map[int]*backgroundProcess, len(pids))
+	for _, pid := range pids {
+		proc, ok := bgProcs[pid]
+		if !ok || proc.jobID != jobID {
+			bgMu.Unlock()
+			return ToolResult{}, fmt.Errorf("shell_exec: refusing to signal PID %d because it is not a background process owned by job %q; stop only a PID returned by this job's background:true call", pid, jobID)
+		}
+		procs[pid] = proc
+	}
+	for _, pid := range pids {
 		delete(bgProcs, pid)
 	}
 	bgMu.Unlock()
-	if !ok {
+
+	for _, pid := range pids {
+		stopBackgroundProcess(pid, procs[pid])
+	}
+	killed := make([]string, 0, len(pids))
+	for _, pid := range pids {
+		killed = append(killed, strconv.Itoa(pid))
+	}
+	return ToolResult{Output: fmt.Sprintf("Stopped job-owned background process group(s) for PID(s): %s", strings.Join(killed, ", "))}, nil
+}
+
+func stopBackgroundProcess(pid int, proc *backgroundProcess) {
+	if pid <= 0 || proc == nil {
+		return
+	}
+	slog.Info("shell_exec: stopping job-owned background process group", "job_id", proc.jobID, "pid", pid)
+	if err := syscall.Kill(-pid, syscall.SIGTERM); err != nil && proc.cmd.Process != nil {
+		_ = proc.cmd.Process.Signal(syscall.SIGTERM)
+	}
+	timer := time.NewTimer(2 * time.Second)
+	defer timer.Stop()
+	ticker := time.NewTicker(25 * time.Millisecond)
+	defer ticker.Stop()
+	for processGroupExists(pid) {
+		select {
+		case <-ticker.C:
+		case <-timer.C:
+			if err := syscall.Kill(-pid, syscall.SIGKILL); err != nil && proc.cmd.Process != nil {
+				_ = proc.cmd.Process.Kill()
+			}
+			return
+		}
+	}
+}
+
+func processGroupExists(pid int) bool {
+	if pid <= 0 {
 		return false
 	}
-	slog.Info("shell_exec: killing tracked background process tree", "pid", pid)
-	killBackgroundProcessTree(pid)
-	if cmd.Process != nil {
-		_ = cmd.Process.Kill()
-	}
-	return true
-}
-
-func killBackgroundProcessTree(pid int) {
-	descendants := processDescendants(pid)
-	for i := len(descendants) - 1; i >= 0; i-- {
-		killProcessGroupOrProcess(descendants[i])
-	}
-	killProcessGroupOrProcess(pid)
-}
-
-func killProcessGroupOrProcess(pid int) {
-	if pid <= 0 {
-		return
-	}
-	if err := syscall.Kill(-pid, syscall.SIGKILL); err == nil {
-		return
-	}
-	_ = syscall.Kill(pid, syscall.SIGKILL)
-}
-
-func processDescendants(pid int) []int {
-	out, err := exec.Command("ps", "-eo", "pid=,ppid=").Output()
-	if err != nil {
-		return nil
-	}
-	children := map[int][]int{}
-	for _, line := range strings.Split(string(out), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) != 2 {
-			continue
-		}
-		child, err := strconv.Atoi(fields[0])
-		if err != nil {
-			continue
-		}
-		parent, err := strconv.Atoi(fields[1])
-		if err != nil {
-			continue
-		}
-		children[parent] = append(children[parent], child)
-	}
-	var descendants []int
-	var walk func(int)
-	walk = func(parent int) {
-		for _, child := range children[parent] {
-			descendants = append(descendants, child)
-			walk(child)
-		}
-	}
-	walk(pid)
-	return descendants
+	err := syscall.Kill(-pid, 0)
+	return err == nil || errors.Is(err, syscall.EPERM)
 }
 
 func registerShellExec(r *Registry) error {
@@ -232,8 +208,10 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("shell_exec: parse arguments: %w", err)
 	}
+	session, hasSession := SessionFromContext(ctx)
+	jobID := strings.TrimSpace(session.JobID)
 	if shellExecNoop(args) {
-		return shellExecNoopResult(), fmt.Errorf("shell_exec: no-op command cannot advance work")
+		return shellExecNoopResult(jobID), fmt.Errorf("shell_exec: no-op command cannot advance work")
 	}
 	hasArgv := len(args.Argv) > 0
 	hasShell := strings.TrimSpace(args.ShellCommand) != ""
@@ -258,12 +236,21 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 			return ToolResult{}, err
 		}
 	}
+	if err := validateShellExecProcessControl(args); err != nil {
+		return ToolResult{}, err
+	}
+	if hasArgv && filepathBase(args.Argv[0]) == "kill" {
+		if !hasSession || jobID == "" {
+			return ToolResult{}, fmt.Errorf("shell_exec: kill requires a non-empty job session and a PID returned by that job's background:true call")
+		}
+		return handleTrackedBackgroundKill(jobID, args)
+	}
 
 	if args.Background {
-		return execBackground(root, args)
-	}
-	if handled, res := maybeHandleTrackedBackgroundKill(args); handled {
-		return res, nil
+		if !hasSession || jobID == "" {
+			return ToolResult{}, fmt.Errorf("shell_exec: background:true requires a non-empty Session.JobID so the process can be scoped and cleaned up safely")
+		}
+		return execBackground(root, args, jobID)
 	}
 	return execForeground(ctx, root, args)
 }
@@ -361,8 +348,8 @@ func shellExecNoop(args shellExecArgs) bool {
 	return len(nonEmpty) == 1 && strings.Trim(nonEmpty[0], `"'`) == ":"
 }
 
-func shellExecNoopResult() ToolResult {
-	pids := trackedBackgroundPIDs()
+func shellExecNoopResult(jobID string) ToolResult {
+	pids := trackedBackgroundPIDs(jobID)
 	var b strings.Builder
 	b.WriteString("No command was run. shell_exec no-op calls do not wait for background processes or finish ticket work.")
 	if len(pids) > 0 {
@@ -379,14 +366,104 @@ func shellExecNoopResult() ToolResult {
 	return ToolResult{Output: b.String()}
 }
 
-func trackedBackgroundPIDs() []int {
+func trackedBackgroundPIDs(jobID string) []int {
+	jobID = strings.TrimSpace(jobID)
+	if jobID == "" {
+		return nil
+	}
 	bgMu.Lock()
 	defer bgMu.Unlock()
 	pids := make([]int, 0, len(bgProcs))
-	for pid := range bgProcs {
+	for pid, proc := range bgProcs {
+		if proc.jobID != jobID {
+			continue
+		}
 		pids = append(pids, pid)
 	}
+	slices.Sort(pids)
 	return pids
+}
+
+func validateShellExecProcessControl(args shellExecArgs) error {
+	if strings.TrimSpace(args.ShellCommand) != "" && shellCommandUsesProcessControl(args.ShellCommand) {
+		return fmt.Errorf("shell_exec: shell-form process control is blocked because ownership cannot be validated; use argv [\"kill\",\"<pid>\"] with a PID returned by this job's background:true call")
+	}
+	if len(args.Argv) == 0 {
+		return nil
+	}
+	switch filepathBase(args.Argv[0]) {
+	case "pkill", "killall":
+		return fmt.Errorf("shell_exec: %s is blocked because it can select processes outside the current job; stop only an exact PID returned by this job's background:true call with argv [\"kill\",\"<pid>\"]", filepathBase(args.Argv[0]))
+	case "kill":
+		if args.Background {
+			return fmt.Errorf("shell_exec: kill cannot run with background:true; stop the exact job-owned PID in the foreground")
+		}
+		_, err := shellExecKillPIDs(args)
+		return err
+	default:
+		return nil
+	}
+}
+
+func shellCommandUsesProcessControl(command string) bool {
+	segments := strings.FieldsFunc(command, func(r rune) bool {
+		return r == '\n' || r == ';' || r == '&' || r == '|' || r == '(' || r == ')'
+	})
+	for _, segment := range segments {
+		for _, field := range strings.Fields(segment) {
+			field = strings.Trim(field, `"'`)
+			if field == "" || shellCommandPrefixToken(field) {
+				continue
+			}
+			switch filepathBase(field) {
+			case "kill", "pkill", "killall":
+				return true
+			}
+			break
+		}
+	}
+	return false
+}
+
+func shellCommandPrefixToken(token string) bool {
+	if strings.HasPrefix(token, "-") {
+		return true
+	}
+	if i := strings.IndexByte(token, '='); i > 0 && !strings.ContainsAny(token[:i], "/ ") {
+		return true
+	}
+	switch filepathBase(token) {
+	case "command", "builtin", "exec", "env", "nohup", "sudo":
+		return true
+	default:
+		return false
+	}
+}
+
+func shellExecKillPIDs(args shellExecArgs) ([]int, error) {
+	if len(args.Argv) < 2 || filepathBase(args.Argv[0]) != "kill" {
+		return nil, fmt.Errorf("shell_exec: kill requires at least one exact job-owned PID")
+	}
+	seen := map[int]bool{}
+	pids := make([]int, 0, len(args.Argv)-1)
+	for _, raw := range args.Argv[1:] {
+		arg := strings.TrimSpace(strings.Trim(raw, `"'`))
+		if arg == "" || strings.HasPrefix(arg, "-") {
+			continue
+		}
+		pid, err := strconv.Atoi(arg)
+		if err != nil || pid <= 0 {
+			return nil, fmt.Errorf("shell_exec: kill operand %q is not a positive tracked PID; stop only exact PIDs returned by this job's background:true calls", raw)
+		}
+		if !seen[pid] {
+			seen[pid] = true
+			pids = append(pids, pid)
+		}
+	}
+	if len(pids) == 0 {
+		return nil, fmt.Errorf("shell_exec: kill requires at least one positive PID returned by this job's background:true call")
+	}
+	return pids, nil
 }
 
 func simpleSingleArgvCommand(s string) bool {
@@ -642,7 +719,7 @@ func execForeground(ctx context.Context, root Root, args shellExecArgs) (ToolRes
 
 const bgCaptureWindow = 2 * time.Second
 
-func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
+func execBackground(root Root, args shellExecArgs, jobID string) (ToolResult, error) {
 	cmd, err := buildCmd(context.Background(), root, args)
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("shell_exec: %w", err)
@@ -672,19 +749,23 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	stdoutWrite.Close()
 	stderrWrite.Close()
 	pid := cmd.Process.Pid
+	proc := &backgroundProcess{jobID: jobID, cmd: cmd, done: make(chan struct{})}
 
 	bgMu.Lock()
-	bgProcs[pid] = cmd
+	bgProcs[pid] = proc
 	bgMu.Unlock()
 
 	// Reap in background and unregister on exit.
 	exitCh := make(chan error, 1)
 	go func() {
 		err := cmd.Wait()
+		close(proc.done)
 		bgMu.Lock()
-		delete(bgProcs, pid)
+		if bgProcs[pid] == proc && !processGroupExists(pid) {
+			delete(bgProcs, pid)
+		}
 		bgMu.Unlock()
-		slog.Debug("shell_exec: background process exited", "pid", pid)
+		slog.Debug("shell_exec: background process exited", "job_id", jobID, "pid", pid)
 		exitCh <- err
 	}()
 
@@ -724,6 +805,12 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 				i = 2
 			}
 		}
+		bgMu.Lock()
+		if bgProcs[pid] == proc {
+			delete(bgProcs, pid)
+		}
+		bgMu.Unlock()
+		stopBackgroundProcess(pid, proc)
 	}
 
 	outStr, truncOut := capString(stdoutBuf.String(), DefaultMaxToolOutputBytes/2)

@@ -77,6 +77,10 @@ Given an operator stop or process shutdown cancels the worker context while a jo
 When the worker records the terminal job state
 Then the queue uses a short finalization context to mark the running job completed or failed, so shutdown cannot strand a claimed job in `running`
 
+Given parallel jobs have started managed background validation processes
+When one executor job finishes
+Then lifecycle cleanup targets only process groups recorded under that job ID and leaves every other job's process running
+
 ### F-006-S004: Trigger Routing
 
 Given manifests define webhook, schedule, or chain triggers
@@ -773,6 +777,10 @@ Given `start` or `serve` is retried after a failed bind, interrupted process, or
 And the configured SQLite database has `-wal` or `-shm` sidecar files
 When startup cleanup runs before opening the server
 Then the harness leaves those sidecar files in place and asks SQLite to recover or checkpoint them instead of deleting queue or repo registry state
+
+Given an unrelated listener or process named `llama-server` is already running on the host
+When `start` or `serve` performs startup cleanup
+Then cleanup does not enumerate or signal that listener or process; MARS stops only inference servers owned by its Router lifecycle and tool subprocess groups owned by their recorded job/session
 
 Given SQLite recovery fails during cleanup
 When startup continues or reports the failure

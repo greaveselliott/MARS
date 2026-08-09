@@ -161,17 +161,21 @@ func TestReviewShellExecPolicyAllowsTrackedBackgroundKill(t *testing.T) {
 	initGitRepo(t, dir)
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	t.Cleanup(KillBackgroundProcs)
+	jobID := t.Name()
+	t.Cleanup(func() { CleanupBackgroundProcesses(jobID) })
 
-	started, err := handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
+	started, err := handleShellExec(backgroundTestContext(jobID), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
 	require.NoError(t, err)
 	pid := backgroundPIDFromOutput(t, started.Output)
-	ctx := WithSession(context.Background(), Session{Role: "qa", ToolCounts: map[string]int{}})
+	ctx := WithSession(context.Background(), Session{Role: "qa", JobID: jobID, ToolCounts: map[string]int{}})
 
 	raw := []byte(`{"argv":["kill","-TERM","` + strconv.Itoa(pid) + `"]}`)
 	if err := preToolPolicy(ctx, root, "shell_exec", raw); err != nil {
 		t.Fatalf("expected QA to stop tracked background PID, got %v", err)
 	}
+	crossJob := WithSession(context.Background(), Session{Role: "qa", JobID: jobID + ":other", ToolCounts: map[string]int{}})
+	err = preToolPolicy(crossJob, root, "shell_exec", raw)
+	require.ErrorContains(t, err, "validation-only")
 }
 
 func TestReviewShellExecPolicyAllowsValidationCommands(t *testing.T) {

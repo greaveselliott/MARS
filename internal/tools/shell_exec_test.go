@@ -1103,7 +1103,7 @@ func TestShellExecBackgroundReportsEarlyExit(t *testing.T) {
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	res, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"echo boom >&2; exit 7","background":true}`))
+	res, err := handleShellExec(backgroundTestContext(t.Name()), root, []byte(`{"shell_command":"echo boom >&2; exit 7","background":true}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "background process exited during startup")
 	require.Equal(t, 7, res.ExitCode)
@@ -1114,8 +1114,9 @@ func TestShellExecBackgroundReturnsPIDForLongRunningProcess(t *testing.T) {
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	defer KillBackgroundProcs()
-	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
+	jobID := t.Name()
+	defer CleanupBackgroundProcesses(jobID)
+	res, err := handleShellExec(backgroundTestContext(jobID), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
 	require.NoError(t, err)
 	require.Contains(t, res.Output, "Started in background (PID")
 	require.Contains(t, res.Output, "After probes, stop this tracked PID")
@@ -1132,15 +1133,17 @@ func TestShellExecSanitizesForegroundAndBackgroundChildEnvironment(t *testing.T)
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	defer KillBackgroundProcs()
+	jobID := t.Name()
+	defer CleanupBackgroundProcesses(jobID)
 
-	foreground, err := handleShellExec(context.Background(), root, []byte(`{"argv":["env"],"timeout_seconds":5}`))
+	ctx := backgroundTestContext(jobID)
+	foreground, err := handleShellExec(ctx, root, []byte(`{"argv":["env"],"timeout_seconds":5}`))
 	require.NoError(t, err)
 	require.Contains(t, foreground.Output, "B1_SAFE_PARENT=safe")
 	require.NotContains(t, foreground.Output, "GITHUB_TOKEN=poison")
 	require.NotContains(t, foreground.Output, childenv.AllowlistVariable+"=")
 
-	background, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"env; sleep 5","background":true}`))
+	background, err := handleShellExec(ctx, root, []byte(`{"shell_command":"env; sleep 5","background":true}`))
 	require.NoError(t, err)
 	require.Contains(t, background.Output, "B1_SAFE_PARENT=safe")
 	require.NotContains(t, background.Output, "GITHUB_TOKEN=poison")
@@ -1154,9 +1157,10 @@ func TestShellExecBackgroundKeepsOutputDrainedAfterStartup(t *testing.T) {
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	defer KillBackgroundProcs()
+	jobID := t.Name()
+	defer CleanupBackgroundProcesses(jobID)
 
-	res, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"while true; do echo tick >&2; sleep 1; done","background":true}`))
+	res, err := handleShellExec(backgroundTestContext(jobID), root, []byte(`{"shell_command":"while true; do echo tick >&2; sleep 1; done","background":true}`))
 	require.NoError(t, err)
 	pid := backgroundPIDFromOutput(t, res.Output)
 
@@ -1198,26 +1202,28 @@ func TestShellExecNoopAfterBackgroundListsTrackedPID(t *testing.T) {
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	defer KillBackgroundProcs()
+	jobID := t.Name()
+	defer CleanupBackgroundProcesses(jobID)
+	ctx := backgroundTestContext(jobID)
 
-	started, err := handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
+	started, err := handleShellExec(ctx, root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
 	require.NoError(t, err)
 	pid := backgroundPIDFromOutput(t, started.Output)
 
-	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":[":"]}`))
+	res, err := handleShellExec(ctx, root, []byte(`{"argv":[":"]}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no-op command cannot advance work")
 	require.Contains(t, res.Output, fmt.Sprintf("Active background PID(s): %d", pid))
 	require.Contains(t, res.Output, `["kill","<pid>"]`)
 }
 
-func TestKillBackgroundProcsKillsEscapedChildProcess(t *testing.T) {
+func TestShellExecEarlyLeaderExitCleansSameGroupChild(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("process group cleanup test is unix-specific")
 	}
 	dir := t.TempDir()
-	src := filepath.Join(dir, "leaker.go")
-	bin := filepath.Join(dir, "leaker")
+	src := filepath.Join(dir, "launcher.go")
+	bin := filepath.Join(dir, "launcher")
 	pidFile := filepath.Join(dir, "child.pid")
 	require.NoError(t, os.WriteFile(src, []byte(`package main
 
@@ -1225,21 +1231,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"syscall"
-	"time"
 )
 
 func main() {
 	cmd := exec.Command("/bin/sleep", "30")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
 		panic(err)
 	}
 	if err := os.WriteFile(os.Args[1], []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0o644); err != nil {
 		panic(err)
-	}
-	for {
-		time.Sleep(time.Hour)
 	}
 }
 `), 0o644))
@@ -1249,25 +1249,13 @@ func main() {
 
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	_, err = handleShellExec(context.Background(), root, []byte(fmt.Sprintf(`{"argv":[%q,%q],"background":true}`, bin, pidFile)))
+	_, err = handleShellExec(backgroundTestContext(t.Name()), root, []byte(fmt.Sprintf(`{"argv":[%q,%q],"background":true}`, bin, pidFile)))
+	require.ErrorContains(t, err, "background process exited during startup")
+
+	data, err := os.ReadFile(pidFile)
 	require.NoError(t, err)
-	t.Cleanup(KillBackgroundProcs)
-
-	var childPID int
-	require.Eventually(t, func() bool {
-		data, err := os.ReadFile(pidFile)
-		if err != nil {
-			return false
-		}
-		pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-		if err != nil {
-			return false
-		}
-		childPID = pid
-		return syscall.Kill(childPID, 0) == nil
-	}, 3*time.Second, 50*time.Millisecond)
-
-	KillBackgroundProcs()
+	childPID, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	require.NoError(t, err)
 	require.Eventually(t, func() bool {
 		return syscall.Kill(childPID, 0) != nil
 	}, 3*time.Second, 50*time.Millisecond)
@@ -1287,13 +1275,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"syscall"
 	"time"
 )
 
 func main() {
 	cmd := exec.Command("/bin/sleep", "30")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
 		panic(err)
 	}
@@ -1311,9 +1297,11 @@ func main() {
 
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
-	res, err := handleShellExec(context.Background(), root, []byte(fmt.Sprintf(`{"argv":[%q,%q],"background":true}`, bin, pidFile)))
+	jobID := t.Name()
+	ctx := backgroundTestContext(jobID)
+	res, err := handleShellExec(ctx, root, []byte(fmt.Sprintf(`{"argv":[%q,%q],"background":true}`, bin, pidFile)))
 	require.NoError(t, err)
-	t.Cleanup(KillBackgroundProcs)
+	t.Cleanup(func() { CleanupBackgroundProcesses(jobID) })
 	parentPID := backgroundPIDFromOutput(t, res.Output)
 
 	var childPID int
@@ -1330,12 +1318,101 @@ func main() {
 		return syscall.Kill(childPID, 0) == nil
 	}, 3*time.Second, 50*time.Millisecond)
 
-	res, err = handleShellExec(context.Background(), root, []byte(fmt.Sprintf(`{"argv":["kill","-TERM","%d"]}`, parentPID)))
+	res, err = handleShellExec(ctx, root, []byte(fmt.Sprintf(`{"argv":["kill","-TERM","%d"]}`, parentPID)))
 	require.NoError(t, err)
-	require.Contains(t, res.Output, "Killed background process tree")
+	require.Contains(t, res.Output, "Stopped job-owned background process group")
 	require.Eventually(t, func() bool {
 		return syscall.Kill(childPID, 0) != nil
 	}, 3*time.Second, 50*time.Millisecond)
+}
+
+func TestShellExecBackgroundRequiresJobID(t *testing.T) {
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+
+	_, err = handleShellExec(context.Background(), root, []byte(`{"argv":["sleep","5"],"background":true}`))
+	require.ErrorContains(t, err, "requires a non-empty Session.JobID")
+}
+
+func TestShellExecBackgroundOwnershipIsIsolatedByJob(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("process ownership test is unix-specific")
+	}
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+	jobA := t.Name() + ":a"
+	jobB := t.Name() + ":b"
+	t.Cleanup(func() {
+		CleanupBackgroundProcesses(jobA)
+		CleanupBackgroundProcesses(jobB)
+	})
+
+	startedA, err := handleShellExec(backgroundTestContext(jobA), root, []byte(`{"argv":["sleep","30"],"background":true}`))
+	require.NoError(t, err)
+	pidA := backgroundPIDFromOutput(t, startedA.Output)
+	startedB, err := handleShellExec(backgroundTestContext(jobB), root, []byte(`{"argv":["sleep","30"],"background":true}`))
+	require.NoError(t, err)
+	pidB := backgroundPIDFromOutput(t, startedB.Output)
+
+	_, err = handleShellExec(backgroundTestContext(jobA), root, []byte(fmt.Sprintf(`{"argv":["kill","%d","%d"]}`, pidA, pidB)))
+	require.ErrorContains(t, err, "not a background process owned by job")
+	require.NoError(t, syscall.Kill(pidA, 0), "mixed-owner PID validation must be atomic")
+	require.NoError(t, syscall.Kill(pidB, 0), "mixed-owner PID validation must preserve every target")
+
+	_, err = handleShellExec(backgroundTestContext(jobB), root, []byte(fmt.Sprintf(`{"argv":["kill","%d"]}`, pidA)))
+	require.ErrorContains(t, err, "not a background process owned by job")
+	require.NoError(t, syscall.Kill(pidA, 0), "cross-job kill must not signal the target")
+
+	CleanupBackgroundProcesses(jobA)
+	require.Eventually(t, func() bool { return syscall.Kill(pidA, 0) != nil }, 3*time.Second, 25*time.Millisecond)
+	require.NoError(t, syscall.Kill(pidB, 0), "job A cleanup must preserve job B")
+}
+
+func TestShellExecRejectsUnownedAndBroadProcessControl(t *testing.T) {
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+	ctx := backgroundTestContext(t.Name())
+
+	for _, raw := range []string{
+		fmt.Sprintf(`{"argv":["kill","%d"]}`, os.Getpid()),
+		`{"argv":["pkill","server"]}`,
+		`{"argv":["killall","server"]}`,
+		`{"shell_command":"kill 1234"}`,
+		`{"shell_command":"echo ok; pkill server"}`,
+	} {
+		_, err := handleShellExec(ctx, root, []byte(raw))
+		require.Error(t, err, raw)
+	}
+}
+
+func TestShellExecShellProcessControlDetectionAllowsBenignArguments(t *testing.T) {
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+
+	res, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"printf '%s\\n' kill http://127.0.0.1:8080/kill"}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "kill")
+	require.Contains(t, res.Output, "/kill")
+}
+
+func TestShellExecJobKillEscalatesAfterTERMGrace(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("signal escalation test is unix-specific")
+	}
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+	jobID := t.Name()
+	t.Cleanup(func() { CleanupBackgroundProcesses(jobID) })
+	ctx := backgroundTestContext(jobID)
+
+	started, err := handleShellExec(ctx, root, []byte(`{"shell_command":"trap '' TERM; while :; do sleep 1; done","background":true}`))
+	require.NoError(t, err)
+	pid := backgroundPIDFromOutput(t, started.Output)
+	startedAt := time.Now()
+	_, err = handleShellExec(ctx, root, []byte(fmt.Sprintf(`{"argv":["kill","%d"]}`, pid)))
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, time.Since(startedAt), 1900*time.Millisecond)
+	require.Eventually(t, func() bool { return syscall.Kill(pid, 0) != nil }, 2*time.Second, 25*time.Millisecond)
 }
 
 func backgroundPIDFromOutput(t *testing.T, output string) int {
@@ -1348,6 +1425,10 @@ func backgroundPIDFromOutput(t *testing.T, output string) int {
 	pid, err := strconv.Atoi(output[start : start+end])
 	require.NoError(t, err)
 	return pid
+}
+
+func backgroundTestContext(jobID string) context.Context {
+	return WithSession(context.Background(), Session{JobID: jobID})
 }
 
 func TestShellExec_mutexArgs(t *testing.T) {

@@ -28,6 +28,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,8 +38,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -132,6 +135,102 @@ func TestToolsRunCommandExecutesRegisteredTool(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "status: ok")
 	require.Contains(t, out.String(), "PASS: internal/tools/example_tool.go exists")
+}
+
+func TestToolsRunCommandCleansBackgroundProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("background cleanup test is unix-specific")
+	}
+	dir := t.TempDir()
+	require.NoError(t, exec.Command("git", "init", dir).Run())
+	pidFile := filepath.Join(dir, "child.pid")
+	argsJSON, err := json.Marshal(map[string]any{
+		"shell_command": fmt.Sprintf("echo $$ > %q; sleep 30", pidFile),
+		"background":    true,
+	})
+	require.NoError(t, err)
+
+	cmd := toolsRunCmd()
+	cmd.SetArgs([]string{
+		"shell_exec",
+		"--repo", dir,
+		"--trust", "contributor",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
+		"--args-json", string(argsJSON),
+	})
+	require.NoError(t, cmd.Execute())
+
+	pid := readMainTestPID(t, pidFile)
+	require.Eventually(t, func() bool { return syscall.Kill(pid, 0) != nil }, 2*time.Second, 25*time.Millisecond)
+}
+
+func TestRunCommandCleansBackgroundProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("background cleanup test is unix-specific")
+	}
+	t.Setenv("HOME", t.TempDir())
+	repoDir := t.TempDir()
+	require.NoError(t, exec.Command("git", "init", repoDir).Run())
+	pidFile := filepath.Join(repoDir, "child.pid")
+	writeToolRunRepoFile(t, repoDir, ".harness/manifest.yaml", `name: cleanup-run
+roles:
+  worker:
+    prompt: roles/worker.md
+    model: test
+    trust_level: contributor
+    tools: [shell_exec]
+`)
+	writeToolRunRepoFile(t, repoDir, ".harness/roles/worker.md", "Run one bounded validation command.\n")
+	toolArgs, err := json.Marshal(map[string]any{
+		"shell_command": fmt.Sprintf("echo $$ > %q; sleep 30", pidFile),
+		"background":    true,
+	})
+	require.NoError(t, err)
+
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if requests.Add(1) == 1 {
+			_ = json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{
+				"message": map[string]any{"role": "assistant", "tool_calls": []any{map[string]any{
+					"id": "call_1", "type": "function", "function": map[string]any{"name": "shell_exec", "arguments": string(toolArgs)},
+				}}},
+				"finish_reason": "tool_calls",
+			}}})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{
+			"message": map[string]any{"role": "assistant", "content": "done"}, "finish_reason": "stop",
+		}}})
+	}))
+	t.Cleanup(server.Close)
+
+	cmd := runCmd()
+	cmd.SetArgs([]string{
+		"worker",
+		"--repo", repoDir,
+		"--model-endpoint", server.URL,
+		"--log-file", filepath.Join(t.TempDir(), "run.log"),
+		"--code-intel", "false",
+		"--max-turns", "2",
+		"--no-init",
+		"--execution-profile", "host",
+		"--acknowledge-host-execution",
+	})
+	require.NoError(t, cmd.Execute())
+
+	pid := readMainTestPID(t, pidFile)
+	require.Eventually(t, func() bool { return syscall.Kill(pid, 0) != nil }, 2*time.Second, 25*time.Millisecond)
+}
+
+func readMainTestPID(t *testing.T, path string) int {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	pid, err := strconv.Atoi(strings.TrimSpace(string(raw)))
+	require.NoError(t, err)
+	return pid
 }
 
 func TestToolsRunCommandDogfoodsToolCreate(t *testing.T) {

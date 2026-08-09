@@ -12,9 +12,14 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -76,6 +81,37 @@ func TestServerMutatingToolBlockedAtObserverTrust(t *testing.T) {
 	require.Contains(t, out.String(), `"isError":true`)
 	require.Contains(t, out.String(), "observer cannot run mutating tool")
 	require.NoFileExists(t, filepath.Join(dir, "x.txt"))
+}
+
+func TestServerEOFCleansJobOwnedBackgroundProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("background process cleanup test is unix-specific")
+	}
+	dir := t.TempDir()
+	require.NoError(t, exec.Command("git", "init", dir).Run())
+	server := newTestServer(t, dir, tools.Session{
+		JobID:            t.Name(),
+		ExecutionProfile: "host",
+		TrustLevel:       "contributor",
+	})
+	input := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"shell_exec","arguments":{"argv":["sleep","30"],"background":true}}}` + "\n"
+
+	var out bytes.Buffer
+	require.NoError(t, server.Serve(context.Background(), strings.NewReader(input), &out))
+	pid := backgroundPIDFromMCPOutput(t, out.String())
+	require.Eventually(t, func() bool { return syscall.Kill(pid, 0) != nil }, 2*time.Second, 25*time.Millisecond)
+}
+
+func backgroundPIDFromMCPOutput(t *testing.T, output string) int {
+	t.Helper()
+	start := strings.Index(output, "PID ")
+	require.NotEqual(t, -1, start, output)
+	start += len("PID ")
+	end := strings.Index(output[start:], ")")
+	require.NotEqual(t, -1, end, output)
+	pid, err := strconv.Atoi(output[start : start+end])
+	require.NoError(t, err)
+	return pid
 }
 
 func newTestServer(t *testing.T, dir string, session tools.Session) Server {

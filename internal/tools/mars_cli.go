@@ -154,7 +154,11 @@ func runMarsCLI(ctx context.Context, root Root, args marsCLIArgs) (ToolResult, e
 		return ToolResult{}, err
 	}
 	if args.Background {
-		return execBackground(root, shellExecArgs{Argv: argv, Background: true})
+		session, ok := SessionFromContext(ctx)
+		if !ok || strings.TrimSpace(session.JobID) == "" {
+			return ToolResult{}, fmt.Errorf("mars_cli: background:true requires a non-empty Session.JobID so the process can be scoped and cleaned up safely")
+		}
+		return execBackground(root, shellExecArgs{Argv: argv, Background: true}, strings.TrimSpace(session.JobID))
 	}
 
 	timeoutSeconds := args.TimeoutSeconds

@@ -483,8 +483,10 @@ Configure MCP clients to launch this command as a local stdio server.`,
 			if maxOutput > 0 {
 				executor.MaxOutput = maxOutput
 			}
+			jobID := fmt.Sprintf("mcp-stdio:%d", os.Getpid())
 			executor.Session = &tools.Session{
 				Role:             role,
+				JobID:            jobID,
 				ExecutionProfile: string(profile),
 				TrustLevel:       string(trustLevel),
 			}
@@ -595,8 +597,11 @@ func toolsRunCmd() *cobra.Command {
 			if maxOutput > 0 {
 				executor.MaxOutput = maxOutput
 			}
+			jobID := fmt.Sprintf("tools-run:%d", os.Getpid())
+			defer tools.CleanupBackgroundProcesses(jobID)
 			executor.Session = &tools.Session{
 				Role:             role,
+				JobID:            jobID,
 				ExecutionProfile: string(profile),
 				TrustLevel:       string(trustLevel),
 			}
@@ -2369,6 +2374,8 @@ func executeRun(opts runOpts) error {
 		tw.WriteError(err.Error())
 		return err
 	}
+	jobID := fmt.Sprintf("%s-%s", manifest.Name, opts.roleName)
+	defer tools.CleanupBackgroundProcesses(jobID)
 
 	handoff := manifest.DisplayHandoff(opts.roleName)
 	tw.WriteHeader(opts.roleName, role.Model, role.Tools, handoff)
@@ -2537,7 +2544,7 @@ func executeRun(opts runOpts) error {
 	}
 	executor.Session = &tools.Session{
 		Role:             opts.roleName,
-		JobID:            fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
+		JobID:            jobID,
 		RepoID:           absRepo,
 		ExecutionProfile: string(profile),
 		TrustLevel:       string(roleTrustLevel),
@@ -2586,7 +2593,7 @@ func executeRun(opts runOpts) error {
 			MaxTurns:    opts.maxTurns,
 			TokenBudget: opts.budget,
 		},
-		JobID:      fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
+		JobID:      jobID,
 		Trace:      recorder,
 		TraceStore: traceStore,
 		UI:         tw,
@@ -4216,7 +4223,7 @@ func serveCmd() *cobra.Command {
 			defer display.Close()
 
 			if profile == executionprofile.Host {
-				serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
+				serve.CleanupScopedLifecycle(dbPath)
 			}
 
 			srv, err := serve.New(serve.Config{

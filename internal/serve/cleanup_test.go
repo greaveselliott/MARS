@@ -10,12 +10,52 @@ package serve
 
 import (
 	"database/sql"
+	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	_ "modernc.org/sqlite"
 )
+
+func TestCleanupScopedLifecyclePreservesForeignListener(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer listener.Close()
+
+	CleanupScopedLifecycle("")
+
+	conn, err := net.Dial("tcp", listener.Addr().String())
+	if err != nil {
+		t.Fatalf("foreign listener was disrupted: %v", err)
+	}
+	conn.Close()
+}
+
+func TestCleanupScopedLifecyclePreservesForeignLlamaServerProcess(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "llama-server")
+	if err := os.Symlink("/bin/sleep", bin); err != nil {
+		t.Fatalf("create llama-server test link: %v", err)
+	}
+	cmd := exec.Command(bin, "30")
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start foreign llama-server process: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	})
+
+	CleanupScopedLifecycle("")
+
+	if err := syscall.Kill(cmd.Process.Pid, 0); err != nil {
+		t.Fatalf("foreign llama-server process was disrupted: %v", err)
+	}
+}
 
 func TestCleanStaleSQLitePreservesRecoverableSidecars(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "mars.db")

@@ -343,7 +343,7 @@ func checkReviewerShellExecValidationPolicy(root Root, session Session, hasSessi
 		}
 		return fmt.Errorf("policy: %s cannot use shell_exec no-op placeholders during review; run a concrete read-only inspection or validation command, or record job_disposition_record with the quality decision", role)
 	}
-	if shellExecStopsTrackedBackgroundPID(args) {
+	if shellExecStopsTrackedBackgroundPID(session, args) {
 		return nil
 	}
 	if shellExecReadOnly(raw) {

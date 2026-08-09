@@ -40,7 +40,7 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 	if err == nil && shellExecRunsRecordedValidationArtifact(session, root, args) {
 		return nil
 	}
-	if err == nil && shellExecStopsTrackedBackgroundPID(args) {
+	if err == nil && shellExecStopsTrackedBackgroundPID(session, args) {
 		return nil
 	}
 	if err == nil && engineerPostCommitBrowserValidationAllowed(root, session, args) {
@@ -74,7 +74,7 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		return fmt.Errorf(
 			"policy: engineer has successful validation and dirty implementation or ticket work for %s. Do not call shell_exec no-op placeholders or waits. %s",
 			tickets[0].ID,
-			engineerDirtyPostValidationGuidance(tickets[0], blockingFiles),
+			engineerDirtyPostValidationGuidance(session, tickets[0], blockingFiles),
 		)
 	}
 	if len(blockingFiles) > 0 {
@@ -82,7 +82,7 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 			return fmt.Errorf(
 				"policy: engineer already has successful browser-framework build and product-smoke validation with dirty implementation or ticket work for %s. Do not call shell_exec again except tracked PID cleanup. %s",
 				tickets[0].ID,
-				engineerDirtyPostValidationGuidance(tickets[0], blockingFiles),
+				engineerDirtyPostValidationGuidance(session, tickets[0], blockingFiles),
 			)
 		}
 		return nil
@@ -105,9 +105,9 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 	)
 }
 
-func engineerDirtyPostValidationGuidance(ticket ticketstate.Ticket, files []string) string {
+func engineerDirtyPostValidationGuidance(session Session, ticket ticketstate.Ticket, files []string) string {
 	var b strings.Builder
-	if pids := trackedBackgroundPIDs(); len(pids) > 0 {
+	if pids := trackedBackgroundPIDs(session.JobID); len(pids) > 0 {
 		b.WriteString("Stop tracked background validation first")
 		for _, pid := range pids {
 			b.WriteString(fmt.Sprintf(" with shell_exec argv [\"kill\",\"%d\"]", pid))

@@ -765,12 +765,12 @@ func featureContractIDFromName(base string) (string, bool) {
 	return "F-" + strings.ToUpper(parts[1]), true
 }
 
-func shellExecStopsTrackedBackgroundPID(args shellExecArgs) bool {
+func shellExecStopsTrackedBackgroundPID(session Session, args shellExecArgs) bool {
 	if len(args.Argv) < 2 || strings.TrimSpace(args.ShellCommand) != "" || filepathBase(args.Argv[0]) != "kill" {
 		return false
 	}
 	active := map[int]bool{}
-	for _, pid := range trackedBackgroundPIDs() {
+	for _, pid := range trackedBackgroundPIDs(session.JobID) {
 		active[pid] = true
 	}
 	if len(active) == 0 {

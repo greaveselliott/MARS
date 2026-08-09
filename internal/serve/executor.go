@@ -250,7 +250,7 @@ func normalizePolicyLoopField(value string) string {
 // Execute is the OnJob callback for the worker pool.
 // It loads the bundle, assembles context, starts inference, and runs the agent loop.
 func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
-	defer tools.KillBackgroundProcs()
+	defer tools.CleanupBackgroundProcesses(job.ID)
 	if job.Role == "dogfood" {
 		defer cleanupDogfoodContainers(filepath.Base(job.RepoID))
 	}

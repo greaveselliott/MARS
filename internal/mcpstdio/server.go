@@ -63,6 +63,9 @@ func (s Server) Serve(ctx context.Context, r io.Reader, w io.Writer) error {
 	if s.Executor == nil {
 		return fmt.Errorf("mcp: executor is nil")
 	}
+	if s.Executor.Session != nil {
+		defer tools.CleanupBackgroundProcesses(s.Executor.Session.JobID)
+	}
 	scanner := bufio.NewScanner(r)
 	buf := make([]byte, 0, 1024*1024)
 	scanner.Buffer(buf, 8*1024*1024)

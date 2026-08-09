@@ -122,13 +122,15 @@ local llama-server processes. Fake, stub, mock, canned, or scripted endpoints
 are still deterministic test fixtures only and do not raise confidence for live
 behavior claims.
 
-Scoped `mars start` performs SQLite sidecar recovery only. It does not
-kill processes on the configured webhook/dashboard ports and does not globally
-kill `llama-server`. When the default scoped control-plane or dashboard address
-is already occupied, the server falls back to an ephemeral local address and logs
-the requested and actual listener. Operators that need deterministic ports can
-pass `--addr` and `--dashboard-addr`; explicit addresses fail on conflict instead
-of being silently remapped.
+Startup cleanup for both `mars start` and `mars serve` performs SQLite sidecar
+recovery only. It does not enumerate or kill processes on configured ports and
+does not globally select processes named `llama-server`; unrelated listeners and
+same-host inference processes remain untouched. MARS stops local inference only
+through the owning Router/Server lifecycle. When the default scoped control-plane
+or dashboard address for `start` is already occupied, the server falls back to an
+ephemeral local address and logs the requested and actual listener. Operators
+that need deterministic ports can pass `--addr` and `--dashboard-addr`; explicit
+addresses fail on conflict instead of being silently remapped.
 
 When local inference is used, the router reserves tier ports before launching a
 server. A live locked port with a healthy `/health` endpoint may be reused;

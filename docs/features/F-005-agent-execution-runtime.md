@@ -224,7 +224,7 @@ Then the tool rejects the call before process execution and instructs the role t
 
 Given a role starts a long-running command with `background:true`
 When the process exits during the startup capture window
-Then the tool returns an error with the initial output and exit code so the role treats the result as a boot failure instead of continuing as though the server is running
+Then the tool stops the recorded process group before returning an error with the initial output and exit code, so an early-exiting wrapper cannot strand a same-group child and the role treats the result as a boot failure instead of continuing as though the server is running
 
 Given a role starts a long-running command with `background:true`
 When the startup capture window ends while the process is still running and emitting logs
@@ -232,11 +232,19 @@ Then the tool returns a bounded initial output snapshot without racing the backg
 
 Given a role starts a long-running command with `background:true`
 When the agent job ends or the harness cleans background processes
-Then the tool terminates the tracked process, its process group, and any known descendant processes so wrapper commands such as `go run` do not leave child servers occupying ports for later runs
+Then the call requires a non-empty session job ID and records the process under that owner
+And cleanup signals only process groups recorded for that job with `SIGTERM`, waits up to two seconds, and uses `SIGKILL` only when that owned group remains
+And processes owned by other jobs or not recorded by MARS are left untouched
 
 Given a role starts a long-running command with `background:true`
 When the role later calls `shell_exec` `kill <tracked-pid>` for that managed background PID
-Then the tool intercepts the kill request and terminates the tracked process tree, including known descendants, so same-job cleanup does not leave wrapper child servers occupying ports
+Then the tool validates the complete PID set before signaling, accepts only PIDs recorded for the same job, and applies the same bounded process-group shutdown
+And an untracked or cross-job PID rejects the whole call without falling through to the operating-system `kill`
+
+Given a role attempts direct shell-form `kill`, `pkill`, or `killall`, or argv `pkill` or `killall`
+When `shell_exec` validates the call
+Then the tool rejects that direct process-control form because it cannot prove job ownership, while benign arguments such as a URL ending in `/kill` remain valid
+And this job-owned helper policy does not contain arbitrary code already running with acknowledged-host current-user authority
 
 Given a role calls `shell_exec` with a bare port token such as `:8080`
 When the tool validates the command
@@ -889,7 +897,7 @@ Then the approval blocker includes the canonical browser-smoke command or equiva
 
 Given QA or Security starts a managed validation server through `shell_exec background:true`
 When the reviewer stops the tracked PID with `kill`
-Then the validation-only shell policy allows that tracked cleanup while continuing to block arbitrary cleanup or untracked process kills
+Then the validation-only shell policy allows that cleanup only when the PID belongs to the reviewer's current job while continuing to block cross-job, arbitrary, or untracked process kills
 
 ### F-005-S057: Generic Gameplay Summary Labels Are Not Standalone Capabilities
 
