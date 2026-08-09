@@ -1129,6 +1129,34 @@ func TestInit_forceOverwrite(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 }
 
+func TestInitRejectsSymlinkedDocsParent(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("outside\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "docs")))
+
+	require.Error(t, Init(dir, false))
+	data, err := os.ReadFile(sentinel)
+	require.NoError(t, err)
+	assert.Equal(t, "outside\n", string(data))
+	assert.NoDirExists(t, filepath.Join(outside, "tickets"))
+}
+
+func TestInitForcePreservesManifestMode(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, Init(dir, false))
+	manifestPath := filepath.Join(dir, ".harness", "manifest.yaml")
+	require.NoError(t, os.Chmod(manifestPath, 0o600))
+
+	require.NoError(t, Init(dir, true))
+	info, err := os.Stat(manifestPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+}
+
 func TestInitWritesWorkspaceNoiseGitignore(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -1671,6 +1699,23 @@ func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	example, err := os.ReadFile(missingExample)
 	require.NoError(t, err)
 	assert.Contains(t, string(example), "flow_profile: ceo-led")
+}
+
+func TestUpgradeRejectsSymlinkedPromptLeaf(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, Init(dir, false))
+	promptPath := filepath.Join(dir, ".harness", "roles", "qa.md")
+	require.NoError(t, os.Remove(promptPath))
+	outside := filepath.Join(t.TempDir(), "sentinel.md")
+	require.NoError(t, os.WriteFile(outside, []byte("outside\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, promptPath))
+
+	_, err := Upgrade(dir)
+	require.Error(t, err)
+	data, readErr := os.ReadFile(outside)
+	require.NoError(t, readErr)
+	assert.Equal(t, "outside\n", string(data))
 }
 
 func TestUpgrade_failsWithoutHarness(t *testing.T) {

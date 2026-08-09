@@ -27,6 +27,7 @@ docs:
 package scanner
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -37,6 +38,7 @@ import (
 	"github.com/greaveselliott/mars/internal/buildinfo"
 	"github.com/greaveselliott/mars/internal/bundle"
 	"github.com/greaveselliott/mars/internal/personas"
+	"github.com/greaveselliott/mars/internal/repofs"
 	"github.com/greaveselliott/mars/internal/roleregistry"
 	"gopkg.in/yaml.v3"
 )
@@ -44,6 +46,51 @@ import (
 const harnessDir = ".harness"
 
 const harnessMetadataFile = "metadata.yaml"
+
+func createRepositoryFile(root *repofs.Root, rel string, data []byte, perm os.FileMode) error {
+	if err := root.MkdirAll(filepath.Dir(rel), 0o755); err != nil {
+		return err
+	}
+	file, err := root.CreateExclusive(rel, perm)
+	if err != nil {
+		return err
+	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = file.Close()
+			_ = root.Remove(rel)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return err
+	}
+	if err := file.Sync(); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	cleanup = false
+	return nil
+}
+
+func writeRepositoryFile(root *repofs.Root, rel string, data []byte, perm os.FileMode) error {
+	if err := root.MkdirAll(filepath.Dir(rel), 0o755); err != nil {
+		return err
+	}
+	info, err := root.Stat(rel)
+	if errors.Is(err, os.ErrNotExist) {
+		return createRepositoryFile(root, rel, data, perm)
+	}
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("scanner: repository replacement target is not a regular file")
+	}
+	return root.AtomicWrite(rel, data, info.Mode().Perm())
+}
 
 // HarnessMetadata records which mars generator last refreshed the
 // deployed target harness scaffold.
@@ -65,62 +112,58 @@ func Init(repoRoot string, force bool) error {
 	if repoRoot == "" {
 		return fmt.Errorf("init: repo root is empty — pass the path to the repository")
 	}
-	info, err := os.Stat(repoRoot)
+	root, err := repofs.Open(repoRoot)
 	if err != nil {
 		return fmt.Errorf("init: cannot access %s: %w — verify the path exists", repoRoot, err)
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("init: %s is not a directory — point to the repository root", repoRoot)
+	return initRepository(root, force)
+}
+
+func initRepository(root *repofs.Root, force bool) error {
+	repoRoot := root.Abs()
+	if err := ensureGitRepository(root); err != nil {
+		return err
 	}
 
-	gitDir := filepath.Join(repoRoot, ".git")
-	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		slog.Info("init: no .git found — running git init", "repo", repoRoot)
-		cmd := exec.Command("git", "init")
-		cmd.Dir = repoRoot
-		if out, gitErr := cmd.CombinedOutput(); gitErr != nil {
-			return fmt.Errorf("init: git init failed in %s: %w\n%s", repoRoot, gitErr, out)
-		}
-	}
-
-	harnessPath := filepath.Join(repoRoot, harnessDir)
-	if _, err := os.Stat(harnessPath); err == nil && !force {
-		return fmt.Errorf("init: %s already exists — use --force to refresh missing scaffold and rewrite manifest", harnessPath)
+	if _, err := root.Stat(harnessDir); err == nil && !force {
+		return fmt.Errorf("init: %s already exists — use --force to refresh missing scaffold and rewrite manifest", filepath.Join(repoRoot, harnessDir))
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("init: inspect %s: %w", harnessDir, err)
 	}
 
 	dirs := []string{
-		harnessPath,
-		filepath.Join(harnessPath, "roles"),
-		filepath.Join(harnessPath, "skills"),
-		filepath.Join(harnessPath, "guardrails"),
-		filepath.Join(harnessPath, "knowledge"),
-		filepath.Join(repoRoot, "docs", "tickets", "backlog"),
-		filepath.Join(repoRoot, "docs", "tickets", "in-progress"),
-		filepath.Join(repoRoot, "docs", "tickets", "in-review"),
-		filepath.Join(repoRoot, "docs", "tickets", "done"),
-		filepath.Join(repoRoot, "docs", "exec-plans", "backlog"),
-		filepath.Join(repoRoot, "docs", "exec-plans", "active"),
-		filepath.Join(repoRoot, "docs", "exec-plans", "completed"),
-		filepath.Join(repoRoot, "docs", "exec-plans", "superseded"),
-		filepath.Join(repoRoot, "docs", "design-docs"),
-		filepath.Join(repoRoot, "docs", "goals"),
-		filepath.Join(repoRoot, "docs", "features"),
-		filepath.Join(repoRoot, "docs", "roles"),
-		filepath.Join(repoRoot, "docs", "roles", "personas"),
-		filepath.Join(repoRoot, "docs", "references"),
-		filepath.Join(repoRoot, "docs", "reports", "qa"),
-		filepath.Join(repoRoot, "docs", "reports", "security"),
-		filepath.Join(repoRoot, "docs", "reports", "dependencies"),
-		filepath.Join(repoRoot, "docs", "reports", "dogfood"),
-		filepath.Join(repoRoot, "docs", "reports", "strategy"),
+		harnessDir,
+		filepath.Join(harnessDir, "roles"),
+		filepath.Join(harnessDir, "skills"),
+		filepath.Join(harnessDir, "guardrails"),
+		filepath.Join(harnessDir, "knowledge"),
+		filepath.Join("docs", "tickets", "backlog"),
+		filepath.Join("docs", "tickets", "in-progress"),
+		filepath.Join("docs", "tickets", "in-review"),
+		filepath.Join("docs", "tickets", "done"),
+		filepath.Join("docs", "exec-plans", "backlog"),
+		filepath.Join("docs", "exec-plans", "active"),
+		filepath.Join("docs", "exec-plans", "completed"),
+		filepath.Join("docs", "exec-plans", "superseded"),
+		filepath.Join("docs", "design-docs"),
+		filepath.Join("docs", "goals"),
+		filepath.Join("docs", "features"),
+		filepath.Join("docs", "roles"),
+		filepath.Join("docs", "roles", "personas"),
+		filepath.Join("docs", "references"),
+		filepath.Join("docs", "reports", "qa"),
+		filepath.Join("docs", "reports", "security"),
+		filepath.Join("docs", "reports", "dependencies"),
+		filepath.Join("docs", "reports", "dogfood"),
+		filepath.Join("docs", "reports", "strategy"),
 	}
 	for _, d := range dirs {
-		if err := os.MkdirAll(d, 0o755); err != nil {
+		if err := root.MkdirAll(d, 0o755); err != nil {
 			return fmt.Errorf("init: create %s: %w — check directory permissions", d, err)
 		}
 		slog.Debug("created directory", "path", d)
 	}
-	if changed, err := ensureWorkspaceNoiseGitignore(repoRoot); err != nil {
+	if changed, err := ensureWorkspaceNoiseGitignore(root); err != nil {
 		return err
 	} else if changed {
 		slog.Debug("init: wrote workspace noise ignore policy", "path", ".gitignore")
@@ -129,56 +172,82 @@ func Init(repoRoot string, force bool) error {
 	projectName := filepath.Base(repoRoot)
 	brief := readProjectBrief(repoRoot, projectName)
 
-	manifestPath := filepath.Join(harnessPath, "manifest.yaml")
-	if err := os.WriteFile(manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
+	manifestPath := filepath.Join(harnessDir, "manifest.yaml")
+	if err := writeRepositoryFile(root, manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
 		return fmt.Errorf("init: write %s: %w — check directory permissions", manifestPath, err)
 	}
 
 	for name, content := range defaultRolePrompts {
-		promptPath := filepath.Join(harnessPath, "roles", name+".md")
-		if _, err := os.Stat(promptPath); err == nil {
+		promptPath := filepath.Join(harnessDir, "roles", name+".md")
+		if _, err := root.Stat(promptPath); err == nil {
 			slog.Debug("init: preserving existing role prompt", "role", name)
 			continue
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("init: stat %s: %w", promptPath, err)
 		}
-		if err := os.WriteFile(promptPath, []byte(defaultRolePrompt(name, content)), 0o644); err != nil {
+		if err := createRepositoryFile(root, promptPath, []byte(defaultRolePrompt(name, content)), 0o644); err != nil {
 			return fmt.Errorf("init: write %s: %w", promptPath, err)
 		}
 		slog.Debug("wrote default role prompt", "role", name)
 	}
 
 	for name, content := range defaultHarnessFiles {
-		harnessFilePath := filepath.Join(harnessPath, name)
-		if _, err := os.Stat(harnessFilePath); err == nil {
+		harnessFilePath := filepath.Join(harnessDir, name)
+		if _, err := root.Stat(harnessFilePath); err == nil {
 			slog.Debug("init: preserving existing harness support file", "path", name)
 			continue
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("init: stat %s: %w", harnessFilePath, err)
 		}
-		if err := os.MkdirAll(filepath.Dir(harnessFilePath), 0o755); err != nil {
-			return fmt.Errorf("init: create %s: %w", filepath.Dir(harnessFilePath), err)
-		}
-		if err := os.WriteFile(harnessFilePath, []byte(content), 0o644); err != nil {
+		if err := createRepositoryFile(root, harnessFilePath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("init: write %s: %w", harnessFilePath, err)
 		}
 		slog.Debug("wrote default harness support file", "path", name)
 	}
 
-	if _, err := writeHarnessMetadata(repoRoot, buildinfo.DefaultVersion); err != nil {
+	if _, err := writeHarnessMetadata(root, buildinfo.DefaultVersion); err != nil {
 		return err
 	}
 
 	for name, content := range defaultDocs {
 		content = renderDefaultDoc(name, content, brief)
-		docPath := filepath.Join(repoRoot, name)
-		if _, err := os.Stat(docPath); err == nil {
+		docPath := filepath.Clean(name)
+		if _, err := root.Stat(docPath); err == nil {
 			slog.Debug("init: preserving existing doc", "path", name)
 			continue
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("init: stat %s: %w", docPath, err)
 		}
-		if err := os.WriteFile(docPath, []byte(content), 0o644); err != nil {
+		if err := createRepositoryFile(root, docPath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("init: write %s: %w", docPath, err)
 		}
 		slog.Debug("wrote default doc", "path", name)
 	}
 
-	slog.Info("initialized .harness/", "path", harnessPath)
+	slog.Info("initialized .harness/", "path", filepath.Join(repoRoot, harnessDir))
+	return nil
+}
+
+func ensureGitRepository(root *repofs.Root) error {
+	if _, err := root.Stat(".git"); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("init: inspect .git: %w", err)
+	}
+
+	slog.Info("init: no .git found — running git init", "repo", root.Abs())
+	if err := root.VerifyPath(); err != nil {
+		return errors.New("init: repository identity verification failed")
+	}
+	cmd := exec.Command("git", "init")
+	cmd.Dir = root.Abs()
+	out, gitErr := cmd.CombinedOutput()
+	if err := root.VerifyPath(); err != nil {
+		return errors.New("init: repository identity verification failed")
+	}
+	if gitErr != nil {
+		return fmt.Errorf("init: git init failed in %s: %w\n%s", root.Abs(), gitErr, out)
+	}
 	return nil
 }
 
@@ -189,25 +258,34 @@ func Init(repoRoot string, force bool) error {
 // end user while still allowing newer mars versions to add missing
 // scaffold files.
 func Upgrade(repoRoot string) (updated []string, err error) {
-	repoRoot = filepath.Clean(repoRoot)
-	harnessPath := filepath.Join(repoRoot, harnessDir)
-	if _, err := os.Stat(harnessPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("upgrade: %s does not exist — run 'mars init' first", harnessPath)
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("upgrade: cannot access %s: %w — verify the path exists", repoRoot, err)
+	}
+	return upgradeRepository(root)
+}
+
+func upgradeRepository(root *repofs.Root) (updated []string, err error) {
+	repoRoot := root.Abs()
+	if _, err := root.Stat(harnessDir); errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("upgrade: %s does not exist — run 'mars init' first", filepath.Join(repoRoot, harnessDir))
+	} else if err != nil {
+		return nil, fmt.Errorf("upgrade: inspect %s: %w", harnessDir, err)
 	}
 
 	projectName := filepath.Base(repoRoot)
-	if changed, err := ensureWorkspaceNoiseGitignore(repoRoot); err != nil {
+	if changed, err := ensureWorkspaceNoiseGitignore(root); err != nil {
 		return updated, err
 	} else if changed {
 		updated = append(updated, ".gitignore")
 		slog.Info("upgrade: wrote missing workspace noise ignore policy", "path", ".gitignore")
 	}
 
-	manifestPath := filepath.Join(harnessPath, "manifest.yaml")
-	if _, err := os.Stat(manifestPath); err == nil {
+	manifestPath := filepath.Join(harnessDir, "manifest.yaml")
+	if _, err := root.Stat(manifestPath); err == nil {
 		slog.Debug("upgrade: preserving existing manifest.yaml", "path", manifestPath)
-	} else if os.IsNotExist(err) {
-		if err := os.WriteFile(manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
+	} else if errors.Is(err, os.ErrNotExist) {
+		if err := createRepositoryFile(root, manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
 			return nil, fmt.Errorf("upgrade: write %s: %w", manifestPath, err)
 		}
 		updated = append(updated, "manifest.yaml")
@@ -217,17 +295,14 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 	}
 
 	for name, content := range defaultRolePrompts {
-		promptPath := filepath.Join(harnessPath, "roles", name+".md")
-		if err := os.MkdirAll(filepath.Dir(promptPath), 0o755); err != nil {
-			return updated, fmt.Errorf("upgrade: create roles dir: %w", err)
-		}
-		if _, err := os.Stat(promptPath); err == nil {
+		promptPath := filepath.Join(harnessDir, "roles", name+".md")
+		if _, err := root.Stat(promptPath); err == nil {
 			slog.Debug("upgrade: preserving existing role prompt", "role", name)
 			continue
-		} else if !os.IsNotExist(err) {
+		} else if !errors.Is(err, os.ErrNotExist) {
 			return updated, fmt.Errorf("upgrade: stat %s: %w", promptPath, err)
 		}
-		if err := os.WriteFile(promptPath, []byte(defaultRolePrompt(name, content)), 0o644); err != nil {
+		if err := createRepositoryFile(root, promptPath, []byte(defaultRolePrompt(name, content)), 0o644); err != nil {
 			return updated, fmt.Errorf("upgrade: write %s: %w", promptPath, err)
 		}
 		updated = append(updated, "roles/"+name+".md")
@@ -235,24 +310,21 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 	}
 
 	for name, content := range defaultHarnessFiles {
-		harnessFilePath := filepath.Join(harnessPath, name)
-		if err := os.MkdirAll(filepath.Dir(harnessFilePath), 0o755); err != nil {
-			return updated, fmt.Errorf("upgrade: create %s: %w", filepath.Dir(harnessFilePath), err)
-		}
-		if _, err := os.Stat(harnessFilePath); err == nil {
+		harnessFilePath := filepath.Join(harnessDir, name)
+		if _, err := root.Stat(harnessFilePath); err == nil {
 			slog.Debug("upgrade: preserving existing harness support file", "path", name)
 			continue
-		} else if !os.IsNotExist(err) {
+		} else if !errors.Is(err, os.ErrNotExist) {
 			return updated, fmt.Errorf("upgrade: stat %s: %w", harnessFilePath, err)
 		}
-		if err := os.WriteFile(harnessFilePath, []byte(content), 0o644); err != nil {
+		if err := createRepositoryFile(root, harnessFilePath, []byte(content), 0o644); err != nil {
 			return updated, fmt.Errorf("upgrade: write %s: %w", harnessFilePath, err)
 		}
 		updated = append(updated, name)
 		slog.Debug("upgrade: wrote missing harness support file", "path", name)
 	}
 
-	changed, err := writeHarnessMetadata(repoRoot, buildinfo.DefaultVersion)
+	changed, err := writeHarnessMetadata(root, buildinfo.DefaultVersion)
 	if err != nil {
 		return updated, err
 	}
@@ -497,8 +569,8 @@ func ReadHarnessMetadata(repoRoot string) (HarnessMetadata, error) {
 	return metadata, nil
 }
 
-func writeHarnessMetadata(repoRoot, generatorVersion string) (bool, error) {
-	path := filepath.Join(filepath.Clean(repoRoot), harnessDir, harnessMetadataFile)
+func writeHarnessMetadata(root *repofs.Root, generatorVersion string) (bool, error) {
+	path := filepath.Join(harnessDir, harnessMetadataFile)
 	metadata := HarnessMetadata{
 		SchemaVersion:    1,
 		Generator:        "mars",
@@ -508,13 +580,14 @@ func writeHarnessMetadata(repoRoot, generatorVersion string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("harness metadata: marshal: %w", err)
 	}
-	if existing, err := os.ReadFile(path); err == nil && string(existing) == string(data) {
-		return false, nil
+	if existing, err := root.ReadFile(path); err == nil {
+		if string(existing) == string(data) {
+			return false, nil
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("harness metadata: read %s: %w", path, err)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return false, fmt.Errorf("harness metadata: create %s: %w", filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := writeRepositoryFile(root, path, data, 0o644); err != nil {
 		return false, fmt.Errorf("harness metadata: write %s: %w", path, err)
 	}
 	return true, nil
@@ -532,10 +605,10 @@ var defaultWorkspaceNoiseIgnores = []string{
 	".harness/.env.local",
 }
 
-func ensureWorkspaceNoiseGitignore(repoRoot string) (bool, error) {
-	path := filepath.Join(filepath.Clean(repoRoot), ".gitignore")
-	data, err := os.ReadFile(path)
-	if err != nil && !os.IsNotExist(err) {
+func ensureWorkspaceNoiseGitignore(root *repofs.Root) (bool, error) {
+	const path = ".gitignore"
+	data, err := root.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return false, fmt.Errorf("init: read %s: %w", path, err)
 	}
 	content := string(data)
@@ -562,7 +635,7 @@ func ensureWorkspaceNoiseGitignore(repoRoot string) (bool, error) {
 		b.WriteString(entry)
 		b.WriteString("\n")
 	}
-	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+	if err := writeRepositoryFile(root, path, []byte(b.String()), 0o644); err != nil {
 		return false, fmt.Errorf("init: write %s: %w", path, err)
 	}
 	return true, nil
@@ -596,30 +669,36 @@ func gitignoreCoversLiteral(lines []string, entry string) bool {
 // overwrite. If .harness/ exists without a manifest, Init runs with force.
 // Returns didInit=true when this call created or repaired the scaffold.
 func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
-	repoRoot = filepath.Clean(repoRoot)
-	manifestPath := filepath.Join(repoRoot, ".harness", "manifest.yaml")
-	_, statErr := os.Stat(manifestPath)
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return false, fmt.Errorf("harness: cannot access repository: %w", err)
+	}
+	return ensureHarness(root, force)
+}
+
+func ensureHarness(root *repofs.Root, force bool) (didInit bool, err error) {
+	const manifestPath = ".harness/manifest.yaml"
+	_, statErr := root.Stat(manifestPath)
 	if statErr == nil {
-		_, err := bundle.Load(repoRoot)
+		_, err := bundle.Load(root.Abs())
 		return false, err
 	}
-	if !os.IsNotExist(statErr) {
+	if !errors.Is(statErr, os.ErrNotExist) {
 		return false, fmt.Errorf("harness: stat manifest: %w", statErr)
 	}
 
-	slog.Info("harness: auto-initialising — no manifest found", "repo", repoRoot)
-	harnessPath := filepath.Join(repoRoot, ".harness")
+	slog.Info("harness: auto-initialising — no manifest found", "repo", root.Abs())
 	initForce := force
-	if _, err := os.Stat(harnessPath); err == nil {
+	if _, err := root.Stat(harnessDir); err == nil {
 		initForce = true
-	} else if !os.IsNotExist(err) {
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return false, fmt.Errorf("harness: stat .harness: %w", err)
 	}
 
-	if err := Init(repoRoot, initForce); err != nil {
+	if err := initRepository(root, initForce); err != nil {
 		return false, fmt.Errorf("harness: auto-init failed: %w", err)
 	}
-	_, err = bundle.Load(repoRoot)
+	_, err = bundle.Load(root.Abs())
 	return true, err
 }
 
