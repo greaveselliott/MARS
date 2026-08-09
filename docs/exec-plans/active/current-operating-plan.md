@@ -14,8 +14,8 @@
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
 **Current Failing Scenario:** F-017-S002 — T-074 and T-075 pass; T-076 execution-profile/environment/state/trace hardening and resumed T-058 browser proof remain, while F-017-S001 is independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** T-076 Checkpoint A passed at exact pushed commit `9191182601d79b996f1848a1e867e50b7d6eaf1c`, and Checkpoint B1 passed at exact pushed commit `5c23f536fadd9ab18694e3f46ed9b10ca96594da`; B2 job-owned process cleanup is the sole next slice before any state, redaction, or trace-lifecycle work.
-**Learning Or MVP Outcome:** Checkpoint A proves the default execution path cannot silently acquire host mutation authority, acknowledged host does not upgrade role trust, and unsupported isolation cannot start work or create state. B1 proves the named reachable child-process seams receive an explicit, name-sanitized environment while preserving ordinary supported toolchain state without claiming containment. B2 must prove cleanup reaches only job-owned process groups.
+**Walking Skeleton Slice:** T-076 Checkpoint A passed at exact pushed commit `9191182601d79b996f1848a1e867e50b7d6eaf1c`, Checkpoint B1 passed at exact pushed commit `5c23f536fadd9ab18694e3f46ed9b10ca96594da`, and Checkpoint B2 passed at exact pushed commit `473b829efe865630f4942b55af9e0108d7529d0c`; Checkpoint C private-state permissions are the sole next slice.
+**Learning Or MVP Outcome:** Checkpoint A proves the default execution path cannot silently acquire host mutation authority, acknowledged host does not upgrade role trust, and unsupported isolation cannot start work or create state. B1 proves the named reachable child-process seams receive an explicit, name-sanitized environment while preserving ordinary supported toolchain state without claiming containment. B2 proves process records, policy, and bounded cleanup reach only job-owned process groups while foreign listeners and unrelated llama-server-named processes survive. Checkpoint C must next prove MARS-owned private state has owner-only permissions.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement only T-076 Checkpoint B2: job-owned bounded process cleanup. Checkpoints C and D remain incomplete and are not current.
+- **Next Primary Action:** Implement only T-076 Checkpoint C's private-state-permissions slice. Checkpoint D remains incomplete and is not current.
 
 ## Starting Baseline
 
@@ -339,19 +339,37 @@ background shell, dependency PATH/cache preservation, managed inference, and
 the Jira repository-request plus owner-allowlist intersection. QA, Security,
 Release Manager, and Orchestrator returned GO.
 
-Only Checkpoint A and B1 are complete. B2 job-owned process cleanup is the
-sole next action. Checkpoints C and D, T-076, and F-017-S002 remain incomplete;
-resumed T-058 remains later in sequence.
+Checkpoint B2 is complete at exact pushed commit
+`473b829efe865630f4942b55af9e0108d7529d0c`. Background process records require
+a job ID; listing, direct helper policy, targeted kill, and lifecycle cleanup
+are scoped to that job. Unowned and cross-job targets fail closed without an
+OS-wide fallback. Cleanup sends TERM to the recorded process group, waits at
+most two seconds, and sends KILL if that group remains. Server jobs, manual
+run, one-shot tools run, and MCP EOF/error clean only their owned groups. Serve
+no longer performs blind lsof/pgrep cleanup, so a foreign listener and an
+unrelated llama-server-named process survive.
+
+The exact B2 gates were
+`go test ./internal/tools ./internal/mcpstdio ./internal/serve ./internal/scanner ./cmd/mars`,
+`go test -race ./internal/tools ./internal/mcpstdio ./internal/serve ./cmd/mars`,
+`go vet ./internal/tools ./internal/mcpstdio ./internal/serve ./internal/scanner ./cmd/mars`,
+`go test ./internal/docsync ./internal/docsconsistency`,
+`go run ./cmd/mars docsync audit --repo .` with 364 files checked and zero
+findings, and `git diff --check`. QA, Security, and Orchestrator returned GO.
+
+Only Checkpoints A, B1, and B2 are complete. Checkpoint C private-state
+permissions are the sole next action. Checkpoint D, T-076, and F-017-S002
+remain incomplete; resumed T-058 remains later in sequence.
 
 The ticket uses one thin child-environment seam, job/session-owned process
 records, one small MARS-state permissions helper, one bounded redaction seam,
 and the existing trace store. It explicitly excludes a VM/container, sandbox
 framework, generalized process supervisor, DLP/vault system, new storage
 engine, T-075 reopening, and all release/settings/visibility/publication work.
-Checkpoints A and B1 changed no version, legal/rights or installed-App disposition,
-Release, settings, visibility, signing, publication, or announcement state.
-The repository remains private at `VERSION=0.68.49`, Primary Status remains
-`primary_blocked`, and F-017-S002 remains incomplete.
+Checkpoints A, B1, and B2 changed no version, legal/rights or installed-App
+disposition, Release, settings, visibility, signing, publication, or
+announcement state. The repository remains private at `VERSION=0.68.49`,
+Primary Status remains `primary_blocked`, and F-017-S002 remains incomplete.
 
 ## Completion Gates By Ticket
 

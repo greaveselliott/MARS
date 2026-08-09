@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:9191182601d79b996f1848a1e867e50b7d6eaf1c", "commit:5c23f536fadd9ab18694e3f46ed9b10ca96594da"]
-verified_by: "Checkpoints A and B1: QA, Security, Release Manager, and Orchestrator GO; T-076 closure still requires Checkpoints B2 through D and Dogfood"
+evidence_links: ["commit:9191182601d79b996f1848a1e867e50b7d6eaf1c", "commit:5c23f536fadd9ab18694e3f46ed9b10ca96594da", "commit:473b829efe865630f4942b55af9e0108d7529d0c"]
+verified_by: "Checkpoints A and B1: QA, Security, Release Manager, and Orchestrator GO; Checkpoint B2: QA, Security, and Orchestrator GO; T-076 closure still requires Checkpoints C and D and Dogfood"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint B1 passed and was pushed at 5c23f536fadd9ab18694e3f46ed9b10ca96594da"
+last_attempt: "2026-08-09: Checkpoint B2 passed and was pushed at 473b829efe865630f4942b55af9e0108d7529d0c"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-execution-boundary:2026-08-09"
-next_action: "Implement Checkpoint B2 only: replace global background-process tracking and unowned cleanup with job-owned bounded cleanup."
+next_action: "Implement only Checkpoint C's private-state-permissions slice: enforce owner-only modes for MARS-owned canonical and recognized legacy state before agent execution."
 dedupe_key: "open-source:execution-profile-environment-state-trace"
 metadata:
   classification: "foundation-owned"
@@ -30,7 +30,7 @@ depends_on: [T-075]
 
 ## Context
 
-T-075 closed the descriptor-bound repository-path and exact Git-index secret-scanning gate. Checkpoint A closed the independent execution-profile admission gap, and Checkpoint B1 now sanitizes the named reachable child-process environment seams. F-017-S002 remains current because background processes are globally tracked, startup can kill unowned processes, MARS-owned state is sometimes group/world-readable, and traces/logs persist raw values indefinitely. These are reachable launch blockers owned by Checkpoints B2 through D. The repository remains private and the launch version freeze remains in force.
+T-075 closed the descriptor-bound repository-path and exact Git-index secret-scanning gate. Checkpoint A closed the independent execution-profile admission gap, Checkpoint B1 sanitizes the named reachable child-process environment seams, and Checkpoint B2 scopes process records and cleanup to the owning job. F-017-S002 remains current because MARS-owned state is sometimes group/world-readable and traces/logs persist raw values indefinitely. These are reachable launch blockers owned by Checkpoints C and D. The repository remains private and the launch version freeze remains in force.
 
 ## Outcome
 
@@ -75,14 +75,14 @@ tags, Releases, signing, publication, or announcement authority.
 
 ## Checkpoint B — Sanitized Children And Job-Owned Processes
 
-**Status:** B1 complete at exact pushed commit
-`5c23f536fadd9ab18694e3f46ed9b10ca96594da`; B2 is current, incomplete, and
-the sole next implementation action.
+**Status:** Complete at exact pushed commits
+`5c23f536fadd9ab18694e3f46ed9b10ca96594da` (B1) and
+`473b829efe865630f4942b55af9e0108d7529d0c` (B2).
 
 Deliver two independently green semantic commits inside this checkpoint.
 
 1. **B1 — Complete.** One thin standard-library child-environment package now preserves ordinary non-sensitive PATH, HOME, temporary-directory, locale, and toolchain/cache state while removing credential-like, MARS, GitHub, cloud/provider, delimiter-bounded auth, SSH, token, secret, password, API-key, private-key, and credential names by default. Parent-only `MARS_CHILD_ENV_ALLOWLIST` can restore an exact named variable but never reaches a child and cannot be widened by repository or model configuration. Every named reachable shell, MARS CLI, dependency, Git, code-intelligence, managed-inference, MCP stdio, Jira proxy, GitHub-auth, and source-update subprocess receives an explicit environment. Jira removes every repository-requested passthrough name from the sanitized base and fails actionably unless the same name is owner-allowlisted, without rendering its value. Filtering is name-based exposure reduction, not same-user containment.
-2. **B2 — Current.** Replace the package-global background-process map with job/session-owned process records. Foreground/background termination and targeted kill may affect only the current job's recorded process groups. Manual run, MCP shutdown, and server jobs clean up only their own groups with bounded TERM then KILL. Remove serve startup/cleanup behavior that kills arbitrary port owners or processes named llama-server; a foreign listener is an actionable conflict, while owned inference stops through its existing manager.
+2. **B2 — Complete.** Background process records require a job ID and are listed, killed, cleaned up, and admitted for direct helper process control only within that job. Unowned and cross-job targets, direct shell-form kill/pkill/killall process-control forms, and incomplete PID sets fail closed without an OS-wide fallback. Cleanup sends TERM to the recorded process group, waits at most two seconds, then sends KILL if the group remains. Server jobs, manual run, one-shot tools run, and MCP EOF/error clean up only their owned groups. Serve no longer uses lsof/pgrep to kill arbitrary port owners or llama-server-named processes; foreign listeners and unrelated llama-server-named processes survive.
 
 The B1 real-child regressions prove foreground and background shell children
 drop a poisoned GitHub credential, dependency sync retains PATH and cache state,
@@ -97,18 +97,31 @@ passed:
 - `go run ./cmd/mars docsync audit --repo .` (`364` files checked, `0` findings)
 - `git diff --check`
 
-QA, Security, Release Manager, and Orchestrator returned GO for B1. This closes
-only B1. B2, Checkpoints C and D, T-076, resumed T-058, and F-017-S002 remain
-incomplete. The repository remains private at `VERSION=0.68.49` with Primary
-Status `primary_blocked`; the legal/rights and installed-App no-gos remain, and
-no Release, settings, visibility, signing, publication, or announcement
-authority changed.
+QA, Security, Release Manager, and Orchestrator returned GO for B1.
+
+The B2 ownership, policy, cleanup, lifecycle, and foreign-process regressions
+passed at the exact pushed semantic checkpoint. Exact B2 gates passed:
+
+- `go test ./internal/tools ./internal/mcpstdio ./internal/serve ./internal/scanner ./cmd/mars`
+- `go test -race ./internal/tools ./internal/mcpstdio ./internal/serve ./cmd/mars`
+- `go vet ./internal/tools ./internal/mcpstdio ./internal/serve ./internal/scanner ./cmd/mars`
+- `go test ./internal/docsync ./internal/docsconsistency`
+- `go run ./cmd/mars docsync audit --repo .` (`364` files checked, `0` findings)
+- `git diff --check`
+
+QA, Security, and Orchestrator returned GO for B2. This closes
+only Checkpoints A, B1, and B2. Checkpoint C's private-state-permissions slice
+is the sole next action. Checkpoint D, T-076, resumed T-058, and F-017-S002
+remain incomplete. The repository remains private at `VERSION=0.68.49` with
+Primary Status `primary_blocked`; the legal/rights and installed-App no-gos
+remain, and no Release, settings, visibility, signing, publication, or
+announcement authority changed.
 
 Prove that poisoned parent credentials and values are absent from foreground/background child output while ordinary builds still work; concurrent jobs cannot see or kill each other's children; standalone run leaves no owned child; and unrelated listeners or llama-server-named processes survive startup and cleanup. Do not add a generalized supervisor, descendant scanner, container, or namespace layer.
 
 ## Checkpoint C — Owner-Only State And Central Redaction
 
-**Status:** Incomplete and not current.
+**Status:** Incomplete; the private-state-permissions slice is the sole next action.
 
 Deliver two independently green semantic commits inside this checkpoint.
 
