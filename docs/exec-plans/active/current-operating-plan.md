@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S002 — T-074 network entry points and T-075 Checkpoints A, B, C1, and C2's direct file-tool, exact Git-index, repository-writer, and target-lifecycle boundaries pass, while the remaining credential/model/release/Jira writer slice remains pending T-075; F-017-S001 remains independently blocked on T-073's owner/legal hold.
+**Current Failing Scenario:** F-017-S002 — T-074 network entry points and T-075 Checkpoints A through C's direct file-tool, exact Git-index, named writer, and target-lifecycle boundaries pass, while the deferred read-side inventory and closure gates remain pending Checkpoint D; F-017-S001 remains independently blocked on T-073's owner/legal hold.
 **Walking Skeleton Slice:** Deliver T-075 and close the repository-path and staged-secret-scanning gate without changing release, visibility, or publication state.
 **Learning Or MVP Outcome:** Prove model/agent-controlled repository operations cannot escape the selected repository and every staged/index blob is scanned without reproducing candidate values.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Implement and validate only T-075 Checkpoint C sub-checkpoint 3: migrate the remaining credential, model, release, and Jira repository writers through `repofs`, then commit and push before Checkpoint D.
+- **Next Primary Action:** Complete T-075 Checkpoint D only: inventory and migrate the deferred bundle/context/tools-policy/scanner/release/Jira general read-side surfaces, then run the bounded closure gates and sign-offs.
 
 ## Starting Baseline
 
@@ -203,9 +203,10 @@ Checkpoint A uses Go's standard-library `os.Root` as the descriptor-bound
 containment primitive and migrates only the direct file tools. Checkpoint B
 scans exact stage-0 Git index blobs and omits `.harness/.env.local` only when it
 is genuinely untracked and ignored. Checkpoint C mechanically migrates the
-finite named ticket/tool/persona, target lifecycle, credential/model,
-bundle/context, and release writer surfaces in independently green commits.
-Checkpoint D records one finite callsite inventory, proportionate tests,
+finite named ticket/tool/persona, target lifecycle, credential/model, release,
+and Jira mutation/writer surfaces in independently green commits. Checkpoint D
+inventories and migrates the deferred bundle/context, tools-policy, scanner,
+release, and Jira general read-side surfaces, then records proportionate tests,
 four-platform builds, installed clean-target smoke, and bounded role sign-off.
 
 Checkpoint A passed at exact commit
@@ -244,9 +245,23 @@ descriptor. Git initialization verifies repository identity before and after
 execution; eject preflights every target before descriptor-relative removal
 and rejects symlink parents/leaves without touching outside sentinels. Focused
 normal/race tests, scanner vet, formatting, and diff checks pass; QA, Security,
-Release Manager, and Orchestrator returned GO. Sub-checkpoint 3's remaining
-credential/model/release/Jira writer slice is the 2026-08-09 next action.
-Checkpoint D, T-075, and F-017-S002 remain incomplete.
+Release Manager, and Orchestrator returned GO. This was sub-checkpoint 2
+evidence only.
+
+Checkpoint C sub-checkpoint 3 passed through exact commits
+`d67b04278db608c5fb39d61d3fa0b54c4909cbed`,
+`f99964e79047b3e71d3076d1a05c75b3df9c4e95`, and
+`e08deb4bd118ff025abf131e7db8cf4eeb4cf333`. Model overrides and local
+credential fallback are descriptor-bound, distinguish read failure from
+missing credentials, enforce owner-only local credential mode, and scrub
+example values. Release notes/backfill retain one descriptor for controlled
+release files with mode-preserving atomic replacement. Jira ticket creation
+is exclusive and reconciliation is atomic and mode-preserving. Focused
+normal/race tests, affected caller tests, package vet, formatting, and diff
+checks pass; QA, Security, Release Manager, and Orchestrator returned GO.
+Checkpoint C's named mutation/writer portion is complete. Checkpoint D's
+deferred read-side inventory and closure gates are the sole next action;
+T-075 and F-017-S002 remain incomplete.
 
 No custom `openat` framework, scanner runtime, VM/container, kernel/race lab,
 arbitrary shell containment, global-state permission work, version, Release,

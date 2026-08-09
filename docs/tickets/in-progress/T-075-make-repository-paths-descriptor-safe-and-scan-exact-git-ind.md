@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08", "commit:66d7e412f0c0dade49c037752c8fa3f0000ee94e", "commit:c8c28cbcc709e12554236e92b7c2e7ba19006784"]
-verified_by: "Checkpoints A, B, C1, and C2: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
+evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08", "commit:66d7e412f0c0dade49c037752c8fa3f0000ee94e", "commit:c8c28cbcc709e12554236e92b7c2e7ba19006784", "commit:d67b04278db608c5fb39d61d3fa0b54c4909cbed", "commit:f99964e79047b3e71d3076d1a05c75b3df9c4e95", "commit:e08deb4bd118ff025abf131e7db8cf4eeb4cf333"]
+verified_by: "Checkpoints A, B, C1, C2, and C3: QA, Security, Release Manager, and Orchestrator on 2026-08-09; T-075 closure pending Dogfood and final sign-off"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint C2 passed through init/upgrade containment 66d7e41 and eject containment c8c28cb; Checkpoint C3 is current"
+last_attempt: "2026-08-09: Checkpoint C3 passed through model/credential d67b042, release f99964e, and Jira e08deb4 containment; Checkpoint D is current"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-repository-boundary:2026-08-09"
-next_action: "Implement and validate Checkpoint C sub-checkpoint 3 only: migrate the remaining credential, model, release, and Jira repository writers through repofs."
+next_action: "Complete Checkpoint D only: inventory and migrate the deferred bundle/context/tools-policy/scanner/release/Jira general read-side surfaces, then run the bounded closure gates and sign-offs."
 dedupe_key: "open-source:repository-path-and-index-secret-boundary"
 metadata:
   classification: "foundation-owned"
@@ -81,7 +81,7 @@ Deliver independently green sub-checkpoints:
 
 1. Migrate ticket_create, tool_create, persona_create, workspace hygiene, record-decision/learnings, and other repo-backed internal/tools writers.
 2. Migrate target init, upgrade, generated-target writes, and eject; contained removal rejects symlink parents/leaves.
-3. Migrate model override and .harness credential-route readers/writers, bundle/context reads that can enter model input, release notes/backfill writers, and the remaining named repository-backed integration writer surfaces.
+3. Migrate model override and .harness credential-route readers/writers, release notes/backfill controlled-file writers, and the remaining named repository-backed integration writer surfaces.
 
 Sub-checkpoint 1 passed through exact commits
 `88f7737bf9be3b804483f676507a193f68ffa7d4` and
@@ -103,14 +103,30 @@ subprocess. Eject preflights every target before mutation, rejects symlink
 parents/leaves in dry-run and apply modes, removes through the descriptor, and
 preserves application files and empty-directory pruning behavior. Focused
 normal/race tests, scanner vet, formatting, and diff checks pass. QA, Security,
-Release Manager, and Orchestrator returned GO. Sub-checkpoint 3, Checkpoint D,
-T-075, and F-017-S002 remain incomplete.
+Release Manager, and Orchestrator returned GO. This was sub-checkpoint 2
+evidence only.
+
+Sub-checkpoint 3 passed through exact commits
+`d67b04278db608c5fb39d61d3fa0b54c4909cbed`,
+`f99964e79047b3e71d3076d1a05c75b3df9c4e95`, and
+`e08deb4bd118ff025abf131e7db8cf4eeb4cf333`. Model overrides and local
+credential fallback use descriptor reads and atomic or exclusive writes;
+credential read failures remain distinct from missing credentials, local
+credentials tighten to `0600`, and committed examples retain names without
+values. Release notes/backfill retain one admitted descriptor for `VERSION`,
+`CHANGELOG.md`, and `internal/buildinfo/version.go`, preserving modes and prior
+dry-run/check/order behavior. Jira ticket creation is exclusive and Jira
+reconciliation is atomic and mode-preserving after existing admission.
+Focused normal/race tests, affected caller tests, package vet, formatting, and
+diff checks pass; QA, Security, Release Manager, and Orchestrator returned GO.
+Checkpoint C's named mutation/writer portion is complete. Checkpoint D, T-075,
+and F-017-S002 remain incomplete.
 
 Use atomic replacement or exclusive creation as appropriate and preserve existing behavior and owner-only credential mode. Do not mediate shell_exec, Git's own internal writes, global MARS state, model downloads, databases, logs, traces, self-update installation, or validation-output directories; those are outside this repository boundary or owned by T-076/T-077.
 
-## Checkpoint D — Closure
+## Checkpoint D — Deferred Read Inventory And Closure
 
-- Perform one mechanical source inventory proving no direct repo-root os.ReadFile/Open/WriteFile/MkdirAll/Rename/Remove remains in the named production surfaces. Record the result as evidence; do not add a permanent generalized linter.
+- Perform one mechanical source inventory of the deferred bundle/context, tools-policy, scanner, release, and Jira general read-side surfaces, migrate the reachable named repository reads through `repofs`, and prove no direct repo-root os.ReadFile/Open/WriteFile/MkdirAll/Rename/Remove remains in scope. Record the result as evidence; do not add a permanent generalized linter.
 - Sync only F-004, F-005, F-007, F-017, guardrails/tools guidance, mirrored CLI/generated doctrine, the active plan, goal, and this ticket where behavior changes.
 - Run focused normal/race tests, docs-consistency and DocSync, four supported CGO-disabled builds, and one installed clean-target smoke proving symlink read/write rejection, exact index-only/force-added secret blocking with no value leakage, and ordinary ignored untracked .harness/.env.local omission.
 - Obtain concurrent QA/Security review plus Dogfood and Release Manager sign-off.
