@@ -286,7 +286,9 @@ mars run engineer --repo ~/my-project --dry-run</code></pre>
             Cloud routing is explicit. MARS stores provider metadata and
             <code>api_key_env</code> names in repo-owned config; it does not
             accept raw provider keys in flags, committed files, logs, traces,
-            telemetry, JSON output, or errors.
+            telemetry, JSON output, or errors. Enabling a cloud route sends
+            selected assembled context, model messages, tool schemas, tool
+            arguments, and tool results to that provider under its terms.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>

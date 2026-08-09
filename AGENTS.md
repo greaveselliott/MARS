@@ -4,7 +4,7 @@
 
 ## What is MARS?
 
-A self-hosted autonomous AI delivery system written in Go. You provide a machine with a GPU, run `mars setup`, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally on open models (Gemma 4, Qwen3-Coder-Next). No cloud API costs, no data exfiltration, no vendor lock-in.
+A self-hosted autonomous AI delivery system written in Go. You provide a machine with a GPU, run `mars setup`, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. MARS is local-first by default and normally runs open-weight models through local inference. Configured cloud model routes send selected assembled context, model messages, and tool data to the chosen provider under that provider's terms; optional integrations and artifact downloads also make the network requests required for their configured work. Raw telemetry stays local by default, while opt-in aggregate reporting sends its previewable payload to the configured collector without making the network transport anonymous.
 
 **Lineage:** MARS is an evolution of the [Mars](https://github.com/elliottgreaves/mars) monorepo's Cursor Automations pipeline. Mars proved the model works (11 autonomous roles). This product extracts that into a standalone, self-hosted system.
 

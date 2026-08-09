@@ -58,7 +58,7 @@ Self-reflection must create durable evidence, not only dashboard signals or evol
 
 The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event, trace ID, score snapshot, commit, outcome, evidence, recommendation, candidate files, and acceptance criteria when those fields are available locally.
 
-Target repo intervention-debt tickets are only the right durable work item when the remediation belongs to the target repository. Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail/tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain local telemetry first and are eligible for anonymous foundation telemetry reporting instead of being written into the target backlog.
+Target repo intervention-debt tickets are only the right durable work item when the remediation belongs to the target repository. Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail/tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain local telemetry first and are eligible for opt-in aggregate foundation telemetry reporting instead of being written into the target backlog.
 
 Direct evolution remains bounded. Harness/runtime, unknown, or unsafe changes default to foundation telemetry rather than target backlog. High-signal foundation telemetry such as `guardrail_loop` can still record bounded evolution reviews against role guidance, manifest workflow, or loop-boundary surfaces without creating target backlog work. Target-owned human follow-up, reverted target commits, stale target tickets, and explicit operator requests may become intervention-debt tickets through the canonical ticket path.
 
@@ -138,7 +138,9 @@ outbox, but it never uploads raw traces, prompts, repo paths, remotes, ticket
 text, command output, file paths, commit SHAs, usernames, source content, or raw
 error messages.
 
-Anonymous foundation telemetry is opt-in. A deployed harness sends only
+Aggregate foundation telemetry is opt-in. The configuration mode remains named
+`anonymous`, but that name describes payload minimization rather than anonymous
+transport. A deployed harness sends only
 allowlisted aggregate envelopes to a configured collector endpoint. The collector
 owns the foundation telemetry database. For local dogfood, the collector stores
 reports in SQLite. For broader public operation, the same collector API can use
@@ -150,7 +152,7 @@ The write path is:
 1. raw local telemetry: `~/.mars/db/{repo-name}/mars.db`
 2. local anonymous outbox: `telemetry_report_outbox` in the same repo DB
 3. collector intake: local SQLite for dogfood, hosted Postgres-compatible storage later
-4. foundation triage: repeated anonymous patterns across distinct anonymous report keys or harness versions become MARS source work, not target repo intervention debt
+4. foundation triage: repeated minimized patterns across distinct aggregate report keys or harness versions become MARS source work, not target repo intervention debt
 
 Remote reporting defaults to off, disabled reporting is healthy, and send
 failures never block local harness operation.

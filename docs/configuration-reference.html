@@ -161,13 +161,15 @@ MARS_CODE_INTEL_ENABLED=true mars start --repo /path/to/repo</code></pre>
         </section>
 
         <section class="doc-section" id="telemetry-config">
-          <h2>Anonymous Telemetry Config</h2>
+          <h2>Aggregate Telemetry Config</h2>
           <p>
             Telemetry is off by default. Users can always inspect local status
-            and preview the exact anonymous aggregate payload before anything
-            leaves the machine. Sending requires
+            and preview the exact allowlisted aggregate payload before anything
+            leaves the machine. Sending requires the mode named
             <code>telemetry.reporting: anonymous</code> and a collector
-            endpoint.
+            endpoint. The mode name describes payload minimization; it does not
+            make the network transport anonymous, and the collector can observe
+            ordinary request metadata.
           </p>
           <pre><code>telemetry:
   reporting: off
@@ -178,7 +180,7 @@ MARS_CODE_INTEL_ENABLED=true mars start --repo /path/to/repo</code></pre>
             <table>
               <thead><tr><th>YAML key</th><th>Environment override</th><th>User meaning</th></tr></thead>
               <tbody>
-                <tr><td><code>telemetry.reporting</code></td><td><code>MARS_TELEMETRY_REPORTING</code></td><td><code>off</code> makes <code>mars telemetry send</code> print that no network call was made. <code>anonymous</code> enables sending queued anonymous reports.</td></tr>
+                <tr><td><code>telemetry.reporting</code></td><td><code>MARS_TELEMETRY_REPORTING</code></td><td><code>off</code> makes <code>mars telemetry send</code> print that no network call was made. <code>anonymous</code> enables sending queued, allowlisted aggregate reports; it is not a transport-anonymity guarantee.</td></tr>
                 <tr><td><code>telemetry.endpoint</code></td><td><code>MARS_TELEMETRY_ENDPOINT</code></td><td>Base collector URL. MARS appends <code>/v1/anonymous-telemetry/reports</code> when sending.</td></tr>
                 <tr><td><code>telemetry.token</code></td><td><code>MARS_TELEMETRY_TOKEN</code></td><td>Optional bearer token for the collector request. Treat it like a secret.</td></tr>
                 <tr><td><code>telemetry.report_interval</code></td><td><code>MARS_TELEMETRY_INTERVAL</code></td><td>Local reporting interval setting. Default is <code>24h</code>.</td></tr>

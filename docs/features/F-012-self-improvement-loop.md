@@ -23,7 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-012-S006 - Repeated useful procedure becomes a compact skill or formalized tool instead of chat memory.
 7. F-012-S007 - Source and generated target harnesses receive the same self-improvement doctrine when applicable.
 8. F-012-S008 - Deployed harnesses keep raw telemetry local and export only opt-in anonymous aggregate reports.
-9. F-012-S009 - Foundation telemetry collector intake triages repeated anonymous patterns into MARS source work.
+9. F-012-S009 - Foundation telemetry collector intake triages repeated minimized aggregate patterns into MARS source work.
 10. F-012-S010 - Deterministic remediation recipes are registered with applicability, safety, and operator actions before LLM repair.
 11. F-012-S011 - Compartmentalised agent smoke tests generate ephemeral role-stage targets through foundation tools.
 
@@ -54,7 +54,7 @@ Then the proposed target is one of prompt, skill, process, guardrail, context, i
 
 Given triage produces actionable or weak evidence
 When the harness records the proposal
-Then target-owned actionable evidence creates or updates active goals or intervention-debt tickets, weak evidence becomes an observation, foundation-owned harness failures stay local telemetry or anonymous foundation telemetry, and repeated intervention-debt updates are compacted instead of inflating future context
+Then target-owned actionable evidence creates or updates active goals or intervention-debt tickets, weak evidence becomes an observation, foundation-owned harness failures stay local telemetry or opt-in aggregate foundation telemetry whose transport is not anonymous, and repeated intervention-debt updates are compacted instead of inflating future context
 
 Given a foundation-owned `guardrail_loop` signal is recorded
 When self-improvement routing evaluates it
@@ -84,7 +84,7 @@ Given the source harness adds or changes self-improvement rules
 When initialized target harnesses should inherit them
 Then generated prompts, skills, knowledge routes, docs, and consistency tests are updated in the same task
 
-### F-012-S008: Anonymous Foundation Telemetry Export
+### F-012-S008: Opt-In Aggregate Foundation Telemetry Export
 
 Given a deployed harness has local raw telemetry in its repo-specific SQLite database
 When anonymous reporting is disabled
@@ -96,11 +96,11 @@ Then the payload contains only allowlisted aggregate fields and excludes raw tra
 
 ### F-012-S009: Foundation Collector Intake And Triage
 
-Given a foundation collector receives anonymous report envelopes
+Given a foundation collector receives minimized aggregate report envelopes under the mode named `anonymous`
 When it validates and stores them
 Then local dogfood uses a SQLite intake database and future hosted operation can use a Postgres-compatible backend without changing the deployed-harness protocol
 
-Given repeated anonymous signatures appear across distinct anonymous report keys or harness versions
+Given repeated minimized signatures appear across distinct aggregate report keys or harness versions
 When foundation triage runs
 Then it creates MARS source work rather than intervention-debt tickets in the deployed target repository
 

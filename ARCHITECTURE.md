@@ -264,6 +264,9 @@ cloud models. Deployed harnesses default to local inference. Local inference
 manages llama.cpp as a subprocess, detects hardware, downloads or verifies model
 weights, starts and stops the server, and health-checks it. Model evaluation
 prints the current candidate plan or probes a supplied compatible endpoint.
+When an operator configures a hosted or cloud endpoint, MARS sends the selected
+assembled context, model messages, tool schemas, tool arguments, and tool
+results needed for that conversation to the endpoint under its provider terms.
 
 ### Tool System (`internal/tools/`)
 
@@ -321,6 +324,11 @@ fallback with `MARS_DISABLE_LINUX_NAMESPACES=1`. Non-Linux platforms
 use process groups, current working directory restriction, and ulimit wrappers.
 Current execution roots tools in the registered repo path; it does not clone a
 fresh working directory per job.
+
+Shell and subprocess execution has the current operating-system user's full
+authority. Process groups, working-directory controls, resource limits,
+allowlists, and guardrails reduce mistakes and blast radius; they are not a
+security sandbox or a containment boundary for hostile code.
 
 Safety and guardrails provide blast-radius limits, deletion policy, secret
 scanning, blocked destructive operations, advisory prompt guidance, mechanical

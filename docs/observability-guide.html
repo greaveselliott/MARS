@@ -83,7 +83,7 @@ docs:
               MARS is designed to be operated from durable evidence, not vibes.
               This guide shows where users inspect live runtime state, trace
               job behavior, understand role quality, export repo-visible
-              evidence, and keep telemetry private unless anonymous reporting
+              evidence, and keep telemetry local unless aggregate reporting
               is explicitly enabled.
             </p>
           </div>
@@ -267,9 +267,12 @@ mars scores export --repo /path/to/repo --create-intervention-debt</code></pre>
         <section class="doc-section" id="telemetry">
           <h2>Telemetry</h2>
           <p>
-            Raw telemetry is local by default. Anonymous reporting is opt-in
-            and sends allowlisted aggregates only after users can preview the
-            payload. <code>mars telemetry send</code> makes no network call
+            Raw telemetry is local by default. The reporting mode named
+            <code>anonymous</code> is opt-in and sends an allowlisted aggregate
+            only after users can preview the payload. That label describes
+            payload minimization, not network anonymity: the configured
+            collector and network path can observe ordinary transport metadata.
+            <code>mars telemetry send</code> makes no network call
             unless <code>telemetry.reporting</code> is set to
             <code>anonymous</code> and a collector endpoint is configured.
           </p>
@@ -303,7 +306,7 @@ mars telemetry send --repo /path/to/repo</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Run a local foundation collector</h3>
-              <pre><code>mars telemetry collect --storage sqlite --addr :9092 --db ~/.mars/db/foundation-telemetry/intake.db
+              <pre><code>mars telemetry collect --storage sqlite --addr 127.0.0.1:9092 --db ~/.mars/db/foundation-telemetry/intake.db
 MARS_TELEMETRY_REPORTING=anonymous MARS_TELEMETRY_ENDPOINT=http://127.0.0.1:9092 mars telemetry send --repo /path/to/repo
 mars telemetry triage-foundation --repo /path/to/MARS --db ~/.mars/db/foundation-telemetry/intake.db --window-days 30</code></pre>
               <p>The collector uses <code>~/.mars/db/foundation-telemetry/intake.db</code> when <code>--db</code> is omitted. Pass it explicitly when the same database will feed <code>triage-foundation</code>.</p>
@@ -371,7 +374,7 @@ mars telemetry triage-foundation --repo /path/to/MARS --db ~/.mars/db/foundation
               <tbody>
                 <tr><td>Raw traces and prompts</td><td>Local repo database and command logs.</td><td>No.</td></tr>
                 <tr><td>Repo paths, remotes, ticket text, file contents</td><td>Local repo and local DB.</td><td>No.</td></tr>
-                <tr><td>Anonymous aggregate telemetry</td><td>Local outbox before send.</td><td>No, unless reporting is explicitly enabled and sent.</td></tr>
+                <tr><td><code>anonymous</code>-mode aggregate telemetry</td><td>Local outbox before send.</td><td>No, unless reporting is explicitly enabled and sent; sending is not an anonymity guarantee.</td></tr>
                 <tr><td>Quality score artifact</td><td><code>docs/QUALITY_SCORE.md</code>.</td><td>Only if the target repo is pushed or shared.</td></tr>
                 <tr><td>Dashboard status</td><td>Local HTTP server.</td><td>No hosted service; bind and network exposure are operator-controlled.</td></tr>
               </tbody>

@@ -268,7 +268,7 @@ docs:
               <tbody>
                 <tr><td>File inspection</td><td><code>file_read</code>, <code>file_search</code>, <code>grep</code>, code-intel tools</td><td>Read known files, search bounded globs, and inspect code graph context. See the <a href="code-intel-reference.html">Code Intelligence Reference</a>.</td></tr>
                 <tr><td>File mutation</td><td><code>file_write</code></td><td>Create or update repo files with docsync and policy checks.</td></tr>
-                <tr><td>Shell execution</td><td><code>shell_exec</code></td><td>Run subprocesses through policy, validation, background process, and output controls.</td></tr>
+                <tr><td>Shell execution</td><td><code>shell_exec</code></td><td>Run subprocesses through policy, validation, background process, and output controls. Commands still have the current operating-system user's full authority; these controls are not a security sandbox.</td></tr>
                 <tr><td>MARS command bridge</td><td><code>mars_cli</code></td><td>Run MARS commands through a structured argv path that avoids stale binary and shell parsing mistakes.</td></tr>
                 <tr><td>Git lifecycle</td><td><code>git_status</code>, <code>git_commit</code>, <code>git_push</code></td><td>Inspect, commit, and publish work under trunk and safety rules.</td></tr>
                 <tr><td>Ticket and planning</td><td><code>ticket_create</code>, <code>record_decision</code>, disposition tools</td><td>Create durable work and decisions rather than leaving them in chat.</td></tr>
@@ -298,7 +298,7 @@ docs:
             </article>
             <article data-doc-filter>
               <h3>Use shell only when needed</h3>
-              <p><code>shell_exec</code> is for tests, builds, runtime probes, and subprocesses where no purpose-built tool fits.</p>
+              <p><code>shell_exec</code> is for tests, builds, runtime probes, and subprocesses where no purpose-built tool fits. Treat every permitted command as host execution with the current operating-system user's full authority.</p>
             </article>
             <article data-doc-filter>
               <h3>Use durable records for decisions</h3>

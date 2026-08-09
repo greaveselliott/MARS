@@ -107,7 +107,11 @@ docs:
             External systems augment the repo-owned operating model. They do
             not become the system of record by default, and missing credentials
             should not block source install, local setup, dry runs, or scoped
-            target operation.
+            target operation. When configured, GitHub, JIRA, and remote MCP
+            exchange the repository identifiers, issue or work-item content,
+            tool inputs, and results required for the scoped request. Update
+            and model-download workflows likewise contact their configured
+            hosts for the requested artifacts.
           </p>
           <div class="concept-grid">
             <article data-doc-filter>

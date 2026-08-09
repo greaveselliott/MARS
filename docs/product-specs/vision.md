@@ -17,6 +17,12 @@ The product must feel zero-config. It detects local hardware, chooses a sensible
 
 Inference runs through local open-weight models by default, with llama.cpp managed as a subprocess. Model, binary, and performance choices should be automatic for normal users and overrideable for advanced users.
 
+Local-first is the default, not a claim that every configured path stays on the
+machine. Cloud model routes send selected assembled context, model messages,
+and tool data to the chosen provider under its terms. GitHub, JIRA, remote MCP,
+updates, model downloads, and opt-in telemetry reporting make the network
+requests required for their configured purpose.
+
 The user should not need to tune thread counts, context sizes, model quantization, or parallel slots before seeing a useful run. Doctor checks explain what is missing and how to fix it.
 
 ### Strict trunk by design
@@ -54,7 +60,11 @@ The product must proactively triage those signals into improvement targets: prom
 
 ## Who It Serves
 
-MARS is for developers and small teams who want autonomous delivery without sending their source code to a hosted model service. The primary user has a local machine with Apple Silicon, NVIDIA, or AMD ROCm hardware and wants agents to operate normal repository workflows with minimal ceremony.
+MARS is for developers and small teams who want autonomous delivery with local
+inference as the default and explicit control over any hosted model or external
+integration they enable. The primary user has a local machine with Apple
+Silicon, NVIDIA, or AMD ROCm hardware and wants agents to operate normal
+repository workflows with minimal ceremony.
 
 Secondary users include teams that want optional remote-code-host telemetry, local dashboards, score history, trust controls, and durable documentation for autonomous work.
 

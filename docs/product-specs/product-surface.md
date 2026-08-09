@@ -81,9 +81,10 @@ artifacts, secrets, release assets, upgrade preservation, and eject cleanup.
 The site now also documents roles and agents (`docs/roles-guide.html`), target
 and local configuration (`docs/configuration-reference.html`), and the no-stale-docs
 documentation sync operating model (`docs/documentation-sync-guide.html`).
-Configuration coverage includes anonymous telemetry YAML keys, environment
-overrides, collector URL semantics, token handling, and the preview-before-send
-privacy boundary.
+Configuration coverage includes aggregate telemetry YAML keys, environment
+overrides, collector URL semantics, token handling, the preview-before-send
+privacy boundary, and the fact that the mode named <code>anonymous</code> does
+not make collector transport anonymous.
 Observability and recovery coverage lives in
 `docs/observability-guide.html` and `docs/troubleshooting-guide.html`, covering
 dashboard state, terminal status, logs, traces, quality score, telemetry,
@@ -130,9 +131,9 @@ reviewed from the repo and deployed without a frontend build step.
 | `mars doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, private-release auth readiness, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
 | `mars scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes. Low scores become improvement targets by default; deduped intervention-debt tickets are created only with `--create-intervention-debt` or clearly target-owned evidence. |
-| `mars telemetry status\|preview\|export\|send` | Implemented | Keeps raw telemetry local, previews the exact anonymous aggregate payload, writes sanitized reports to the local outbox, and sends only when anonymous reporting is explicitly enabled. |
-| `mars telemetry collect --storage sqlite` | Implemented | Runs a local anonymous foundation telemetry collector backed by SQLite; the collector API is designed so hosted Postgres-compatible storage can be added later without changing deployed harnesses. |
-| `mars telemetry triage-foundation` | Implemented | Reads collector aggregates and creates MARS source intervention-debt work only for repeated anonymous foundation-owned patterns. |
+| `mars telemetry status\|preview\|export\|send` | Implemented | Keeps raw telemetry local, previews the exact allowlisted aggregate payload, writes sanitized reports to the local outbox, and sends only when the reporting mode named `anonymous` is explicitly enabled. The label does not make network transport anonymous. |
+| `mars telemetry collect --storage sqlite` | Implemented | Runs a local aggregate foundation telemetry collector backed by SQLite; the collector API is designed so hosted Postgres-compatible storage can be added later without changing deployed harnesses. |
+| `mars telemetry triage-foundation` | Implemented | Reads collector aggregates and creates MARS source intervention-debt work only for repeated minimized foundation-owned patterns. |
 | `mars trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
 | `mars models list [--provider registry\|ollama]` | Implemented | Lists pinned medium-profile registry defaults or locally installed Ollama models. Ollama listing is a catalog/evaluation surface, not default promotion. |
@@ -259,7 +260,7 @@ The product contract is:
 - Engineer roles complete one ticket per run.
 - Engineer roles provide scenario evidence before closing feature tickets.
 - In-progress tickets are highest priority.
-- Target-owned intervention-debt tickets are generated only from clearly target-owned repeated local telemetry failures, explicit operator requests, or opt-in score export; they do not outrank ordinary product backlog unless a product ticket explicitly names them in `blocked_by`. Foundation-owned failures stay local or flow through optional anonymous foundation telemetry.
+- Target-owned intervention-debt tickets are generated only from clearly target-owned repeated local telemetry failures, explicit operator requests, or opt-in score export; they do not outrank ordinary product backlog unless a product ticket explicitly names them in `blocked_by`. Foundation-owned failures stay local or flow through optional aggregate foundation telemetry; its minimized payload does not make transport anonymous.
 - Blocked work is documented and proactively unblocked when the fix is in scope.
 - Dogfood and QA roles produce reproducible evidence.
 - Janitor and orchestrator roles keep ticket state truthful.
@@ -329,12 +330,14 @@ traces, HTTP responses, or returned setup results.
 
 The product must never describe optional integration as complete unless credentials, webhook delivery, and status/comment behavior have actually been validated.
 
-Local telemetry and dashboard evidence remain the default. Anonymous foundation
+Local telemetry and dashboard evidence remain the default. Aggregate foundation
 telemetry is a separate opt-in integration: deployed harnesses keep raw events
-in their repo-specific SQLite database, derive sanitized aggregate reports into a
-local outbox, and send only allowlisted fields to a configured collector. Local
-dogfood uses the built-in SQLite collector; public operation can later host the
-same collector against a Postgres-compatible backend such as Neon.
+in their repo-specific SQLite database, derive sanitized aggregate reports into
+a local outbox, and send only allowlisted fields to a configured collector. The
+configuration mode remains named <code>anonymous</code>, but the collector and
+network path can observe transport metadata. Local dogfood uses the built-in
+SQLite collector; public operation can later host the same collector against a
+Postgres-compatible backend such as Neon.
 
 ## Known Hardening Areas
 

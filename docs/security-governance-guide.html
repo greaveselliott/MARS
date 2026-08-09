@@ -112,8 +112,9 @@ docs:
                 <tr><td>Runtime databases</td><td>Per-repo SQLite databases live under local MARS state paths unless `--db` overrides them.</td><td><a href="files-state-reference.html#databases">Databases</a></td></tr>
                 <tr><td>Models and binaries</td><td>Downloaded and cached locally for the default local inference path.</td><td><a href="files-state-reference.html#local-state">Local state</a></td></tr>
                 <tr><td>Logs and traces</td><td>Stored locally for audit and troubleshooting.</td><td><a href="observability-guide.html#logs-traces">Observability</a></td></tr>
-                <tr><td>Telemetry</td><td>Local by default; anonymous aggregate reporting is opt-in and previewable.</td><td><a href="observability-guide.html#telemetry">Telemetry</a></td></tr>
-                <tr><td>Hosted providers and integrations</td><td>Disabled unless configured with explicit credentials or endpoints.</td><td><a href="configuration-reference.html#integrations">Configuration</a></td></tr>
+                <tr><td>Telemetry</td><td>Raw events are local by default. Opt-in aggregate reporting is previewable, but the collector and network path can observe transport metadata; the transport is not anonymous.</td><td><a href="observability-guide.html#telemetry">Telemetry</a></td></tr>
+                <tr><td>Cloud model routes</td><td>Disabled unless configured. When enabled, selected assembled context, model messages, tool schemas, arguments, and results go to the provider under its terms.</td><td><a href="models-guide.html#providers">Models</a></td></tr>
+                <tr><td>Hosted providers and integrations</td><td>Disabled unless configured with explicit credentials or endpoints. GitHub, JIRA, remote MCP, update, and model-download requests transmit the identifiers or content required for the request.</td><td><a href="configuration-reference.html#integrations">Configuration</a></td></tr>
               </tbody>
             </table>
           </div>
@@ -164,6 +165,7 @@ docs:
                 <tr><td>Hard guardrails</td><td>Block matching unsafe content or operations.</td><td>Current YAML rules are syntactic.</td><td><a href="guardrails-reference.html#schema">Guardrails reference</a></td></tr>
                 <tr><td>Advisory guardrails</td><td>Shape agent behavior and review expectations.</td><td>Advisory rules inform, not block.</td><td><a href="guardrails-reference.html#schema">Guardrail schema</a></td></tr>
                 <tr><td>Blast-radius checks</td><td>Reduce irreversible or broad unsafe changes.</td><td>No control makes damage impossible.</td><td><a href="safety-quality-guide.html#blast-radius">Safety guide</a></td></tr>
+                <tr><td>Shell and subprocess controls</td><td>Apply policy, working-directory, process-group, and resource controls.</td><td>Commands retain the current operating-system user's full authority; these controls are not a security sandbox.</td><td><a href="tools-mcp-guide.html#categories">Tools guide</a></td></tr>
                 <tr><td>Secret scan</td><td>Finds likely secrets and redacts output.</td><td>Rotate confirmed secrets outside MARS.</td><td><a href="guardrails-reference.html#secret-scan">Secret scanning</a></td></tr>
               </tbody>
             </table>

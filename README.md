@@ -10,6 +10,14 @@ The default path is local-first and strict-trunk. Open-weight models run on
 your hardware through llama.cpp by default, optional integrations are explicit,
 and the repository remains the system of record.
 
+Local-first is a default, not a universal no-network claim. A configured cloud
+model route sends selected assembled context, model messages, tool schemas,
+tool arguments, and tool results to that provider under its terms. Configured
+GitHub, JIRA, remote MCP, update, and model-download workflows transmit the
+identifiers or content required to perform their requests. Raw telemetry stays
+local by default; opt-in aggregate reporting is previewable, but its collector
+transport is not anonymous.
+
 ## Mental Model
 
 There are three related things:
@@ -79,7 +87,8 @@ source checkout install, local setup, and a scoped target run.
   one target repository.
 - **Supported cloud routing**: optional provider routes are supported for
   OpenAI, Anthropic, Gemini, Mistral, DeepSeek, and xAI through `api_key_env`
-  credential indirection.
+  credential indirection. Enabling one sends selected assembled context and
+  tool data to that provider under its terms.
 - **Implemented and still hardening**: local inference lifecycle, generated
   target harness lifecycle, `run`/`start`/`serve`, embedded dashboard,
   release/update workflows, scoring, trust, telemetry, tools, and MCP.
@@ -268,6 +277,13 @@ include:
 - Board-driven JIRA intake through `.harness/integrations.yaml`; this is
   default-off and currently under active staged delivery.
 - MCP exposure for Codex, Cursor, Claude, and other compatible clients.
+
+These integrations exchange data with their configured endpoints: GitHub API
+requests and webhook deliveries exchange the repository, actor, release, and
+configured event content required for the operation; JIRA and remote MCP carry
+the scoped work data needed for each request; update and model-download requests
+disclose the requested artifact plus ordinary network metadata. Review each
+endpoint and provider policy before enabling it.
 
 Board-driven details live in
 [docs/design-docs/board-driven-integrations.md](docs/design-docs/board-driven-integrations.md)

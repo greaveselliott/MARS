@@ -499,12 +499,12 @@ mars models credentials write-local-env --repo ~/my-project --api-key-env OPENAI
                 <tr><td><code>mars scores export</code></td><td>Refreshes <code>docs/QUALITY_SCORE.md</code> from live evidence.</td><td><code>--repo</code>, <code>--db</code>, <code>--window-days</code>, <code>--create-intervention-debt</code>.</td></tr>
                 <tr><td><code>mars trust</code></td><td>Shows progressive autonomy levels.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
                 <tr><td><code>mars trust set</code></td><td>Overrides trust with an audit reason.</td><td><code>mars trust set engineer ~/my-project contributor --reason "Ticket-bound edits approved"</code>.</td></tr>
-                <tr><td><code>mars telemetry status</code></td><td>Shows anonymous telemetry reporting state.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
-                <tr><td><code>mars telemetry preview</code></td><td>Prints the exact anonymous payload before export or send.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
+                <tr><td><code>mars telemetry status</code></td><td>Shows aggregate telemetry reporting state.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
+                <tr><td><code>mars telemetry preview</code></td><td>Prints the exact allowlisted aggregate payload before export or send.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
                 <tr><td><code>mars telemetry export</code></td><td>Enqueues sanitized aggregate reports in the local outbox.</td><td><code>--anonymous</code>.</td></tr>
-                <tr><td><code>mars telemetry send</code></td><td>Sends pending anonymous reports to the configured collector.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
-                <tr><td><code>mars telemetry collect</code></td><td>Runs a local anonymous foundation telemetry collector.</td><td><code>--addr</code>, <code>--storage sqlite</code>, <code>--db</code>.</td></tr>
-                <tr><td><code>mars telemetry triage-foundation</code></td><td>Creates MARS source tickets from repeated anonymous foundation-owned patterns.</td><td><code>--repo</code>, <code>--db</code>, <code>--window-days</code>.</td></tr>
+                <tr><td><code>mars telemetry send</code></td><td>Sends pending allowlisted aggregate reports to the configured collector; the transport is not anonymous.</td><td><code>--repo</code>, <code>--db</code>.</td></tr>
+                <tr><td><code>mars telemetry collect</code></td><td>Runs a local aggregate foundation telemetry collector.</td><td><code>--addr</code>, <code>--storage sqlite</code>, <code>--db</code>.</td></tr>
+                <tr><td><code>mars telemetry triage-foundation</code></td><td>Creates MARS source tickets from repeated minimized foundation-owned patterns.</td><td><code>--repo</code>, <code>--db</code>, <code>--window-days</code>.</td></tr>
                 <tr><td><code>mars code-intel metrics</code></td><td>Summarizes persisted code graph assistance evidence.</td><td><code>--repo</code>, <code>--db</code>, <code>--window-days</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars code-intel benchmark</code></td><td>Runs local control/treatment benchmarks for code graph impact.</td><td><code>--case</code>, <code>--trials</code>, <code>--changed-paths</code>, <code>--expected-files</code>, <code>--expected-tests</code>, <code>--expected-docs</code>, <code>--report</code>.</td></tr>
               </tbody>
