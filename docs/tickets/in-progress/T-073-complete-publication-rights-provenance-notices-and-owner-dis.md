@@ -10,10 +10,10 @@ evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/featu
 verified_by: "pending repository owner, QA, Security, Release Manager, and Orchestrator"
 owner: "foundation-maintainer"
 last_attempt: "2026-08-09: browser/llama provenance, product claims, deterministic notices, truthful prompt lineage, and current-tree PNG removal are pushed and verified"
-blocker: "Qualified trademark disposition, owner authority over first-party/AI/automation and retained-history PNG material, and exact original-model/quantizer chains remain required."
+blocker: "Qualified trademark disposition and owner authority over first-party/AI/automation and retained-history PNG material remain required; default-model artifact provenance is the current machine checkpoint."
 blocked_by: []
 trace_id: "launch-rights-provenance:2026-08-08"
-next_action: "Resolve the six default model artifacts' exact original-model and quantizer chains, then complete the bounded owner and trademark dispositions; do not close T-073 or publish early."
+next_action: "Bind the six default model artifacts to exact artifact identities and truthful publisher/base/license/quantizer evidence, then complete the bounded owner and trademark dispositions; do not close T-073 or publish early."
 dedupe_key: "open-source:rights-provenance-owner-disposition"
 metadata:
   classification: "mixed-unclear-until-disposition"
@@ -39,7 +39,7 @@ Keep the repository private and retain VERSION 0.68.49 with source fallback 0.69
 ## Checkpoints
 
 1. Authority, name, predecessor, AI, and media: map first-party source/docs/prompts/assets, employment or client conflicts, the 11 predecessor Mars prompt ports, AI-assisted commits and applicable terms, and every media/branding file. Each port maps its predecessor full commit, source path/blob, retained path/blob, and normalized similarity evidence. Perform current UKIPO, USPTO, EUIPO/TMview, and WIPO searches. A material name conflict is a launch no-go. The owner's 2026-08-09 decision to retain `MARS` requires qualified trademark counsel's written disposition; it does not waive the conflict. Unverifiable media is replaced or removed. Commit and push this independently reviewed checkpoint.
-2. Model, quantizer, llama.cpp, and vendored provenance: record full immutable model and quantizer revisions, artifact SHA-256, original-model license and terms, quantizer source/license, llama.cpp tag resolved to its full source commit plus checksums/license/notices/platform mapping, and htmx/Chart.js provenance for every retained or downloaded artifact. Abbreviated revisions and family-level citations do not pass. Replace, remove, or fail closed on any incomplete chain. Commit and push this independently reviewed checkpoint.
+2. Model, quantizer, llama.cpp, and vendored provenance: bind every downloaded model to its exact repository, full artifact commit, filename, size, and SHA-256, plus the publisher's declared base model, license/terms, quantizer identity, and conversion-tool facts. MARS links to these weights and does not redistribute them. A publisher's unavailable conversion-input revision is recorded as `not_published`, never inferred and never described as reproducible; it is an evidence limitation rather than a launch blocker when the exact output bytes, declared relationship, and applicable terms are pinned. Abbreviated artifact revisions do not pass. Also bind llama.cpp tags to full source commits plus checksums/license/notices/platform mappings and bind htmx/Chart.js provenance. Replace, remove, or fail closed on any missing artifact identity, license/terms, or declared relationship. Commit and push this independently reviewed checkpoint.
 3. Dependency notices and product claims: pin go-licenses v2.0.1, generate deterministic Go dependency notices, and add CI that rejects unknown, stale, GPL, AGPL, or SSPL classifications. Complete THIRD_PARTY_NOTICES and remove provisional wording. Correct every claim to local-first and explicitly document configured cloud/integration transmission, opt-in telemetry, and host execution with the current OS user's authority. Commit and push this independently reviewed checkpoint.
 4. Owner disposition: create one repository-safe rights/provenance report and owner attestation covering first-party authority, employment/client conflicts, predecessor ports, AI terms, third-party obligations, models, llama.cpp, media, name-search disposition, accepted evidence gaps, and history strategy. Accepted gaps are limited to already recorded non-content/provider limitations and can never substitute for ownership, license, provenance, model terms, predecessor, media, or trademark evidence. Every finding must be resolved by retain_authorized, retain_with_notice, replace, exclude_from_release, or remove_current_and_history; permission_required, clean_snapshot_required, or no_go cannot remain at completion. exclude_from_release is terminal only for an external artifact proven absent from public source, retained history, and Release assets whose exact terms still permit linking or downloading. replace and remove_current_and_history close only after executed, mechanically verified remediation; required history removal stops T-073 for separately authorized destructive rewrite. Commit preserve_audited_history only if every retained publishable surface is complete. Obtain repository-owner, QA, Security, Release Manager, and Orchestrator sign-offs and close F-017-S001.
 
@@ -54,7 +54,7 @@ Run focused provenance/registry/license tests, deterministic two-run notice comp
 ## Acceptance
 
 - The owner explicitly attests authority over first-party source, documentation, prompts, assets, predecessor material, and AI-assisted contributions, with no unresolved employment/client/assignment conflict.
-- Every retained media, model, quantizer, llama.cpp binary, vendored browser asset, and Go dependency has an exact authorized provenance/license/terms/notices chain.
+- Every retained media, llama.cpp binary, vendored browser asset, and Go dependency has an exact authorized provenance/license/terms/notices chain. Every linked model has an exact artifact identity, applicable license/terms, and truthful publisher/base/quantizer evidence; unavailable publisher facts are explicit rather than inferred.
 - Current UKIPO, USPTO, EUIPO/TMview, and WIPO searches have a repository-safe date/jurisdiction/risk disposition and no unresolved material conflict.
 - Deterministic dependency notices are complete; CI rejects unknown, stale, GPL, AGPL, and SSPL classifications; THIRD_PARTY_NOTICES is final and non-provisional.
 - Product claims accurately describe local-first operation, configured transmissions, opt-in telemetry, and host execution authority.
@@ -112,7 +112,10 @@ checkpoint D, any later ticket, or any remote/publication action.
   HTML/CSS.
 
 Checkpoint C's machine work is complete. Checkpoint B remains open only for
-the six default model/original/quantizer chains. Checkpoint A and D remain open
+the six default model artifact-level provenance records. The risk-calibrated
+contract does not pretend that publishers recorded unavailable conversion-input
+revisions: exact output identity, declared base/license/quantizer evidence, and
+the download-only boundary are required instead. Checkpoint A and D remain open
 for the owner authority/AI/automation/history-PNG attestation and qualified
 trademark disposition; none of the commits above clears retained history,
 changes visibility, or authorizes publication.

@@ -20,11 +20,11 @@ community surfaces, and the 48-hour canary pass.
 **Current Primary Blocker:** T-073 checkpoint A found a live exact-word `MARS`
 registration in directly overlapping AI-agent/process-automation services;
 owner authority over retained prompt/AI/automation and historical PNG material
-also remains unsigned, and six default model chains remain incomplete.
-**Next Primary Action:** resolve the six default model/original/quantizer
-chains while the owner obtains the qualified trademark disposition and
-completes the bounded authority/history attestation without changing
-visibility.
+also remains unsigned, and six default model artifact records remain incomplete.
+**Next Primary Action:** bind the six default model artifact identities and
+truthful publisher/base/license/quantizer evidence while the owner obtains the
+qualified trademark disposition and completes the bounded authority/history
+attestation without changing visibility.
 **Supporting Evidence:** the immutable publication-root, prompt, predecessor,
 AI-attribution, media, and official-register evidence recorded below.
 
@@ -70,7 +70,7 @@ Current-tree and machine-verifiable T-073 work completed on 2026-08-09:
 These changes close the machine portions of dependency notices, public claims,
 browser-asset provenance, llama.cpp provenance, prompt-lineage truth, and
 current-tree media removal. They do not establish owner authority, clear the
-historical PNG, resolve the six default model/original/quantizer chains, or
+historical PNG, complete the six default model artifact provenance records, or
 clear the `MARS` name.
 
 ## Publication Scope
