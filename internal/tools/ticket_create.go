@@ -11,8 +11,9 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -336,7 +337,7 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 		return ToolResult{}, fmt.Errorf("ticket_create: body is required — include Context, Requirements, and Acceptance criteria sections")
 	}
 
-	existing, err := scanExistingTickets(root.Abs())
+	existing, err := scanExistingTickets(root)
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("ticket_create: scan existing tickets: %w", err)
 	}
@@ -539,20 +540,28 @@ func yamlInlineList(values []string) string {
 	return "[" + strings.Join(cleaned, ", ") + "]"
 }
 
-func scanExistingTickets(repoRoot string) ([]existingTicket, error) {
-	ticketsDir := filepath.Join(repoRoot, "docs", "tickets")
+func scanExistingTickets(root Root) ([]existingTicket, error) {
 	statuses := []string{"backlog", "in-progress", "in-review", "done"}
 
 	var tickets []existingTicket
 	for _, status := range statuses {
-		dir := filepath.Join(ticketsDir, status)
-		entries, err := os.ReadDir(dir)
+		dir := filepath.Join("docs", "tickets", status)
+		directory, err := root.RepoFS().OpenFile(dir)
 		if err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			return nil, fmt.Errorf("read %s: %w", dir, err)
+			return nil, fmt.Errorf("read %s: %w", filepath.Join(root.Abs(), dir), err)
 		}
+		entries, readErr := directory.ReadDir(-1)
+		closeErr := directory.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("read %s: %w", filepath.Join(root.Abs(), dir), readErr)
+		}
+		if closeErr != nil {
+			return nil, fmt.Errorf("close %s: %w", filepath.Join(root.Abs(), dir), closeErr)
+		}
+		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 		for _, e := range entries {
 			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
 				continue
@@ -567,7 +576,10 @@ func scanExistingTickets(repoRoot string) ([]existingTicket, error) {
 				t.ID = "T-" + m[1]
 			}
 
-			frontmatter := readTicketFrontmatter(filepath.Join(dir, e.Name()))
+			frontmatter, err := readTicketFrontmatter(root, filepath.Join(dir, e.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("read ticket %s: %w", t.Path, err)
+			}
 			if frontmatter["title"] != "" {
 				t.Title = frontmatter["title"]
 			} else {
@@ -584,15 +596,16 @@ func scanExistingTickets(repoRoot string) ([]existingTicket, error) {
 	return tickets, nil
 }
 
-func readTicketTitle(path string) string {
-	return readTicketFrontmatter(path)["title"]
+func readTicketTitle(root Root, path string) string {
+	frontmatter, _ := readTicketFrontmatter(root, path)
+	return frontmatter["title"]
 }
 
-func readTicketFrontmatter(path string) map[string]string {
+func readTicketFrontmatter(root Root, path string) (map[string]string, error) {
 	out := map[string]string{}
-	f, err := os.Open(path)
+	f, err := root.RepoFS().OpenFile(path)
 	if err != nil {
-		return out
+		return nil, err
 	}
 	defer f.Close()
 
@@ -616,7 +629,10 @@ func readTicketFrontmatter(path string) map[string]string {
 		}
 		out[strings.TrimSpace(key)] = unquoteYAMLString(strings.TrimSpace(value))
 	}
-	return out
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func parseYAMLInlineList(value string) []string {

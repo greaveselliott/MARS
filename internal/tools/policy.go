@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -278,11 +277,7 @@ func planningRoleCannotMutateWithShell(role string) bool {
 }
 
 func repoFileExists(root Root, rel string) bool {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return false
-	}
-	info, err := os.Stat(abs)
+	info, err := root.RepoFS().Stat(rel)
 	return err == nil && !info.IsDir()
 }
 
@@ -411,7 +406,7 @@ func checkSourceFileDocSyncWritePolicy(root Root, rel, content string) error {
 		if !strings.HasPrefix(doc, "docs/") && doc != "AGENTS.md" && doc != "README.md" && doc != "ARCHITECTURE.md" && doc != "CONTRIBUTING.md" {
 			return fmt.Errorf("policy: source file %s MarsDocSync metadata references non-documentation path %s", rel, doc)
 		}
-		if _, err := os.Stat(filepath.Join(root.Abs(), filepath.FromSlash(doc))); err != nil {
+		if _, err := root.RepoFS().Stat(filepath.FromSlash(doc)); err != nil {
 			return fmt.Errorf("policy: source file %s MarsDocSync metadata references missing doc %s; read docs/features/ and use the existing canonical feature contract, not a scenario ID path", rel, doc)
 		}
 	}
@@ -710,28 +705,20 @@ func checkFeatureFileWritePolicy(root Root, session Session, hasSession bool, re
 	if !ok {
 		return nil
 	}
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
+	if _, err := root.RepoFS().Stat(rel); err == nil {
 		return nil
 	}
-	if _, err := os.Stat(abs); err == nil {
-		return nil
-	}
-	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
-	if err != nil {
-		return nil
-	}
-	matches, err := filepath.Glob(filepath.Join(featuresDir, featureID+"*.md"))
+	matches, err := root.RepoFS().Glob(filepath.Join("docs", "features", featureID+"*.md"))
 	if err != nil || len(matches) == 0 {
 		return nil
 	}
-	cleanAbs := filepath.Clean(abs)
+	cleanRel := filepath.Clean(rel)
 	for _, match := range matches {
-		if filepath.Clean(match) == cleanAbs {
+		if filepath.Clean(filepath.FromSlash(match)) == cleanRel {
 			return nil
 		}
 	}
-	existing := filepath.ToSlash(filepath.Join("docs", "features", filepath.Base(matches[0])))
+	existing := filepath.ToSlash(matches[0])
 	if hasSession && !roleMayWriteFeatureContracts(session.Role) {
 		role := strings.ToLower(strings.TrimSpace(session.Role))
 		return fmt.Errorf("policy: feature contract %s already exists as %s; %s cannot write feature contracts. Record strategy in allowed strategy artifacts or hand off to COO to update %s; do not create duplicate feature path %s", featureID, existing, role, existing, rel)
@@ -882,11 +869,7 @@ func isUntrackedRootBuildArtifact(ctx context.Context, root Root, rel string) (b
 	if !isAllowedRootBuildArtifactName(root, rel) {
 		return false, nil
 	}
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return false, nil
-	}
-	info, err := os.Stat(abs)
+	info, err := root.RepoFS().Stat(rel)
 	if err != nil || info.IsDir() {
 		return false, nil
 	}
@@ -897,7 +880,7 @@ func isUntrackedRootBuildArtifact(ctx context.Context, root Root, rel string) (b
 	if ls.ExitCode != 0 || !lineListContains(ls.Output, rel) {
 		return false, nil
 	}
-	return fileLooksBinary(abs), nil
+	return fileLooksBinary(root, rel), nil
 }
 
 func isAllowedRootBuildArtifactName(root Root, name string) bool {
@@ -908,11 +891,7 @@ func isAllowedRootBuildArtifactName(root Root, name string) bool {
 }
 
 func goModuleBinaryName(root Root) string {
-	abs, err := root.ResolvePath("go.mod")
-	if err != nil {
-		return ""
-	}
-	data, err := os.ReadFile(abs)
+	data, err := root.RepoFS().ReadFile("go.mod")
 	if err != nil {
 		return ""
 	}
@@ -931,8 +910,8 @@ func goModuleBinaryName(root Root) string {
 	return ""
 }
 
-func fileLooksBinary(abs string) bool {
-	f, err := os.Open(abs)
+func fileLooksBinary(root Root, rel string) bool {
+	f, err := root.RepoFS().OpenFile(rel)
 	if err != nil {
 		return false
 	}

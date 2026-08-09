@@ -308,11 +308,7 @@ func looksLikeMarsSource(root Root) bool {
 		filepath.Join("cmd", "mars", "main.go"),
 		"go.mod",
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			return false
-		}
-		if _, err := os.Stat(abs); err != nil {
+		if _, err := root.RepoFS().Stat(rel); err != nil {
 			return false
 		}
 	}

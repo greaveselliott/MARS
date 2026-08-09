@@ -12,7 +12,6 @@ package tools
 import (
 	"crypto/sha256"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -213,11 +212,7 @@ func projectBriefFeatureReferencePaths(root Root) []string {
 }
 
 func rootRelExists(root Root, rel string) bool {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return false
-	}
-	_, err = os.Stat(abs)
+	_, err := root.RepoFS().Stat(filepath.FromSlash(rel))
 	return err == nil
 }
 

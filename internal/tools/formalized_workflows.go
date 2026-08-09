@@ -17,7 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -163,7 +162,7 @@ func isMarsFoundationSource(root Root) bool {
 		"cmd/mars/main.go",
 		"docs/roles/personas/foundation-maintainer.md",
 	} {
-		if _, err := os.Stat(filepath.Join(root.Abs(), filepath.FromSlash(rel))); err != nil {
+		if _, err := root.RepoFS().Stat(filepath.FromSlash(rel)); err != nil {
 			return false
 		}
 	}
@@ -353,11 +352,7 @@ func parseSimpleWorkflowArgs(raw json.RawMessage) (simpleWorkflowArgs, error) {
 }
 
 func readOptional(root Root, rel string) string {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return ""
-	}
-	b, err := os.ReadFile(abs)
+	b, err := root.RepoFS().ReadFile(rel)
 	if err != nil {
 		return ""
 	}

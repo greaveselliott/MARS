@@ -12,7 +12,6 @@ package tools
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -153,11 +152,7 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 			if rel == "" || IsGeneratedWorkspacePath(rel) || IsGeneratedDependencyMetadataPath(rel) {
 				continue
 			}
-			abs, err := root.ResolvePath(rel)
-			if err != nil {
-				return stats, err
-			}
-			b, err := os.ReadFile(abs)
+			b, err := root.RepoFS().ReadFile(rel)
 			if err != nil {
 				continue
 			}
@@ -218,18 +213,13 @@ func ticketLifecycleCounterpartInCandidates(deletedPath, deletedID, deletedState
 }
 
 func ticketLifecycleCounterpartExists(root Root, deletedPath, deletedID, deletedState string) bool {
-	pattern := filepath.Join(root.Abs(), "docs", "tickets", "*", "*.md")
-	matches, err := filepath.Glob(pattern)
+	matches, err := root.RepoFS().Glob(filepath.Join("docs", "tickets", "*", "*.md"))
 	if err != nil {
 		return false
 	}
 	deletedPath = filepath.ToSlash(deletedPath)
 	for _, match := range matches {
-		rel, err := filepath.Rel(root.Abs(), match)
-		if err != nil {
-			continue
-		}
-		rel = filepath.ToSlash(rel)
+		rel := filepath.ToSlash(match)
 		if rel == deletedPath {
 			continue
 		}

@@ -13,7 +13,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -82,7 +81,7 @@ func checkAgentSmokePipelineFixerProjectValidationPolicy(root Root, session Sess
 	if !hasAllPackages || repoFileExists(root, "go.mod") {
 		return nil
 	}
-	contract, err := os.ReadFile(filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md"))
+	contract, err := root.RepoFS().ReadFile(filepath.Join("docs", "validation", "agent-smoke", "current-case.md"))
 	if err != nil {
 		return nil
 	}
@@ -181,11 +180,7 @@ func goRunCandidateFiles(target string) []string {
 }
 
 func sourceContainsServerMarker(root Root, rel string) bool {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return false
-	}
-	data, err := os.ReadFile(abs)
+	data, err := root.RepoFS().ReadFile(rel)
 	if err != nil {
 		return false
 	}
@@ -377,8 +372,7 @@ func makeBuildRepoLocalGoOutput(root Root, args shellExecArgs) (string, string, 
 	if !shellFieldsInvokeMakeBuild(fields) {
 		return "", "", false
 	}
-	makefilePath := filepath.Join(root.Abs(), "Makefile")
-	data, err := os.ReadFile(makefilePath)
+	data, err := root.RepoFS().ReadFile("Makefile")
 	if err != nil {
 		return "", "", false
 	}

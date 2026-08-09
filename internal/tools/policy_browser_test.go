@@ -1369,6 +1369,41 @@ if (games !== 1) throw new Error('expected exactly one new Phaser.Game');
 	}
 }
 
+func TestBrowserFrameworkSourceFindingsWalkNestedButExcludeSymlinkAndGeneratedTrees(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePhaserPackage(t, dir, true)
+	nested := filepath.Join(dir, "src", "nested")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nested, "index.html"), []byte(`<script src="https://cdn.example.invalid/phaser.js"></script>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	excluded := filepath.Join(dir, "node_modules", "ignored")
+	if err := os.MkdirAll(excluded, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(excluded, "ignored.html"), []byte(`<script src="https://cdn.example.invalid/phaser.js"></script>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "outside.html"), []byte(`<script src="https://cdn.example.invalid/phaser.js"></script>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dir, "linked-outside")); err != nil {
+		t.Fatal(err)
+	}
+
+	joined := strings.Join(browserFrameworkSourceFindings(root), "\n")
+	if !strings.Contains(joined, "src/nested/index.html") {
+		t.Fatalf("expected real nested browser finding, got %s", joined)
+	}
+	if strings.Contains(joined, "outside.html") || strings.Contains(joined, "node_modules") {
+		t.Fatalf("expected symlink and excluded trees to stay absent, got %s", joined)
+	}
+}
+
 func TestEngineerFileWriteBlocksPhaserPackageWithoutBuildScript(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

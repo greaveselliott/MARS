@@ -14,7 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -85,11 +85,7 @@ func projectBriefForbidsPackageManager(root Root) bool {
 }
 
 func projectFeatureContractText(root Root) string {
-	abs, err := root.ResolvePath(filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"))
-	if err != nil {
-		return ""
-	}
-	data, err := os.ReadFile(abs)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"))
 	if err != nil {
 		return ""
 	}
@@ -567,47 +563,44 @@ func repoBrowserFrameworkInfo(root Root) browserFrameworkInfo {
 			info.DeclaredFrameworkNames = append(info.DeclaredFrameworkNames, name)
 		}
 	}
-	path, err := root.ResolvePath("package.json")
-	if err == nil {
-		if data, err := os.ReadFile(path); err == nil {
-			var pkg struct {
-				Scripts         map[string]string `json:"scripts"`
-				Dependencies    map[string]string `json:"dependencies"`
-				DevDependencies map[string]string `json:"devDependencies"`
+	if data, err := root.RepoFS().ReadFile("package.json"); err == nil {
+		var pkg struct {
+			Scripts         map[string]string `json:"scripts"`
+			Dependencies    map[string]string `json:"dependencies"`
+			DevDependencies map[string]string `json:"devDependencies"`
+		}
+		if err := json.Unmarshal(data, &pkg); err == nil {
+			info.HasPackageManifest = true
+			for name, script := range pkg.Scripts {
+				if buildScriptName(name) {
+					if packageBuildScriptNoop(script) {
+						info.NoopBuildScripts = append(info.NoopBuildScripts, name)
+						continue
+					}
+					info.HasBuildScript = true
+				}
 			}
-			if err := json.Unmarshal(data, &pkg); err == nil {
-				info.HasPackageManifest = true
-				for name, script := range pkg.Scripts {
-					if buildScriptName(name) {
-						if packageBuildScriptNoop(script) {
-							info.NoopBuildScripts = append(info.NoopBuildScripts, name)
-							continue
-						}
-						info.HasBuildScript = true
-					}
+			frameworks := map[string]string{
+				"@vitejs/plugin-react": "react",
+				"@vitejs/plugin-vue":   "vue",
+				"babylonjs":            "babylon",
+				"next":                 "next",
+				"phaser":               "phaser",
+				"pixi.js":              "pixi",
+				"react":                "react",
+				"svelte":               "svelte",
+				"three":                "three",
+				"vite":                 "vite",
+				"vue":                  "vue",
+			}
+			for dep := range pkg.Dependencies {
+				if name, ok := frameworks[strings.ToLower(strings.TrimSpace(dep))]; ok {
+					addFramework(name, true)
 				}
-				frameworks := map[string]string{
-					"@vitejs/plugin-react": "react",
-					"@vitejs/plugin-vue":   "vue",
-					"babylonjs":            "babylon",
-					"next":                 "next",
-					"phaser":               "phaser",
-					"pixi.js":              "pixi",
-					"react":                "react",
-					"svelte":               "svelte",
-					"three":                "three",
-					"vite":                 "vite",
-					"vue":                  "vue",
-				}
-				for dep := range pkg.Dependencies {
-					if name, ok := frameworks[strings.ToLower(strings.TrimSpace(dep))]; ok {
-						addFramework(name, true)
-					}
-				}
-				for dep := range pkg.DevDependencies {
-					if name, ok := frameworks[strings.ToLower(strings.TrimSpace(dep))]; ok {
-						addFramework(name, true)
-					}
+			}
+			for dep := range pkg.DevDependencies {
+				if name, ok := frameworks[strings.ToLower(strings.TrimSpace(dep))]; ok {
+					addFramework(name, true)
 				}
 			}
 		}
@@ -730,7 +723,7 @@ func repoHasStaticBrowserSurface(root Root) bool {
 		filepath.ToSlash(filepath.Join("src", "index.html")),
 		filepath.ToSlash(filepath.Join("public", "index.html")),
 	} {
-		if _, err := os.Stat(filepath.Join(root.Abs(), filepath.FromSlash(rel))); err == nil {
+		if _, err := root.RepoFS().Stat(filepath.FromSlash(rel)); err == nil {
 			return true
 		}
 	}
@@ -738,7 +731,7 @@ func repoHasStaticBrowserSurface(root Root) bool {
 }
 
 func packageRuntimeScriptFindings(root Root) []string {
-	data, err := os.ReadFile(filepath.Join(root.Abs(), "package.json"))
+	data, err := root.RepoFS().ReadFile("package.json")
 	if err != nil {
 		return nil
 	}
@@ -771,23 +764,19 @@ func browserFrameworkSourceFindings(root Root) []string {
 	jsModulePaths := []string{}
 	htmlFiles := map[string]string{}
 	htmlPaths := []string{}
-	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+	_ = fs.WalkDir(root.RepoFS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
 		if d.IsDir() {
 			switch strings.ToLower(d.Name()) {
 			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
-				return filepath.SkipDir
+				return fs.SkipDir
 			default:
 				return nil
 			}
 		}
-		rel, err := filepath.Rel(root.Abs(), path)
-		if err != nil {
-			return nil
-		}
-		rel = filepath.ToSlash(rel)
+		rel := filepath.ToSlash(path)
 		lowerRel := strings.ToLower(rel)
 		if !javascriptSourcePath(lowerRel) && !htmlSourcePath(lowerRel) {
 			return nil
@@ -795,7 +784,7 @@ func browserFrameworkSourceFindings(root Root) []string {
 		if browserFrameworkValidationHelperPath(lowerRel) {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		data, err := root.RepoFS().ReadFile(path)
 		if err != nil {
 			return nil
 		}
@@ -865,14 +854,14 @@ func htmlSourcePath(lowerRel string) bool {
 
 func repoHasPhaserScriptTag(root Root) bool {
 	found := false
-	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+	_ = fs.WalkDir(root.RepoFS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || found {
 			return nil
 		}
 		if d.IsDir() {
 			switch strings.ToLower(d.Name()) {
 			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
-				return filepath.SkipDir
+				return fs.SkipDir
 			default:
 				return nil
 			}
@@ -880,13 +869,14 @@ func repoHasPhaserScriptTag(root Root) bool {
 		if !strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		data, err := root.RepoFS().ReadFile(path)
 		if err != nil {
 			return nil
 		}
 		lower := strings.ToLower(string(data))
 		if strings.Contains(lower, "<script") && strings.Contains(lower, "phaser") {
 			found = true
+			return fs.SkipAll
 		}
 		return nil
 	})
@@ -895,14 +885,14 @@ func repoHasPhaserScriptTag(root Root) bool {
 
 func phaserGoModuleFindings(root Root) []string {
 	var findings []string
-	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+	_ = fs.WalkDir(root.RepoFS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
 		if d.IsDir() {
 			switch strings.ToLower(d.Name()) {
 			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
-				return filepath.SkipDir
+				return fs.SkipDir
 			default:
 				return nil
 			}
@@ -910,18 +900,14 @@ func phaserGoModuleFindings(root Root) []string {
 		if strings.ToLower(d.Name()) != "go.mod" {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		data, err := root.RepoFS().ReadFile(path)
 		if err != nil {
 			return nil
 		}
 		if !strings.Contains(strings.ToLower(string(data)), "phaser") {
 			return nil
 		}
-		rel, err := filepath.Rel(root.Abs(), path)
-		if err != nil {
-			return nil
-		}
-		findings = append(findings, fmt.Sprintf("%s declares a Phaser-related Go module dependency; Phaser JS targets should use package.json with the phaser npm dependency, not go.mod", filepath.ToSlash(rel)))
+		findings = append(findings, fmt.Sprintf("%s declares a Phaser-related Go module dependency; Phaser JS targets should use package.json with the phaser npm dependency, not go.mod", filepath.ToSlash(path)))
 		return nil
 	})
 	return findings

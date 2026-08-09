@@ -15,8 +15,9 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -248,16 +249,12 @@ func featureContractExists(root Root, featureID string) bool {
 }
 
 func featureContractPath(root Root, featureID string) string {
-	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
-	if err != nil {
-		return ""
-	}
-	matches, err := filepath.Glob(filepath.Join(featuresDir, featureID+"*.md"))
+	matches, err := root.RepoFS().Glob(filepath.Join("docs", "features", featureID+"*.md"))
 	if err != nil || len(matches) == 0 {
 		return ""
 	}
 	sort.Strings(matches)
-	return matches[0]
+	return filepath.Join(root.Abs(), filepath.FromSlash(matches[0]))
 }
 
 func firstUncoveredFeatureScenario(root Root, featureID string) string {
@@ -283,7 +280,7 @@ func featureScenarioCoverage(root Root, featureID string) ([]string, map[string]
 	if featurePath == "" {
 		return nil, covered
 	}
-	data, err := os.ReadFile(featurePath)
+	data, err := root.RepoFS().ReadFile(relPathFromAbs(root, featurePath))
 	if err != nil {
 		return nil, covered
 	}
@@ -300,7 +297,7 @@ func featureScenarioCoverage(root Root, featureID string) ([]string, map[string]
 			if strings.TrimSpace(t.RelPath) == "" {
 				continue
 			}
-			data, err := os.ReadFile(filepath.Join(root.Abs(), filepath.FromSlash(t.RelPath)))
+			data, err := root.RepoFS().ReadFile(filepath.FromSlash(t.RelPath))
 			if err != nil {
 				continue
 			}
@@ -313,18 +310,14 @@ func featureScenarioCoverage(root Root, featureID string) ([]string, map[string]
 }
 
 func featureContractIDs(root Root) []string {
-	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
-	if err != nil {
-		return nil
-	}
-	matches, err := filepath.Glob(filepath.Join(featuresDir, "F-*.md"))
+	matches, err := root.RepoFS().Glob(filepath.Join("docs", "features", "F-*.md"))
 	if err != nil {
 		return nil
 	}
 	seen := map[string]bool{}
 	var out []string
 	for _, match := range matches {
-		if data, err := os.ReadFile(match); err == nil && featureContractSuperseded(string(data)) {
+		if data, err := root.RepoFS().ReadFile(filepath.FromSlash(match)); err == nil && featureContractSuperseded(string(data)) {
 			continue
 		}
 		id, ok := featureContractIDFromName(filepath.Base(match))
@@ -854,11 +847,7 @@ func checkTicketFileWritePolicy(root Root, rel string) error {
 	if len(parts) < 4 || !isTicketLifecycleDir(parts[2]) {
 		return fmt.Errorf("policy: ticket markdown must live under docs/tickets/backlog, docs/tickets/in-progress, docs/tickets/in-review, or docs/tickets/done; use ticket_create for new tickets instead of file_write to %s", rel)
 	}
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return nil
-	}
-	if _, err := os.Stat(abs); os.IsNotExist(err) {
+	if _, err := root.RepoFS().Stat(rel); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("policy: new ticket files must be created with ticket_create so numbering, backlog placement, and dedupe are enforced; attempted file_write to %s", rel)
 	}
 	return nil
@@ -958,11 +947,7 @@ func checkShellTicketDoneEvidencePolicy(ctx context.Context, root Root, raw json
 		}
 	}
 	for _, source := range moveSources {
-		abs, err := root.ResolvePath(source)
-		if err != nil {
-			continue
-		}
-		data, err := os.ReadFile(abs)
+		data, err := root.RepoFS().ReadFile(source)
 		if err != nil {
 			continue
 		}
@@ -1227,14 +1212,17 @@ func ticketLifecycleDuplicatesOutsideState(root Root, rel, state string) []strin
 		if candidateState == state {
 			continue
 		}
-		dir, err := root.ResolvePath(filepath.Join("docs", "tickets", candidateState))
+		dir := filepath.Join("docs", "tickets", candidateState)
+		directory, err := root.RepoFS().OpenFile(dir)
 		if err != nil {
 			continue
 		}
-		entries, err := os.ReadDir(dir)
-		if err != nil {
+		entries, readErr := directory.ReadDir(-1)
+		_ = directory.Close()
+		if readErr != nil {
 			continue
 		}
+		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 		for _, entry := range entries {
 			if entry.IsDir() {
 				continue

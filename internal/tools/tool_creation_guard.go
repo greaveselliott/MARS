@@ -11,7 +11,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -86,22 +85,14 @@ func guardContains(root Root, rel, needle string) string {
 }
 
 func guardFileExists(root Root, rel string) string {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return "FAIL: " + rel + " invalid: " + err.Error()
-	}
-	if _, err := os.Stat(abs); err != nil {
+	if _, err := root.RepoFS().Stat(rel); err != nil {
 		return "FAIL: " + rel + " missing"
 	}
 	return "PASS: " + rel + " exists"
 }
 
 func guardRead(root Root, rel string) (string, error) {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return "", err
-	}
-	b, err := os.ReadFile(abs)
+	b, err := root.RepoFS().ReadFile(rel)
 	if err != nil {
 		return "", err
 	}

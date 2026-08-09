@@ -14,7 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 )
@@ -156,11 +156,7 @@ func agentSmokeReviewReportBlockingFiles(ctx context.Context, root Root, session
 	if reportPath == "" {
 		return nil
 	}
-	abs, err := root.ResolvePath(reportPath)
-	if err != nil {
-		return nil
-	}
-	if _, err := os.Stat(abs); err != nil {
+	if _, err := root.RepoFS().Stat(reportPath); err != nil {
 		return nil
 	}
 	files, err := changedFiles(ctx, root)
@@ -222,11 +218,7 @@ func missingAgentSmokeReviewReportPath(root Root, session Session) string {
 	if reportPath == "" {
 		return ""
 	}
-	abs, err := root.ResolvePath(reportPath)
-	if err != nil {
-		return ""
-	}
-	if _, err := os.Stat(abs); err == nil {
+	if _, err := root.RepoFS().Stat(reportPath); err == nil {
 		return ""
 	}
 	return reportPath
@@ -237,8 +229,7 @@ func agentSmokeReviewReportPath(root Root, session Session) string {
 	if role != "qa" && role != "security" && role != "dogfood" {
 		return ""
 	}
-	contractPath := filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md")
-	data, err := os.ReadFile(contractPath)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "validation", "agent-smoke", "current-case.md"))
 	if err != nil || !strings.Contains(string(data), "# Agent Smoke Case Contract") {
 		return ""
 	}
@@ -388,7 +379,7 @@ func roleRequiresDocSyncForSuccessfulDisposition(role string) bool {
 
 func repoHasTestFiles(root Root) bool {
 	hasTests := false
-	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+	_ = fs.WalkDir(root.RepoFS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || hasTests {
 			return nil
 		}
@@ -396,17 +387,14 @@ func repoHasTestFiles(root Root) bool {
 		if d.IsDir() {
 			switch name {
 			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
-				return filepath.SkipDir
+				return fs.SkipDir
 			default:
 				return nil
 			}
 		}
-		rel, err := filepath.Rel(root.Abs(), path)
-		if err != nil {
-			return nil
-		}
-		if testFilePath(filepath.ToSlash(rel)) {
+		if testFilePath(filepath.ToSlash(path)) {
 			hasTests = true
+			return fs.SkipAll
 		}
 		return nil
 	})
@@ -415,7 +403,7 @@ func repoHasTestFiles(root Root) bool {
 
 func repoHasGoSourceFiles(root Root) bool {
 	hasSource := false
-	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+	_ = fs.WalkDir(root.RepoFS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || hasSource {
 			return nil
 		}
@@ -423,18 +411,15 @@ func repoHasGoSourceFiles(root Root) bool {
 		if d.IsDir() {
 			switch name {
 			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
-				return filepath.SkipDir
+				return fs.SkipDir
 			default:
 				return nil
 			}
 		}
-		rel, err := filepath.Rel(root.Abs(), path)
-		if err != nil {
-			return nil
-		}
-		rel = filepath.ToSlash(strings.ToLower(strings.TrimSpace(rel)))
+		rel := filepath.ToSlash(strings.ToLower(strings.TrimSpace(path)))
 		if strings.HasSuffix(rel, ".go") && !strings.HasSuffix(rel, "_test.go") {
 			hasSource = true
+			return fs.SkipAll
 		}
 		return nil
 	})

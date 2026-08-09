@@ -15,7 +15,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -129,8 +128,7 @@ func agentSmokeDependencyLockDispositionGuidance(root Root, files []string) stri
 }
 
 func agentSmokeContractPresent(root Root) bool {
-	contractPath := filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md")
-	data, err := os.ReadFile(contractPath)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "validation", "agent-smoke", "current-case.md"))
 	if err != nil {
 		return false
 	}
@@ -216,7 +214,7 @@ func firstSliceScenarioLooksProcessOnly(root Root, featureID, scenario string) b
 	if featurePath == "" {
 		return false
 	}
-	data, err := os.ReadFile(featurePath)
+	data, err := root.RepoFS().ReadFile(relPathFromAbs(root, featurePath))
 	if err != nil {
 		return false
 	}
@@ -240,11 +238,7 @@ func firstSliceScenarioLooksProcessOnly(root Root, featureID, scenario string) b
 }
 
 func activePlanCurrentFailingScenarios(root Root, featureID string, scenarios []string) []string {
-	path, err := root.ResolvePath(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md"))
-	if err != nil {
-		return nil
-	}
-	data, err := os.ReadFile(path)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md"))
 	if err != nil {
 		return nil
 	}
@@ -280,7 +274,7 @@ func featureHasCompletedValidationTicket(root Root, featureID string) bool {
 		if t.Status != ticketstate.StatusDone || t.Kind == "intervention-debt" {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(root.Abs(), filepath.FromSlash(t.RelPath)))
+		data, err := root.RepoFS().ReadFile(filepath.FromSlash(t.RelPath))
 		if err != nil {
 			continue
 		}
@@ -327,7 +321,7 @@ func featureHasExactFirstSliceTicket(root Root, featureID, requiredScenario stri
 		if t.Kind == "intervention-debt" || (t.Status != ticketstate.StatusBacklog && t.Status != ticketstate.StatusInProgress) {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(root.Abs(), filepath.FromSlash(t.RelPath)))
+		data, err := root.RepoFS().ReadFile(filepath.FromSlash(t.RelPath))
 		if err != nil {
 			continue
 		}
@@ -393,11 +387,7 @@ func ctoHandoffFeatureContractIDs(root Root) []string {
 }
 
 func activePlanFeatureIDs(root Root) []string {
-	path, err := root.ResolvePath(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md"))
-	if err != nil {
-		return nil
-	}
-	data, err := os.ReadFile(path)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md"))
 	if err != nil {
 		return nil
 	}
@@ -448,7 +438,7 @@ func productScenarioIDsForHandoff(root Root, featureID string, scenarios []strin
 	if featurePath == "" {
 		return nil
 	}
-	data, err := os.ReadFile(featurePath)
+	data, err := root.RepoFS().ReadFile(relPathFromAbs(root, featurePath))
 	if err != nil {
 		return nil
 	}
@@ -547,8 +537,7 @@ func checkAgentSmokeDispositionRequiredEvidence(root Root, session Session, stat
 	if !agentSmokeDispositionStatusRequiresEvidence(status) {
 		return nil
 	}
-	contractPath := filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md")
-	data, err := os.ReadFile(contractPath)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "validation", "agent-smoke", "current-case.md"))
 	if err != nil {
 		return nil
 	}
@@ -581,11 +570,7 @@ func checkAgentSmokeDispositionRequiredEvidence(root Root, session Session, stat
 	required = uniqueNonEmptyPaths(required)
 	var missing []string
 	for _, rel := range required {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			continue
-		}
-		if _, err := os.Stat(abs); err != nil {
+		if _, err := root.RepoFS().Stat(rel); err != nil {
 			missing = append(missing, rel)
 		}
 	}
@@ -605,11 +590,7 @@ func checkAgentSmokeDispositionRequiredEvidence(root Root, session Session, stat
 }
 
 func checkAgentSmokeReleaseTagAtHead(root Root, caseID string) error {
-	versionPath, err := root.ResolvePath("VERSION")
-	if err != nil {
-		return nil
-	}
-	versionData, err := os.ReadFile(versionPath)
+	versionData, err := root.RepoFS().ReadFile("VERSION")
 	if err != nil {
 		return nil
 	}
@@ -770,11 +751,7 @@ func checkPlanningDispositionFeatureSpecificity(root Root, session Session, stat
 	if role != "coo" || !successfulDispositionStatus(status) {
 		return nil
 	}
-	featurePath, err := root.ResolvePath(filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"))
-	if err != nil {
-		return nil
-	}
-	data, err := os.ReadFile(featurePath)
+	data, err := root.RepoFS().ReadFile(filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"))
 	if err != nil {
 		return nil
 	}
@@ -857,11 +834,7 @@ func checkProductCapabilityScenarioCoverage(root Root) error {
 }
 
 func productCapabilityCoverageFeatureContents(root Root) []string {
-	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
-	if err != nil {
-		return nil
-	}
-	matches, err := filepath.Glob(filepath.Join(featuresDir, "F-*.md"))
+	matches, err := root.RepoFS().Glob(filepath.Join("docs", "features", "F-*.md"))
 	if err != nil || len(matches) == 0 {
 		return nil
 	}
@@ -869,7 +842,7 @@ func productCapabilityCoverageFeatureContents(root Root) []string {
 	var active []string
 	var fallback []string
 	for _, match := range matches {
-		data, err := os.ReadFile(match)
+		data, err := root.RepoFS().ReadFile(filepath.FromSlash(match))
 		if err != nil {
 			continue
 		}

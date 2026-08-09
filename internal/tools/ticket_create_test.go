@@ -567,7 +567,9 @@ func TestSlugify(t *testing.T) {
 func TestScanExistingTickets_emptyDir(t *testing.T) {
 	t.Parallel()
 	dir, _ := setupTicketDir(t)
-	tickets, err := scanExistingTickets(dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	tickets, err := scanExistingTickets(root)
 	require.NoError(t, err)
 	assert.Empty(t, tickets)
 }
@@ -580,7 +582,9 @@ func TestScanExistingTickets_findsAcrossStatuses(t *testing.T) {
 	writeTicket(t, dir, "in-review", "T-003-gamma.md", "Gamma")
 	writeTicket(t, dir, "done", "T-004-delta.md", "Delta")
 
-	tickets, err := scanExistingTickets(dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	tickets, err := scanExistingTickets(root)
 	require.NoError(t, err)
 	assert.Len(t, tickets, 4)
 
@@ -594,6 +598,21 @@ func TestScanExistingTickets_findsAcrossStatuses(t *testing.T) {
 	assert.True(t, statuses["done"])
 }
 
+func TestScanExistingTickets_rejectsOutsideSymlink(t *testing.T) {
+	t.Parallel()
+	dir, _ := setupTicketDir(t)
+	outside := filepath.Join(t.TempDir(), "T-900-outside.md")
+	require.NoError(t, os.WriteFile(outside, []byte("---\nid: T-900\ntitle: Outside\n---\n"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "docs", "tickets", "backlog", "T-900-outside.md")))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	tickets, err := scanExistingTickets(root)
+	require.ErrorContains(t, err, "symbolic links are not allowed")
+	require.Empty(t, tickets)
+	require.FileExists(t, outside)
+}
+
 func TestReadTicketTitle(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -601,7 +620,9 @@ func TestReadTicketTitle(t *testing.T) {
 	content := "---\nid: T-001\ntitle: My Great Ticket\npriority: high\n---\n\n# T-001: My Great Ticket\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 
-	title := readTicketTitle(path)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	title := readTicketTitle(root, filepath.Base(path))
 	assert.Equal(t, "My Great Ticket", title)
 }
 

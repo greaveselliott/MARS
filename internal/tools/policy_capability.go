@@ -10,7 +10,6 @@ docs:
 package tools
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,11 +26,7 @@ func projectBriefMentionsFramework(root Root, framework string) bool {
 		filepath.Join("docs", "goals", "active.md"),
 		filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"),
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			continue
-		}
-		data, err := os.ReadFile(abs)
+		data, err := root.RepoFS().ReadFile(rel)
 		if err != nil {
 			continue
 		}
@@ -48,11 +43,7 @@ func projectBriefHasConcreteProductIntent(root Root) bool {
 		filepath.Join("docs", "product-specs", "vision.md"),
 		filepath.Join("docs", "goals", "active.md"),
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			continue
-		}
-		data, err := os.ReadFile(abs)
+		data, err := root.RepoFS().ReadFile(rel)
 		if err != nil {
 			continue
 		}
@@ -132,11 +123,7 @@ func projectBriefLabelTokens(root Root) map[string]bool {
 		filepath.Join("docs", "product-specs", "vision.md"),
 		filepath.Join("docs", "goals", "active.md"),
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			continue
-		}
-		data, err := os.ReadFile(abs)
+		data, err := root.RepoFS().ReadFile(rel)
 		if err != nil {
 			continue
 		}
@@ -197,11 +184,7 @@ func projectBriefSourceText(root Root) string {
 		filepath.Join("docs", "product-specs", "vision.md"),
 		filepath.Join("docs", "goals", "active.md"),
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			continue
-		}
-		data, err := os.ReadFile(abs)
+		data, err := root.RepoFS().ReadFile(rel)
 		if err != nil {
 			continue
 		}
@@ -679,11 +662,7 @@ func projectBriefNamesGoBackend(root Root) bool {
 		"README.md",
 		filepath.Join("docs", "product-specs", "vision.md"),
 	} {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			continue
-		}
-		data, err := os.ReadFile(abs)
+		data, err := root.RepoFS().ReadFile(rel)
 		if err != nil {
 			continue
 		}

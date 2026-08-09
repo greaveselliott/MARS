@@ -735,11 +735,7 @@ func generatedRoot(rel string) string {
 }
 
 func countFileLines(root Root, rel string) int {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return 0
-	}
-	data, err := os.ReadFile(abs)
+	data, err := root.RepoFS().ReadFile(rel)
 	if err != nil {
 		return 0
 	}
@@ -751,11 +747,7 @@ func countFileLines(root Root, rel string) int {
 }
 
 func pathExists(root Root, rel string) bool {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return false
-	}
-	_, err = os.Stat(abs)
+	_, err := root.RepoFS().Stat(rel)
 	return err == nil
 }
 

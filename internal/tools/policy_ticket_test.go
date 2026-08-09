@@ -2096,6 +2096,43 @@ func main() {}
 	}
 }
 
+func TestSourceDocSyncAndFeatureGlobRejectSymlink(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	outside := filepath.Join(t.TempDir(), "F-099-outside.md")
+	if err := os.WriteFile(outside, []byte("# Outside feature\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "docs", "features", "F-099-outside.md")
+	if err := os.MkdirAll(filepath.Dir(link), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(map[string]string{
+		"path": "src/main.go",
+		"content": `/*
+MarsDocSync:
+docs:
+- docs/features/F-099-outside.md
+*/
+package main
+`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = preToolPolicy(context.Background(), root, "file_write", raw)
+	if err == nil || !strings.Contains(err.Error(), "references missing doc docs/features/F-099-outside.md") {
+		t.Fatalf("expected descriptor-safe DocSync rejection, got %v", err)
+	}
+	if path := featureContractPath(root, "F-099"); path != "" {
+		t.Fatalf("expected symlinked feature glob result to be rejected, got %q", path)
+	}
+}
+
 func setupPolicyTicketRepo(t *testing.T) (string, Root) {
 	return setupPolicyTicketRepoWithGit(t, false)
 }

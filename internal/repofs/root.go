@@ -31,6 +31,8 @@ type Root struct {
 	descriptor *os.Root
 }
 
+var _ fs.FS = (*Root)(nil)
+
 // Open validates and canonicalizes a repository root.
 func Open(path string) (*Root, error) {
 	abs, err := filepath.Abs(path)
@@ -58,6 +60,11 @@ func Open(path string) (*Root, error) {
 // directories and user-facing repository identity. File access must use the
 // descriptor-relative methods below.
 func (r *Root) Abs() string { return r.abs }
+
+// Open implements fs.FS for descriptor-bound standard-library traversal.
+func (r *Root) Open(name string) (fs.File, error) {
+	return r.OpenFile(filepath.FromSlash(name))
+}
 
 // VerifyPath proves the pathname used by repository subprocesses still names
 // the directory bound to this Root.

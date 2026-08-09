@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 	"time"
 )
@@ -684,11 +683,7 @@ func nodeCheckMissingFileProcedureFailure(root Root, args shellExecArgs, res Too
 	if !ok || target == "" {
 		return false
 	}
-	abs, err := root.ResolvePath(target)
-	if err != nil {
-		return false
-	}
-	if _, err := os.Stat(abs); err == nil {
+	if _, err := root.RepoFS().Stat(target); err == nil {
 		return false
 	}
 	output := strings.ToLower(strings.TrimSpace(res.Stderr + "\n" + res.Output))

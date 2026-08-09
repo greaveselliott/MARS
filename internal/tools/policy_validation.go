@@ -14,7 +14,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -480,11 +482,7 @@ func testBuildFailureLooksLikeMissingGoModule(session Session) bool {
 }
 
 func repoPathExists(root Root, rel string) bool {
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
-		return false
-	}
-	_, err = os.Stat(abs)
+	_, err := root.RepoFS().Stat(rel)
 	return err == nil
 }
 
@@ -655,13 +653,9 @@ func checkRootScratchValidationWritePolicy(root Root, rel string) error {
 	if rel == "" || strings.Contains(rel, "/") || !rootScratchValidationName(rel) {
 		return nil
 	}
-	abs, err := root.ResolvePath(rel)
-	if err != nil {
+	if _, err := root.RepoFS().Stat(rel); err == nil {
 		return nil
-	}
-	if _, err := os.Stat(abs); err == nil {
-		return nil
-	} else if !os.IsNotExist(err) {
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	return fmt.Errorf("policy: new repo-root scratch validation file %s is blocked because scratch probes become committed product noise; use existing tests, direct shell_exec build/run/curl evidence, or create durable validation code under tests/ with ticket scope", rel)
@@ -759,15 +753,11 @@ func validationArtifactBuildTarget(root Root) string {
 }
 
 func firstCmdMain(root Root) (string, bool) {
-	matches, err := filepath.Glob(filepath.Join(root.Abs(), "cmd", "*", "main.go"))
+	matches, err := root.RepoFS().Glob(filepath.Join("cmd", "*", "main.go"))
 	if err != nil || len(matches) == 0 {
 		return "", false
 	}
-	rel, err := filepath.Rel(root.Abs(), matches[0])
-	if err != nil {
-		return "", false
-	}
-	return rel, true
+	return filepath.FromSlash(matches[0]), true
 }
 
 func shellExecRunsValidationCommandForSession(session *Session, root Root, args shellExecArgs) bool {
@@ -1239,7 +1229,7 @@ func goBuildOutputPathFromFields(root Root, fields []string) (string, bool, bool
 }
 
 func goBuildDefaultOutputName(root Root) string {
-	if data, err := os.ReadFile(filepath.Join(root.Abs(), "go.mod")); err == nil {
+	if data, err := root.RepoFS().ReadFile("go.mod"); err == nil {
 		for _, line := range strings.Split(string(data), "\n") {
 			fields := strings.Fields(strings.TrimSpace(line))
 			if len(fields) == 2 && fields[0] == "module" {
