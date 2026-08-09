@@ -8,10 +8,14 @@ docs:
 package scanner
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io"
+	"io/fs"
 	"path/filepath"
 	"sort"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 // EjectOptions controls removal of a deployed MARS from a target repo.
@@ -58,43 +62,34 @@ func Eject(repoRoot string, opts EjectOptions) (EjectResult, error) {
 	if repoRoot == "" {
 		return EjectResult{}, fmt.Errorf("eject: repo root is empty — pass the path to the repository")
 	}
-	absRoot, err := filepath.Abs(repoRoot)
+	root, err := repofs.Open(repoRoot)
 	if err != nil {
-		return EjectResult{}, fmt.Errorf("eject: resolve repo root: %w", err)
-	}
-	info, err := os.Stat(absRoot)
-	if err != nil {
-		return EjectResult{}, fmt.Errorf("eject: cannot access %s: %w — verify the path exists", absRoot, err)
-	}
-	if !info.IsDir() {
-		return EjectResult{}, fmt.Errorf("eject: %s is not a directory — point to the repository root", absRoot)
+		return EjectResult{}, fmt.Errorf("eject: cannot access repository: %w — verify the path exists", err)
 	}
 
-	result := EjectResult{RepoRoot: absRoot}
+	result := EjectResult{RepoRoot: root.Abs()}
 	for _, rel := range ejectHarnessPaths {
 		rel = filepath.Clean(rel)
-		abs := filepath.Join(absRoot, rel)
-		if _, err := os.Lstat(abs); os.IsNotExist(err) {
+		if _, err := root.Stat(rel); errors.Is(err, fs.ErrNotExist) {
 			result.Missing = append(result.Missing, filepath.ToSlash(rel))
 			continue
 		} else if err != nil {
-			return result, fmt.Errorf("eject: inspect %s: %w", abs, err)
+			return result, fmt.Errorf("eject: inspect %s: %w", rel, err)
 		}
 		result.Removed = append(result.Removed, filepath.ToSlash(rel))
-		if opts.Apply {
-			if err := os.RemoveAll(abs); err != nil {
-				return result, fmt.Errorf("eject: remove %s: %w", abs, err)
-			}
-		}
 	}
 
 	if opts.Apply {
+		for _, rel := range result.Removed {
+			if err := root.RemoveAll(filepath.FromSlash(rel)); err != nil {
+				return result, fmt.Errorf("eject: remove %s: %w", rel, err)
+			}
+		}
 		for _, rel := range ejectPruneDirs {
 			rel = filepath.Clean(rel)
-			abs := filepath.Join(absRoot, rel)
-			pruned, err := removeIfEmpty(abs)
+			pruned, err := removeIfEmpty(root, rel)
 			if err != nil {
-				return result, fmt.Errorf("eject: prune %s: %w", abs, err)
+				return result, fmt.Errorf("eject: prune %s: %w", rel, err)
 			}
 			if pruned {
 				result.Pruned = append(result.Pruned, filepath.ToSlash(rel))
@@ -108,18 +103,26 @@ func Eject(repoRoot string, opts EjectOptions) (EjectResult, error) {
 	return result, nil
 }
 
-func removeIfEmpty(path string) (bool, error) {
-	entries, err := os.ReadDir(path)
-	if os.IsNotExist(err) {
+func removeIfEmpty(root *repofs.Root, rel string) (bool, error) {
+	directory, err := root.OpenFile(rel)
+	if errors.Is(err, fs.ErrNotExist) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
+	entries, readErr := directory.ReadDir(1)
+	closeErr := directory.Close()
+	if closeErr != nil {
+		return false, closeErr
+	}
 	if len(entries) > 0 {
 		return false, nil
 	}
-	if err := os.Remove(path); err != nil {
+	if !errors.Is(readErr, io.EOF) {
+		return false, readErr
+	}
+	if err := root.Remove(rel); err != nil {
 		return false, err
 	}
 	return true, nil

@@ -29,6 +29,42 @@ func TestEjectDryRunDoesNotRemoveHarnessArtifacts(t *testing.T) {
 	require.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
 }
 
+func TestEjectRejectsSymlinkedHarnessLeaf(t *testing.T) {
+	for _, apply := range []bool{false, true} {
+		t.Run(map[bool]string{false: "dry-run", true: "apply"}[apply], func(t *testing.T) {
+			dir := t.TempDir()
+			outside := t.TempDir()
+			sentinel := filepath.Join(outside, "sentinel.txt")
+			require.NoError(t, os.WriteFile(sentinel, []byte("outside\n"), 0o600))
+			require.NoError(t, os.Symlink(outside, filepath.Join(dir, ".harness")))
+
+			_, err := Eject(dir, EjectOptions{Apply: apply})
+			require.Error(t, err)
+			data, readErr := os.ReadFile(sentinel)
+			require.NoError(t, readErr)
+			require.Equal(t, "outside\n", string(data))
+			require.FileExists(t, filepath.Join(dir, ".harness", "sentinel.txt"))
+		})
+	}
+}
+
+func TestEjectApplyRejectsSymlinkedDocsParentBeforeRemoval(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, Init(dir, false))
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "docs")))
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("outside\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "docs")))
+
+	_, err := Eject(dir, EjectOptions{Apply: true})
+	require.Error(t, err)
+	data, readErr := os.ReadFile(sentinel)
+	require.NoError(t, readErr)
+	require.Equal(t, "outside\n", string(data))
+	require.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+}
+
 func TestEjectApplyRemovesHarnessArtifactsAndPreservesAppFiles(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
