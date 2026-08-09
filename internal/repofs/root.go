@@ -59,6 +59,20 @@ func Open(path string) (*Root, error) {
 // descriptor-relative methods below.
 func (r *Root) Abs() string { return r.abs }
 
+// VerifyPath proves the pathname used by repository subprocesses still names
+// the directory bound to this Root.
+func (r *Root) VerifyPath() error {
+	bound, err := r.descriptor.Stat(".")
+	if err != nil {
+		return errors.New("repofs: inspect bound repository identity")
+	}
+	current, err := os.Stat(r.abs)
+	if err != nil || !os.SameFile(bound, current) {
+		return errors.New("repofs: repository pathname identity changed")
+	}
+	return nil
+}
+
 // Resolve returns a lexically contained absolute path for legacy call sites.
 // It does not grant safe file access; callers migrate to the methods below.
 func (r *Root) Resolve(name string) (string, error) {
@@ -353,7 +367,6 @@ func (r *Root) admitExisting(name string) (string, *os.Root, error) {
 }
 
 func cleanName(name string) (string, error) {
-	name = strings.TrimSpace(name)
 	if name == "" {
 		return "", errors.New("repofs: path is empty")
 	}

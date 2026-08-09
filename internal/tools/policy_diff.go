@@ -65,26 +65,12 @@ func buildArtifactCleanupHint(ctx context.Context, root Root, stats safety.DiffS
 }
 
 func checkDiffForSecrets(ctx context.Context, root Root) error {
-	files, err := changedFiles(ctx, root)
+	hits, err := safety.ScanRepositoryForSecrets(ctx, root.RepoFS(), safety.RepositorySecretScanFull)
 	if err != nil {
-		return err
+		return fmt.Errorf("policy: secret scanner could not verify repository content: %w", err)
 	}
-	for _, rel := range files {
-		abs, err := root.ResolvePath(rel)
-		if err != nil {
-			return err
-		}
-		info, err := os.Stat(abs)
-		if err != nil || info.IsDir() {
-			continue
-		}
-		b, err := os.ReadFile(abs)
-		if err != nil {
-			continue
-		}
-		if hits := safety.ScanForSecrets(rel, string(b)); len(hits) > 0 {
-			return fmt.Errorf("policy: secret scanner blocked %s:%d (%s)", hits[0].File, hits[0].Line, hits[0].Pattern)
-		}
+	if len(hits) > 0 {
+		return fmt.Errorf("policy: secret scanner blocked %s:%d (%s)", hits[0].File, hits[0].Line, hits[0].Pattern)
 	}
 	return nil
 }

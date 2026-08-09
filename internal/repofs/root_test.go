@@ -120,6 +120,7 @@ func TestRootRemainsBoundWhenOriginalPathIsReplaced(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.Rename(repository, moved))
 	require.NoError(t, os.Symlink(outside, repository))
+	require.Error(t, root.VerifyPath())
 
 	data, err := root.ReadFile("sentinel.txt")
 	require.NoError(t, err)
@@ -132,4 +133,16 @@ func TestRootRemainsBoundWhenOriginalPathIsReplaced(t *testing.T) {
 	movedData, err := os.ReadFile(filepath.Join(moved, "sentinel.txt"))
 	require.NoError(t, err)
 	require.Equal(t, "updated\n", string(movedData))
+}
+
+func TestRootPreservesWhitespaceInRepositoryNames(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	relative := "  exact name.txt  "
+	require.NoError(t, os.WriteFile(filepath.Join(dir, relative), []byte("exact\n"), 0o600))
+	root, err := Open(dir)
+	require.NoError(t, err)
+	data, err := root.ReadFile(relative)
+	require.NoError(t, err)
+	require.Equal(t, "exact\n", string(data))
 }

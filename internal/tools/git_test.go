@@ -194,6 +194,28 @@ func TestGitCommitPolicyBlocksSecretsInDirtyDiff(t *testing.T) {
 	require.Contains(t, err.Error(), "secret scanner")
 }
 
+func TestGitCommitPolicyScansIndexWhenWorktreeIsClean(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	testutil.WriteFile(t, filepath.Join(dir, "README.md"), "initial\n")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "README.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "init"))
+
+	secret := "ghp_" + strings.Repeat("2", 36)
+	testutil.WriteFile(t, filepath.Join(dir, "staged.txt"), "token = \""+secret+"\"\n")
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "staged.txt"))
+	testutil.WriteFile(t, filepath.Join(dir, "staged.txt"), "clean worktree\n")
+
+	err = preToolPolicy(context.Background(), root, "git_commit", json.RawMessage(`{"message":"commit staged secret"}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "secret scanner")
+	require.NotContains(t, err.Error(), secret)
+}
+
 func TestGitCommitBlocksGeneratedWorkspaceOutput(t *testing.T) {
 	t.Parallel()
 	requireGit(t)

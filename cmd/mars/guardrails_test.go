@@ -30,8 +30,10 @@ docs:
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,8 +41,11 @@ import (
 
 func TestGuardrailsSecretScanRedactsAndSkipsLocalEnv(t *testing.T) {
 	repo := t.TempDir()
+	runMainTestGit(t, repo, "init", "-q")
+	secret := "sk_" + "live_abcdefghijklmnop"
 	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(repo, "README.md"), []byte(`api_`+`key = "sk_`+`live_abcdefghijklmnop"`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".gitignore"), []byte(".harness/.env.local\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "README.md"), []byte(`api_key = "`+secret+`"`), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", ".env.local"), []byte(`ANTHROPIC_API_`+`KEY=sk_`+`live_should_not_report_from_local_env`), 0o600))
 
 	findings, err := runCLISecretScan(repo, false)
@@ -48,6 +53,25 @@ func TestGuardrailsSecretScanRedactsAndSkipsLocalEnv(t *testing.T) {
 	require.Len(t, findings, 1)
 	require.Equal(t, "README.md", findings[0].File)
 	require.Equal(t, "[REDACTED]", findings[0].Match)
+	encoded, err := json.Marshal(findings)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), secret)
+}
+
+func TestGuardrailsStagedSecretScanUsesIndexBytes(t *testing.T) {
+	repo := t.TempDir()
+	runMainTestGit(t, repo, "init", "-q")
+	secret := "ghp_" + strings.Repeat("q", 36)
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "staged.txt"), []byte("token = \""+secret+"\"\n"), 0o600))
+	runMainTestGit(t, repo, "add", "staged.txt")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "staged.txt"), []byte("clean worktree\n"), 0o600))
+
+	findings, err := runCLISecretScan(repo, true)
+	require.NoError(t, err)
+	require.Len(t, findings, 1)
+	require.Equal(t, "staged.txt", findings[0].File)
+	require.Equal(t, "[REDACTED]", findings[0].Match)
+	require.NotContains(t, findings[0].Match, secret)
 }
 
 func TestGuardrailsInstallHooksIsIdempotent(t *testing.T) {

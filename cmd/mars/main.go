@@ -47,7 +47,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -75,6 +74,7 @@ import (
 	"github.com/greaveselliott/mars/internal/network"
 	"github.com/greaveselliott/mars/internal/qualityscore"
 	"github.com/greaveselliott/mars/internal/release"
+	"github.com/greaveselliott/mars/internal/repofs"
 	"github.com/greaveselliott/mars/internal/safety"
 	"github.com/greaveselliott/mars/internal/scanner"
 	"github.com/greaveselliott/mars/internal/scoring"
@@ -935,7 +935,7 @@ func guardrailsSecretScanCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Repository root")
-	cmd.Flags().BoolVar(&staged, "staged", false, "Scan staged files only")
+	cmd.Flags().BoolVar(&staged, "staged", false, "Scan exact staged Git index blobs only")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -981,69 +981,28 @@ func secretScanStatus(findings []cliSecretFinding) string {
 }
 
 func runCLISecretScan(repoRoot string, staged bool) ([]cliSecretFinding, error) {
-	paths, err := secretScanCandidatePaths(repoRoot, staged)
+	root, err := repofs.Open(repoRoot)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("guardrails secret-scan: repository admission failed")
 	}
-	var findings []cliSecretFinding
-	for _, rel := range paths {
-		rel = filepath.ToSlash(strings.TrimSpace(rel))
-		if rel == "" || rel == ".harness/.env.local" || strings.HasPrefix(rel, ".git/") {
-			continue
-		}
-		abs := filepath.Join(repoRoot, filepath.FromSlash(rel))
-		info, err := os.Stat(abs)
-		if err != nil || info.IsDir() {
-			continue
-		}
-		data, err := os.ReadFile(abs)
-		if err != nil {
-			continue
-		}
-		for _, hit := range safety.ScanForSecrets(rel, string(data)) {
-			findings = append(findings, cliSecretFinding{
-				File:    hit.File,
-				Line:    hit.Line,
-				Pattern: hit.Pattern,
-				Match:   "[REDACTED]",
-			})
-		}
+	mode := safety.RepositorySecretScanFull
+	if staged {
+		mode = safety.RepositorySecretScanStaged
+	}
+	hits, err := safety.ScanRepositoryForSecrets(context.Background(), root, mode)
+	if err != nil {
+		return nil, fmt.Errorf("guardrails secret-scan: %w", err)
+	}
+	findings := make([]cliSecretFinding, 0, len(hits))
+	for _, hit := range hits {
+		findings = append(findings, cliSecretFinding{
+			File:    hit.File,
+			Line:    hit.Line,
+			Pattern: hit.Pattern,
+			Match:   "[REDACTED]",
+		})
 	}
 	return findings, nil
-}
-
-func secretScanCandidatePaths(repoRoot string, staged bool) ([]string, error) {
-	if _, err := os.Stat(filepath.Join(repoRoot, ".git")); os.IsNotExist(err) {
-		paths, err := filesystemPaths(repoRoot)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]string, 0, len(paths))
-		for path := range paths {
-			out = append(out, path)
-		}
-		sort.Strings(out)
-		return out, nil
-	}
-	args := []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard"}
-	if staged {
-		args = []string{"diff", "--cached", "--name-only", "-z", "--diff-filter=ACMRT"}
-	}
-	gitCmd := exec.Command("git", args...)
-	gitCmd.Dir = repoRoot
-	out, err := gitCmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("guardrails secret-scan: git %s failed: %w", strings.Join(args, " "), err)
-	}
-	var paths []string
-	for _, rel := range strings.Split(string(out), "\x00") {
-		rel = strings.TrimSpace(rel)
-		if rel != "" {
-			paths = append(paths, rel)
-		}
-	}
-	sort.Strings(paths)
-	return paths, nil
 }
 
 func installSecretScanHook(repoRoot string) (string, bool, error) {

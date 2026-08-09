@@ -75,8 +75,9 @@ When the write is evaluated
 Then secret scanning blocks the mutation and reports the finding
 
 Given `.harness/.env.local` contains local cloud provider credentials
-When scanning committed or staged files
-Then the file is treated as ignored local state and the scan still blocks any secret-like value that appears in committed harness files, docs, logs, traces, or JSON reports
+When the file is genuinely untracked and excluded by Git ignore policy
+Then a full repository scan omits that local state
+But when the file is tracked, staged, or force-added, the scanner reads its exact Git index blob and blocks any credential finding without printing the value
 
 ### F-007-S006: Sandbox Limits
 
@@ -149,6 +150,10 @@ Then tool policy blocks the command before process execution, no compiled artifa
 Given an operator runs `mars guardrails secret-scan --repo <path>`
 When staged, tracked, or working-tree files contain common credential patterns
 Then the command exits non-zero, names the file, line, and pattern, and redacts the matched value in text and JSON output
+
+Given an operator or pre-commit hook scans staged content
+When the staged blob differs from the worktree copy, exists only in the index, is a rename destination, or is force-added despite ignore policy
+Then the scanner reads the exact stage-0 blob by Git object ID, reconciles deletions as tombstones, and fails closed on unsupported index or blob-read errors without rendering candidate bytes or object IDs
 
 Given an operator runs `mars guardrails install-hooks --repo <path>`
 When the repository has no managed MARS pre-commit block

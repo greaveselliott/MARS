@@ -20,6 +20,15 @@ Rules are loaded from the repo’s `.harness/` tree so teams can customize polic
 
 “Hard” means a failing check blocks promotion or fails the job per [pipeline-engine.md](pipeline-engine.md) policy hooks.
 
+Repository secret scanning treats Git's resulting index as the staged-content
+authority: it reads stage-0 blobs by object ID instead of substituting worktree
+bytes. Full scans cover the tracked index plus dirty tracked and ordinary
+non-ignored untracked files. An ignored `.harness/.env.local` is omitted only
+while genuinely untracked; a tracked or force-added copy is scanned. Unsupported
+index states and read failures block with locator-only, value-redacted output,
+while a staged deletion is reconciled as a tombstone rather than rescanning the
+removed content.
+
 ### AD-107: Workspace Hygiene Gates Generated Churn Before LLM Work
 
 Generated dependency and build output is a hard guardrail surface because it

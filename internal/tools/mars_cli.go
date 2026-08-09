@@ -651,7 +651,7 @@ Global command surface:
     Example: ["models", "credentials", "write-local-env", "--repo", ".", "--api-key-env", "ANTHROPIC_API_KEY", "--yes", "--json"]
 
   guardrails secret-scan
-    Scan repository files or staged changes for common secret patterns with redacted output.
+    Scan exact staged Git index blobs, or the full tracked index plus dirty tracked and ordinary non-ignored untracked files, for common secret patterns with redacted output. Ignored .harness/.env.local is omitted only while genuinely untracked; tracked or force-added copies are scanned.
     Flags: --repo <path>, --staged, --json
     Example: ["guardrails", "secret-scan", "--repo", ".", "--staged", "--json"]
 

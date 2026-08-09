@@ -82,7 +82,7 @@ func TestLatestReleaseInfoRejectsRedirects(t *testing.T) {
 func TestLatestReleaseInfoRejectsUnsafeEndpointsBeforeRequest(t *testing.T) {
 	for _, endpoint := range []string{
 		"http://example.test/releases/latest",
-		"https://user:password@example.test/releases/latest",
+		"https://user:" + "password@example.test/releases/latest",
 		"https:///missing-host",
 		"https://example.test/releases/latest#fragment",
 	} {

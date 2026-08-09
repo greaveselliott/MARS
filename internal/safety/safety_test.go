@@ -9,9 +9,15 @@ package safety
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/greaveselliott/mars/internal/repofs"
 )
 
 func TestCheck_withinLimits(t *testing.T) {
@@ -220,6 +226,277 @@ func TestScanForSecrets_reportsCorrectLineNumber(t *testing.T) {
 	if results[0].Line != 3 {
 		t.Errorf("expected line 3, got %d", results[0].Line)
 	}
+}
+
+func TestRepositorySecretScanStagedUsesIndexBlobs(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	root := openSecretScanRoot(t, repo)
+	secret := testRepositorySecret()
+	const path = "  staged.txt  "
+	writeSecretScanFile(t, repo, path, "token = \""+secret+"\"\n")
+	runSecretScanGit(t, repo, "add", path)
+	writeSecretScanFile(t, repo, path, "clean worktree\n")
+
+	findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+	if err != nil {
+		t.Fatalf("scan staged index blob: %v", err)
+	}
+	assertRepositoryFinding(t, findings, path)
+	assertRepositoryScanRedacted(t, findings, secret)
+
+	if err := os.Remove(filepath.Join(repo, path)); err != nil {
+		t.Fatalf("remove worktree entry: %v", err)
+	}
+	findings, err = ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+	if err != nil {
+		t.Fatalf("scan index-only blob: %v", err)
+	}
+	assertRepositoryFinding(t, findings, path)
+}
+
+func TestRepositorySecretScanStagedIgnoresGitReplaceObjects(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	root := openSecretScanRoot(t, repo)
+	secret := testRepositorySecret()
+	writeSecretScanFile(t, repo, "staged.txt", "token = \""+secret+"\"\n")
+	runSecretScanGit(t, repo, "add", "staged.txt")
+	original := strings.TrimSpace(runSecretScanGitOutput(t, repo, nil, "rev-parse", ":staged.txt"))
+	clean := strings.TrimSpace(runSecretScanGitOutput(t, repo, strings.NewReader("clean\n"), "hash-object", "-w", "--stdin"))
+	runSecretScanGit(t, repo, "replace", original, clean)
+	if replaced := runSecretScanGitOutput(t, repo, nil, "cat-file", "blob", original); replaced != "clean\n" {
+		t.Fatalf("replace-object fixture was not active: %q", replaced)
+	}
+
+	findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+	if err != nil {
+		t.Fatalf("scan staged blob with replacement ref: %v", err)
+	}
+	assertRepositoryFinding(t, findings, "staged.txt")
+	assertRepositoryScanRedacted(t, findings, secret)
+}
+
+func TestRepositorySecretScanIncludesTrackedLocalCredentialFile(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	root := openSecretScanRoot(t, repo)
+	secret := testRepositorySecret()
+	writeSecretScanFile(t, repo, ".gitignore", ".harness/.env.local\n")
+	runSecretScanGit(t, repo, "add", ".gitignore")
+	runSecretScanGit(t, repo, "commit", "-m", "ignore local credentials")
+	writeSecretScanFile(t, repo, localCredentialPath, "ACCESS_TOKEN="+secret+"\n")
+
+	findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanFull)
+	if err != nil {
+		t.Fatalf("scan ignored untracked credential file: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("ignored untracked credential file should be omitted, got %+v", findings)
+	}
+
+	runSecretScanGit(t, repo, "add", "-f", localCredentialPath)
+	findings, err = ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+	if err != nil {
+		t.Fatalf("scan force-added credential file: %v", err)
+	}
+	assertRepositoryFinding(t, findings, localCredentialPath)
+	runSecretScanGit(t, repo, "commit", "-m", "track credential fixture")
+	writeSecretScanFile(t, repo, "note.txt", "clean\n")
+	runSecretScanGit(t, repo, "add", "note.txt")
+	findings, err = ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+	if err != nil {
+		t.Fatalf("scan tracked credential file: %v", err)
+	}
+	assertRepositoryFinding(t, findings, localCredentialPath)
+}
+
+func TestRepositorySecretScanReconcilesRenameAndDeletion(t *testing.T) {
+	t.Run("rename destination", func(t *testing.T) {
+		repo := newSecretScanGitRepo(t)
+		root := openSecretScanRoot(t, repo)
+		secret := testRepositorySecret()
+		writeSecretScanFile(t, repo, "old.txt", "token = \""+secret+"\"\n")
+		runSecretScanGit(t, repo, "add", "old.txt")
+		runSecretScanGit(t, repo, "commit", "-m", "add fixture")
+		runSecretScanGit(t, repo, "mv", "old.txt", "new.txt")
+
+		findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+		if err != nil {
+			t.Fatalf("scan renamed blob: %v", err)
+		}
+		assertRepositoryFinding(t, findings, "new.txt")
+		for _, finding := range findings {
+			if finding.File == "old.txt" {
+				t.Fatalf("rename source must not be scanned: %+v", findings)
+			}
+		}
+	})
+
+	t.Run("deletion is tombstone", func(t *testing.T) {
+		repo := newSecretScanGitRepo(t)
+		root := openSecretScanRoot(t, repo)
+		secret := testRepositorySecret()
+		writeSecretScanFile(t, repo, "deleted.txt", "token = \""+secret+"\"\n")
+		runSecretScanGit(t, repo, "add", "deleted.txt")
+		runSecretScanGit(t, repo, "commit", "-m", "add fixture")
+		runSecretScanGit(t, repo, "rm", "deleted.txt")
+		writeSecretScanFile(t, repo, "deleted.txt", "token = \""+secret+"\"\n")
+
+		findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+		if err != nil {
+			t.Fatalf("scan staged deletion: %v", err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("staged deletion must not fall back to worktree bytes: %+v", findings)
+		}
+	})
+}
+
+func TestRepositorySecretScanFullIncludesDirtyAndUntrackedFiles(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	root := openSecretScanRoot(t, repo)
+	secret := testRepositorySecret()
+	writeSecretScanFile(t, repo, "README.md", "ACCESS_TOKEN="+secret+"\n")
+	writeSecretScanFile(t, repo, "untracked.txt", "ACCESS_TOKEN="+secret+"\n")
+
+	findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanFull)
+	if err != nil {
+		t.Fatalf("scan full repository view: %v", err)
+	}
+	assertRepositoryFinding(t, findings, "README.md")
+	assertRepositoryFinding(t, findings, "untracked.txt")
+}
+
+func TestRepositorySecretScanRequiresWorktreeTopLevel(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	nested := filepath.Join(repo, "nested")
+	if err := os.Mkdir(nested, 0o700); err != nil {
+		t.Fatalf("create nested directory: %v", err)
+	}
+	root := openSecretScanRoot(t, nested)
+
+	_, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanFull)
+	if err == nil || err.Error() != "repository secret scan: Git worktree-root admission failed" {
+		t.Fatalf("expected fixed worktree-root rejection, got %v", err)
+	}
+	if strings.Contains(err.Error(), repo) || strings.Contains(err.Error(), nested) {
+		t.Fatalf("worktree-root error exposed a path: %v", err)
+	}
+}
+
+func TestRepositorySecretScanFullReadsAssumeUnchangedWorktreeEntry(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	root := openSecretScanRoot(t, repo)
+	secret := testRepositorySecret()
+	runSecretScanGit(t, repo, "update-index", "--assume-unchanged", "README.md")
+	writeSecretScanFile(t, repo, "README.md", "ACCESS_TOKEN="+secret+"\n")
+	if output := runSecretScanGitOutput(t, repo, nil, "diff", "--name-only", "--"); output != "" {
+		t.Fatalf("assume-unchanged fixture remained visible to ordinary diff: %q", output)
+	}
+
+	findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanFull)
+	if err != nil {
+		t.Fatalf("scan assume-unchanged worktree entry: %v", err)
+	}
+	assertRepositoryFinding(t, findings, "README.md")
+	assertRepositoryScanRedacted(t, findings, secret)
+}
+
+func TestRepositorySecretScanFailsClosedWithoutLeakingCandidates(t *testing.T) {
+	repo := newSecretScanGitRepo(t)
+	root := openSecretScanRoot(t, repo)
+	secret := testRepositorySecret()
+	if err := os.Symlink(secret, filepath.Join(repo, "credential-link")); err != nil {
+		t.Fatalf("create credential symlink fixture: %v", err)
+	}
+	runSecretScanGit(t, repo, "add", "credential-link")
+
+	findings, err := ScanRepositoryForSecrets(context.Background(), root, RepositorySecretScanStaged)
+	if err == nil {
+		t.Fatal("expected unsupported staged symlink to fail closed")
+	}
+	if strings.Contains(err.Error(), secret) {
+		t.Fatalf("error exposed candidate value: %v", err)
+	}
+	assertRepositoryScanRedacted(t, findings, secret)
+}
+
+func newSecretScanGitRepo(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is required")
+	}
+	repo := t.TempDir()
+	runSecretScanGit(t, repo, "init", "-q")
+	runSecretScanGit(t, repo, "config", "user.email", "tests@example.invalid")
+	runSecretScanGit(t, repo, "config", "user.name", "MARS Tests")
+	runSecretScanGit(t, repo, "config", "commit.gpgsign", "false")
+	writeSecretScanFile(t, repo, "README.md", "clean\n")
+	runSecretScanGit(t, repo, "add", "README.md")
+	runSecretScanGit(t, repo, "commit", "-m", "initial")
+	return repo
+}
+
+func openSecretScanRoot(t *testing.T, repo string) *repofs.Root {
+	t.Helper()
+	root, err := repofs.Open(repo)
+	if err != nil {
+		t.Fatalf("open repository root: %v", err)
+	}
+	return root
+}
+
+func runSecretScanGit(t *testing.T, repo string, args ...string) {
+	t.Helper()
+	_ = runSecretScanGitOutput(t, repo, nil, args...)
+}
+
+func runSecretScanGitOutput(t *testing.T, repo string, input *strings.Reader, args ...string) string {
+	t.Helper()
+	command := exec.Command("git", append([]string{"-C", repo}, args...)...)
+	if input != nil {
+		command.Stdin = input
+	}
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git fixture command failed: %v: %s", err, output)
+	}
+	return string(output)
+}
+
+func writeSecretScanFile(t *testing.T, repo, relative, content string) {
+	t.Helper()
+	path := filepath.Join(repo, filepath.FromSlash(relative))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create fixture parent: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+}
+
+func assertRepositoryFinding(t *testing.T, findings []RepositorySecretFinding, path string) {
+	t.Helper()
+	for _, finding := range findings {
+		if finding.File == path {
+			return
+		}
+	}
+	t.Fatalf("expected finding for %s, got %+v", path, findings)
+}
+
+func assertRepositoryScanRedacted(t *testing.T, findings []RepositorySecretFinding, candidate string) {
+	t.Helper()
+	text := fmt.Sprintf("%+v", findings)
+	encoded, err := json.Marshal(findings)
+	if err != nil {
+		t.Fatalf("marshal findings: %v", err)
+	}
+	if strings.Contains(text, candidate) || strings.Contains(string(encoded), candidate) {
+		t.Fatal("repository findings exposed candidate value")
+	}
+}
+
+func testRepositorySecret() string {
+	return "ghp_" + strings.Repeat("z", 36)
 }
 
 func TestEmergencyStop_executesAll(t *testing.T) {
