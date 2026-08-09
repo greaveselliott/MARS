@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/repofs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,6 +77,19 @@ func TestReadHarnessMetadataAcceptsLegacyGenerator(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "mars", metadata.Generator)
 	require.Equal(t, "0.65.0", metadata.GeneratorVersion)
+}
+
+func TestReadHarnessMetadataRejectsSymlink(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".harness"), 0o755))
+	outside := filepath.Join(t.TempDir(), "metadata.yaml")
+	require.NoError(t, os.WriteFile(outside, []byte("schema_version: 1\ngenerator: outside\ngenerator_version: 9.9.9\n"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, ".harness", "metadata.yaml")))
+
+	_, err := ReadHarnessMetadata(dir)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), outside)
 }
 
 func TestScan_detectsCI(t *testing.T) {
@@ -245,6 +259,39 @@ func TestScan_contextCancellation(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestScanRejectsRepositorySymlinkInputs(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name      string
+		link      string
+		directory bool
+	}{
+		{name: "source parent", link: "src", directory: true},
+		{name: "package leaf", link: "package.json"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+			outsideDir := t.TempDir()
+			outside := filepath.Join(outsideDir, "outside-input")
+			if tc.directory {
+				outside = outsideDir
+				require.NoError(t, os.WriteFile(filepath.Join(outside, "outside.go"), []byte("package outside\n// OUTSIDE_SCAN_PHRASE\n"), 0o644))
+			} else {
+				require.NoError(t, os.WriteFile(outside, []byte(`{"name":"OUTSIDE_SCAN_PHRASE","dependencies":{"next":"latest"}}`), 0o644))
+			}
+			require.NoError(t, os.Symlink(outside, filepath.Join(dir, tc.link)))
+
+			result, err := Scan(context.Background(), Config{RepoRoot: dir})
+			require.Error(t, err)
+			assert.Nil(t, result)
+			assert.Contains(t, err.Error(), "symbolic link is not allowed: "+tc.link)
+			assert.NotContains(t, err.Error(), outside)
+			assert.NotContains(t, err.Error(), "OUTSIDE_SCAN_PHRASE")
+		})
+	}
+}
+
 func TestGenerateTickets(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -330,6 +377,23 @@ func TestGenerateTicketsCreatesInterventionDebtForStaleInProgress(t *testing.T) 
 	assert.Contains(t, text, "work_type: intervention-debt")
 	assert.Contains(t, text, "dedupe_key:")
 	assert.Contains(t, text, "category: \"stale_in_progress_ticket\"")
+}
+
+func TestInitIgnoresSymlinkedReadmeBrief(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	outside := filepath.Join(t.TempDir(), "README.md")
+	const outsidePhrase = "OUTSIDE_PRIVATE_PRODUCT_PHRASE"
+	require.NoError(t, os.WriteFile(outside, []byte("# Outside Product\n\n"+outsidePhrase+" must never seed this repository.\n"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "README.md")))
+
+	require.NoError(t, Init(dir, false))
+	currentPlan, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "active", "current-operating-plan.md"))
+	require.NoError(t, err)
+	assert.NotContains(t, string(currentPlan), outsidePhrase)
+	assert.Contains(t, string(currentPlan), "the product described by README and active goals")
+	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 }
 
 func TestInit_success(t *testing.T) {
@@ -1274,8 +1338,10 @@ func TestDetectFramework_goMod(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example\n"), 0o644))
+	root, err := repofs.Open(dir)
+	require.NoError(t, err)
 
-	fw := detectFramework(dir, []string{"go.mod"})
+	fw := detectFramework(root, []string{"go.mod"})
 	assert.Equal(t, "Go Module", fw)
 }
 
@@ -1283,8 +1349,10 @@ func TestDetectFramework_cargoToml(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte("[package]\n"), 0o644))
+	root, err := repofs.Open(dir)
+	require.NoError(t, err)
 
-	fw := detectFramework(dir, []string{"Cargo.toml"})
+	fw := detectFramework(root, []string{"Cargo.toml"})
 	assert.Equal(t, "Rust/Cargo", fw)
 }
 

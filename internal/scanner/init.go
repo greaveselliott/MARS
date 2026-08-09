@@ -170,7 +170,7 @@ func initRepository(root *repofs.Root, force bool) error {
 	}
 
 	projectName := filepath.Base(repoRoot)
-	brief := readProjectBrief(repoRoot, projectName)
+	brief := readProjectBrief(root, projectName)
 
 	manifestPath := filepath.Join(harnessDir, "manifest.yaml")
 	if err := writeRepositoryFile(root, manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
@@ -367,12 +367,12 @@ type projectBrief struct {
 	Source  string
 }
 
-func readProjectBrief(repoRoot, projectName string) projectBrief {
+func readProjectBrief(root *repofs.Root, projectName string) projectBrief {
 	name := humanizeProjectName(projectName)
 	summary := "the product described by README and active goals"
 	source := "mars init"
 	for _, candidate := range []string{"README.md", "README.markdown", "README"} {
-		data, err := os.ReadFile(filepath.Join(repoRoot, candidate))
+		data, err := root.ReadFile(candidate)
 		if err != nil {
 			continue
 		}
@@ -551,8 +551,13 @@ func renderProductWalkingSkeletonDoc(content string, brief projectBrief) string 
 
 // ReadHarnessMetadata loads .harness/metadata.yaml from a target repository.
 func ReadHarnessMetadata(repoRoot string) (HarnessMetadata, error) {
-	path := filepath.Join(filepath.Clean(repoRoot), harnessDir, harnessMetadataFile)
-	data, err := os.ReadFile(path)
+	root, err := repofs.Open(repoRoot)
+	if err != nil {
+		return HarnessMetadata{}, err
+	}
+	rel := filepath.Join(harnessDir, harnessMetadataFile)
+	path := filepath.Join(root.Abs(), rel)
+	data, err := root.ReadFile(rel)
 	if err != nil {
 		return HarnessMetadata{}, err
 	}

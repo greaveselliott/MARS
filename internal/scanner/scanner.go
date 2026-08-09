@@ -13,13 +13,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/greaveselliott/mars/internal/repofs"
 	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 	"github.com/greaveselliott/mars/internal/tools"
 )
@@ -89,12 +90,9 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 	if cfg.RepoRoot == "" {
 		return nil, fmt.Errorf("scanner: repo root is empty — pass the path to the repository you want to scan")
 	}
-	info, err := os.Stat(cfg.RepoRoot)
+	root, err := repofs.Open(cfg.RepoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("scanner: cannot access %s: %w — verify the path exists", cfg.RepoRoot, err)
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("scanner: %s is not a directory — point to the repository root", cfg.RepoRoot)
 	}
 	applyDefaults(&cfg)
 
@@ -102,18 +100,24 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 	var allFiles []string
 	extensionCount := make(map[string]int)
 
-	err = filepath.WalkDir(cfg.RepoRoot, func(path string, d os.DirEntry, walkErr error) error {
+	err = fs.WalkDir(root, ".", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
-			return nil
+			return walkErr
 		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		rel, _ := filepath.Rel(cfg.RepoRoot, path)
-		if d.IsDir() {
-			if shouldSkipDir(d.Name(), rel, cfg.SkipDirs) {
-				return filepath.SkipDir
+		rel := filepath.FromSlash(path)
+		if (d.IsDir() || d.Type()&fs.ModeSymlink != 0) && shouldSkipDir(d.Name(), rel, cfg.SkipDirs) {
+			if d.IsDir() {
+				return fs.SkipDir
 			}
+			return nil
+		}
+		if d.Type()&fs.ModeSymlink != 0 {
+			return fmt.Errorf("symbolic link is not allowed: %s", filepath.ToSlash(rel))
+		}
+		if d.IsDir() {
 			return nil
 		}
 		allFiles = append(allFiles, rel)
@@ -124,12 +128,12 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("scanner: walk %s: %w", cfg.RepoRoot, err)
+		return nil, fmt.Errorf("scanner: walk repository: %w", err)
 	}
 
 	result.Language = detectLanguage(extensionCount)
-	result.Framework = detectFramework(cfg.RepoRoot, allFiles)
-	result.HasCI = detectCI(cfg.RepoRoot, allFiles)
+	result.Framework = detectFramework(root, allFiles)
+	result.HasCI = detectCI(root, allFiles)
 	result.HasTests = detectTests(allFiles)
 	result.HasReadme = detectReadme(allFiles)
 	result.HasLicense = detectLicense(allFiles)
@@ -165,12 +169,12 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 		})
 	}
 
-	result.Findings = append(result.Findings, findWorkspaceHygieneIssues(ctx, cfg.RepoRoot)...)
-	result.Findings = append(result.Findings, checkBootability(cfg.RepoRoot, allFiles, result.Framework)...)
-	result.Findings = append(result.Findings, findUntestedPackages(cfg.RepoRoot, allFiles)...)
-	result.Findings = append(result.Findings, findLargeFunctions(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
-	result.Findings = append(result.Findings, findTodos(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
-	result.Findings = append(result.Findings, findStaleInProgressTickets(cfg.RepoRoot, time.Now().UTC())...)
+	result.Findings = append(result.Findings, findWorkspaceHygieneIssues(ctx, root.Abs())...)
+	result.Findings = append(result.Findings, checkBootability(root, allFiles, result.Framework)...)
+	result.Findings = append(result.Findings, findUntestedPackages(root.Abs(), allFiles)...)
+	result.Findings = append(result.Findings, findLargeFunctions(ctx, root, allFiles, cfg.MaxPackages)...)
+	result.Findings = append(result.Findings, findTodos(ctx, root, allFiles, cfg.MaxPackages)...)
+	result.Findings = append(result.Findings, findStaleInProgressTickets(root.Abs(), time.Now().UTC())...)
 
 	slog.Info("scan complete",
 		"language", result.Language,
@@ -236,11 +240,11 @@ func detectLanguage(counts map[string]int) string {
 	return best
 }
 
-func detectFramework(root string, files []string) string {
+func detectFramework(root *repofs.Root, files []string) string {
 	for _, f := range files {
 		switch filepath.Base(f) {
 		case "package.json":
-			return detectJSFramework(filepath.Join(root, f))
+			return detectJSFramework(root, f)
 		case "go.mod":
 			return "Go Module"
 		case "requirements.txt", "pyproject.toml":
@@ -254,8 +258,8 @@ func detectFramework(root string, files []string) string {
 	return ""
 }
 
-func detectJSFramework(pkgPath string) string {
-	data, err := os.ReadFile(pkgPath)
+func detectJSFramework(root *repofs.Root, pkgPath string) string {
+	data, err := root.ReadFile(pkgPath)
 	if err != nil {
 		return "Node.js"
 	}
@@ -274,7 +278,7 @@ func detectJSFramework(pkgPath string) string {
 	}
 }
 
-func detectCI(root string, files []string) bool {
+func detectCI(root *repofs.Root, files []string) bool {
 	for _, f := range files {
 		dir := filepath.Dir(f)
 		base := filepath.Base(f)
@@ -284,16 +288,16 @@ func detectCI(root string, files []string) bool {
 		if base == ".gitlab-ci.yml" || base == "Jenkinsfile" {
 			return true
 		}
-		if base == "Makefile" && hasMakeCheckTarget(filepath.Join(root, f)) {
+		if base == "Makefile" && hasMakeCheckTarget(root, f) {
 			return true
 		}
 	}
-	_, err := os.Stat(filepath.Join(root, ".github", "workflows"))
+	_, err := root.Stat(filepath.Join(".github", "workflows"))
 	return err == nil
 }
 
-func hasMakeCheckTarget(path string) bool {
-	data, err := os.ReadFile(path)
+func hasMakeCheckTarget(root *repofs.Root, path string) bool {
+	data, err := root.ReadFile(path)
 	if err != nil {
 		return false
 	}
@@ -353,7 +357,7 @@ func hasGitignore(files []string) bool {
 // checkBootability runs framework-specific validation to ensure the project
 // can actually build and start. Returns findings for structural issues that
 // would prevent the app from running.
-func checkBootability(root string, files []string, framework string) []Finding {
+func checkBootability(root *repofs.Root, files []string, framework string) []Finding {
 	var findings []Finding
 
 	switch framework {
@@ -368,7 +372,7 @@ func checkBootability(root string, files []string, framework string) []Finding {
 	return findings
 }
 
-func checkNextJSBootability(root string, files []string) []Finding {
+func checkNextJSBootability(root *repofs.Root, files []string) []Finding {
 	var findings []Finding
 
 	findings = append(findings, checkNodeBootability(root)...)
@@ -416,8 +420,7 @@ func checkNextJSBootability(root string, files []string) []Finding {
 		}
 	}
 
-	nextConfigPath := filepath.Join(root, "next.config.js")
-	if data, err := os.ReadFile(nextConfigPath); err == nil {
+	if data, err := root.ReadFile("next.config.js"); err == nil {
 		if strings.Contains(string(data), "appDir") {
 			findings = append(findings, Finding{
 				Type:        "deprecated_next_config",
@@ -436,8 +439,8 @@ func checkNextJSBootability(root string, files []string) []Finding {
 // checkTSConfigPathAlias verifies that @/* path aliases in tsconfig.json
 // actually resolve to where source files live. A common agent error is
 // setting @/* → ./* when source lives in src/, causing module-not-found errors.
-func checkTSConfigPathAlias(root string, files []string) []Finding {
-	tsconfig, err := os.ReadFile(filepath.Join(root, "tsconfig.json"))
+func checkTSConfigPathAlias(root *repofs.Root, files []string) []Finding {
+	tsconfig, err := root.ReadFile("tsconfig.json")
 	if err != nil {
 		return nil
 	}
@@ -487,11 +490,10 @@ func checkTSConfigPathAlias(root string, files []string) []Finding {
 	return nil
 }
 
-func checkNodeBootability(root string) []Finding {
+func checkNodeBootability(root *repofs.Root) []Finding {
 	var findings []Finding
 
-	pkgPath := filepath.Join(root, "package.json")
-	data, err := os.ReadFile(pkgPath)
+	data, err := root.ReadFile("package.json")
 	if err != nil {
 		return nil
 	}
@@ -522,14 +524,14 @@ func checkNodeBootability(root string) []Finding {
 	return findings
 }
 
-func checkTailwindConsistency(root string, files []string) []Finding {
+func checkTailwindConsistency(root *repofs.Root, files []string) []Finding {
 	hasTailwindDirectives := false
 	for _, f := range files {
 		ext := filepath.Ext(f)
 		if ext != ".css" {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(root, f))
+		data, err := root.ReadFile(f)
 		if err != nil {
 			continue
 		}
@@ -668,7 +670,7 @@ func findUntestedPackages(_ string, files []string) []Finding {
 }
 
 // findLargeFunctions detects Go functions exceeding 50 lines.
-func findLargeFunctions(ctx context.Context, root string, files []string, concurrency int) []Finding {
+func findLargeFunctions(ctx context.Context, root *repofs.Root, files []string, concurrency int) []Finding {
 	var goFiles []string
 	for _, f := range files {
 		if strings.HasSuffix(f, ".go") {
@@ -704,8 +706,8 @@ func findLargeFunctions(ctx context.Context, root string, files []string, concur
 	return findings
 }
 
-func scanFileForLargeFuncs(root, relPath string) []Finding {
-	f, err := os.Open(filepath.Join(root, relPath))
+func scanFileForLargeFuncs(root *repofs.Root, relPath string) []Finding {
+	f, err := root.OpenFile(relPath)
 	if err != nil {
 		return nil
 	}
@@ -771,7 +773,7 @@ func extractFuncName(line string) string {
 	return ""
 }
 
-func findTodos(ctx context.Context, root string, files []string, concurrency int) []Finding {
+func findTodos(ctx context.Context, root *repofs.Root, files []string, concurrency int) []Finding {
 	var sourceFiles []string
 	for _, f := range files {
 		ext := strings.ToLower(filepath.Ext(f))
@@ -809,8 +811,8 @@ func findTodos(ctx context.Context, root string, files []string, concurrency int
 	return findings
 }
 
-func scanFileForTodos(root, relPath string) []Finding {
-	f, err := os.Open(filepath.Join(root, relPath))
+func scanFileForTodos(root *repofs.Root, relPath string) []Finding {
+	f, err := root.OpenFile(relPath)
 	if err != nil {
 		return nil
 	}
