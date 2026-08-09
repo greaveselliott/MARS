@@ -12,8 +12,10 @@ docs:
 package config
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -247,6 +249,91 @@ func TestConfigLoadAndSaveRejectSymlinkWithoutTouchingTarget(t *testing.T) {
 		t.Fatalf("symlink target changed: got %q want %q", got, want)
 	}
 	assertConfigMode(t, target, 0o644)
+}
+
+func TestClearStoredGitHubTokenPreservesOtherFieldsModeAndIgnoresEnv(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	wantField := "models_dir: /stored/models"
+	wantUnknown := "future_setting:"
+	if err := os.WriteFile(path, []byte("# preserved config\ngithub_token: stored-secret\n"+wantField+"\n"+wantUnknown+"\n  enabled: true\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	t.Setenv("MARS_GITHUB_TOKEN", "env-secret")
+	t.Setenv("MARS_MODELS_DIR", "/env/models")
+
+	cleared, err := ClearStoredGitHubToken(path)
+	if err != nil {
+		t.Fatalf("ClearStoredGitHubToken: %v", err)
+	}
+	if !cleared {
+		t.Fatal("expected stored GitHub token to be cleared")
+	}
+	assertConfigMode(t, path, 0o600)
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read cleared config: %v", err)
+	}
+	for _, forbidden := range []string{"github_token", "stored-secret", "env-secret", "/env/models"} {
+		if strings.Contains(string(got), forbidden) {
+			t.Fatalf("cleared config contains %q: %s", forbidden, got)
+		}
+	}
+	for _, preserved := range []string{wantField, wantUnknown, "enabled: true"} {
+		if !strings.Contains(string(got), preserved) {
+			t.Fatalf("cleared config lost %q: %s", preserved, got)
+		}
+	}
+
+	beforeSecondClear := append([]byte(nil), got...)
+	cleared, err = ClearStoredGitHubToken(path)
+	if err != nil {
+		t.Fatalf("second ClearStoredGitHubToken: %v", err)
+	}
+	if cleared {
+		t.Fatal("second clear should be idempotent")
+	}
+	afterSecondClear, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read idempotently cleared config: %v", err)
+	}
+	if !bytes.Equal(afterSecondClear, beforeSecondClear) {
+		t.Fatalf("idempotent clear changed config: got %q want %q", afterSecondClear, beforeSecondClear)
+	}
+}
+
+func TestClearStoredGitHubTokenUsesSelectedLegacyFileWithoutCopyingOrContamination(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("MARS_GITHUB_TOKEN", "env-secret")
+	legacyPath := LegacyPath()
+	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o700); err != nil {
+		t.Fatalf("mkdir legacy config dir: %v", err)
+	}
+	if err := os.WriteFile(legacyPath, []byte("github_token: legacy-secret\nmodels_dir: /legacy/models\n"), 0o600); err != nil {
+		t.Fatalf("write legacy config: %v", err)
+	}
+
+	cleared, err := ClearStoredGitHubToken("")
+	if err != nil {
+		t.Fatalf("ClearStoredGitHubToken: %v", err)
+	}
+	if !cleared {
+		t.Fatal("expected legacy token to be cleared")
+	}
+	got, err := os.ReadFile(legacyPath)
+	if err != nil {
+		t.Fatalf("read legacy config: %v", err)
+	}
+	if strings.Contains(string(got), "github_token") || strings.Contains(string(got), "legacy-secret") || strings.Contains(string(got), "env-secret") {
+		t.Fatalf("legacy token was not isolated from environment: %s", got)
+	}
+	if !strings.Contains(string(got), "models_dir: /legacy/models") {
+		t.Fatalf("legacy config lost unrelated field: %s", got)
+	}
+	assertConfigMode(t, legacyPath, 0o600)
+	if _, err := os.Lstat(DefaultPath()); !os.IsNotExist(err) {
+		t.Fatalf("clear copied legacy config into canonical path: %v", err)
+	}
 }
 
 func assertConfigMode(t *testing.T, path string, want os.FileMode) {

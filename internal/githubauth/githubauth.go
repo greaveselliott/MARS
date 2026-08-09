@@ -29,6 +29,10 @@ const (
 	StatusWarn = "warn"
 	StatusFail = "fail"
 
+	AccessAnonymous     = "anonymous"
+	AccessAuthenticated = "authenticated"
+	AccessUnavailable   = "unavailable"
+
 	SourceNone           = "none"
 	SourceEnvGHToken     = "env-gh-token"
 	SourceEnvGitHubToken = "env-github-token"
@@ -58,6 +62,7 @@ type ResolveResult struct {
 // the github_auth_check universal tool.
 type Report struct {
 	Status        string `json:"status"`
+	AccessClass   string `json:"access_class"`
 	AuthSource    string `json:"auth_source"`
 	RepoAccess    string `json:"repo_access"`
 	ReleaseAccess string `json:"release_access"`
@@ -65,7 +70,14 @@ type Report struct {
 	NextAction    string `json:"next_action,omitempty"`
 }
 
-// Options configures token resolution and private release access checks.
+// ClearLocalReport describes removal of only MARS's stored GitHub fallback.
+type ClearLocalReport struct {
+	Status  string `json:"status"`
+	Cleared bool   `json:"cleared"`
+	Message string `json:"message"`
+}
+
+// Options configures optional token resolution and release access checks.
 type Options struct {
 	Env          func(string) string
 	ConfigPath   string
@@ -78,8 +90,8 @@ type Options struct {
 	Timeout      time.Duration
 }
 
-// ResolveToken resolves GitHub auth using the Getting Started private-release
-// order: GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, then local config.
+// ResolveToken resolves optional GitHub auth in this order: GH_TOKEN,
+// GITHUB_TOKEN, GitHub CLI auth, then local config.
 func ResolveToken(ctx context.Context, opts Options) ResolveResult {
 	env := opts.Env
 	if env == nil {
@@ -126,11 +138,154 @@ func ResolveToken(ctx context.Context, opts Options) ResolveResult {
 	return ResolveResult{Token: Token{Source: SourceNone}, GHCLIError: ghErr, ConfigErr: cfgErr}
 }
 
-// Check verifies that a resolved token can read private MARS release
-// metadata. It intentionally never includes the token in output.
+// Check probes release metadata anonymously first. Credentials are resolved
+// only after an exact denial from the exact official GitHub API endpoint, and
+// at most one authenticated retry is sent to that same URL.
 func Check(ctx context.Context, opts Options) Report {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	endpoint := strings.TrimSpace(opts.ReleaseURL)
+	if endpoint == "" {
+		endpoint = ReleaseAPIURL(opts.RepoFullName)
+	}
+	client := checkHTTPClient(opts)
+	statusCode, err := requestReleaseMetadata(ctx, client, endpoint, Token{})
+	if err != nil {
+		return unavailableReport(StatusWarn, SourceNone,
+			"release metadata is unavailable",
+			"Check network and TLS connectivity, then rerun `mars auth github check`.")
+	}
+	if statusCode == http.StatusOK {
+		return Report{
+			Status:        StatusOK,
+			AccessClass:   AccessAnonymous,
+			AuthSource:    SourceNone,
+			RepoAccess:    "ok",
+			ReleaseAccess: "ok",
+			Message:       "MARS release metadata is available anonymously",
+		}
+	}
+	if !credentialRetryStatus(statusCode) || !exactOfficialReleaseURL(endpoint, opts.RepoFullName) {
+		return unavailableReport(StatusWarn, SourceNone,
+			"release metadata is unavailable anonymously",
+			"Retry the official release metadata check later; credentials were not resolved or sent.")
+	}
+
 	resolved := ResolveToken(ctx, opts)
-	return checkToken(ctx, opts, resolved.Token)
+	if strings.TrimSpace(resolved.Token.Value) == "" {
+		return unavailableReport(StatusFail, SourceNone,
+			"release metadata is unavailable anonymously and no optional GitHub credential is configured",
+			"For a private fork or rate-limited check, run `gh auth login` and then `mars auth github setup`.")
+	}
+	statusCode, err = requestReleaseMetadata(ctx, client, endpoint, resolved.Token)
+	if err != nil {
+		return unavailableReport(StatusWarn, resolved.Token.Source,
+			"release metadata is unavailable after the optional authenticated retry",
+			"Check network and TLS connectivity, then rerun `mars auth github check`.")
+	}
+	if statusCode == http.StatusOK {
+		return Report{
+			Status:        StatusOK,
+			AccessClass:   AccessAuthenticated,
+			AuthSource:    resolved.Token.Source,
+			RepoAccess:    "ok",
+			ReleaseAccess: "ok",
+			Message:       "MARS release metadata is available with optional GitHub authentication",
+		}
+	}
+	return unavailableReport(StatusFail, resolved.Token.Source,
+		"release metadata is unavailable after the optional authenticated retry",
+		"Refresh the optional GitHub credential or retry when the official release is available.")
+}
+
+// ClearLocal removes only the stored github_token fallback from the selected
+// MARS config. It does not resolve or mutate environment, GitHub CLI, GitHub
+// App, repository, or remote credentials.
+func ClearLocal(opts Options) (ClearLocalReport, error) {
+	cleared, err := config.ClearStoredGitHubToken(opts.ConfigPath)
+	if err != nil {
+		return ClearLocalReport{}, errors.New("auth github clear-local: could not update the selected config — ensure it is a regular owner-writable YAML file and retry")
+	}
+	if !cleared {
+		return ClearLocalReport{Status: StatusOK, Message: "no stored GitHub fallback was present"}, nil
+	}
+	return ClearLocalReport{Status: StatusOK, Cleared: true, Message: "stored GitHub fallback cleared"}, nil
+}
+
+func checkHTTPClient(opts Options) *http.Client {
+	base := opts.HTTPClient
+	if base == nil {
+		timeout := opts.Timeout
+		if timeout <= 0 {
+			timeout = 10 * time.Second
+		}
+		base = &http.Client{Timeout: timeout}
+	}
+	client := *base
+	client.Jar = nil
+	client.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return &client
+}
+
+func requestReleaseMetadata(ctx context.Context, client *http.Client, endpoint string, token Token) (int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", "mars-github-auth-check")
+	if strings.TrimSpace(token.Value) != "" {
+		req.Header.Set("Authorization", "Bearer "+token.Value)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+	return resp.StatusCode, nil
+}
+
+func credentialRetryStatus(statusCode int) bool {
+	return statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden || statusCode == http.StatusNotFound
+}
+
+func exactOfficialReleaseURL(endpoint, repoFullName string) bool {
+	repo := repoName(repoFullName)
+	parts := strings.Split(repo, "/")
+	if len(parts) != 2 || !safeGitHubName(parts[0]) || !safeGitHubName(parts[1]) {
+		return false
+	}
+	return endpoint == "https://api.github.com/repos/"+parts[0]+"/"+parts[1]+"/releases/latest"
+}
+
+func safeGitHubName(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, char := range value {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '-' || char == '_' || char == '.' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func unavailableReport(status, authSource, message, nextAction string) Report {
+	return Report{
+		Status:        status,
+		AccessClass:   AccessUnavailable,
+		AuthSource:    authSource,
+		RepoAccess:    "unavailable",
+		ReleaseAccess: "unavailable",
+		Message:       message,
+		NextAction:    nextAction,
+	}
 }
 
 // Setup verifies private release access and persists an owner-only local
@@ -177,6 +332,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	if strings.TrimSpace(token.Value) == "" {
 		return Report{
 			Status:        StatusFail,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    SourceNone,
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
@@ -201,6 +357,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	if err != nil {
 		return Report{
 			Status:        StatusWarn,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    token.Source,
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
@@ -216,6 +373,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	if err != nil {
 		return Report{
 			Status:        StatusWarn,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    token.Source,
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
@@ -229,6 +387,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	case http.StatusOK:
 		return Report{
 			Status:        StatusOK,
+			AccessClass:   AccessAuthenticated,
 			AuthSource:    token.Source,
 			RepoAccess:    "ok",
 			ReleaseAccess: "ok",
@@ -237,6 +396,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	case http.StatusUnauthorized:
 		return Report{
 			Status:        StatusFail,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    token.Source,
 			RepoAccess:    "denied",
 			ReleaseAccess: "denied",
@@ -250,6 +410,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 		}
 		return Report{
 			Status:        StatusFail,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    token.Source,
 			RepoAccess:    "forbidden",
 			ReleaseAccess: "forbidden",
@@ -259,6 +420,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	case http.StatusNotFound:
 		return Report{
 			Status:        StatusFail,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    token.Source,
 			RepoAccess:    "not_found",
 			ReleaseAccess: "not_found",
@@ -268,6 +430,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 	default:
 		return Report{
 			Status:        StatusWarn,
+			AccessClass:   AccessUnavailable,
 			AuthSource:    token.Source,
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",

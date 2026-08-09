@@ -272,15 +272,22 @@ the matching `mars-{os}-{arch}` asset, verifies `checksums.txt`, and
 atomically replaces the binary in the directory containing the currently running
 command. This avoids requiring Go or a source checkout for packaged users.
 
-Private release repositories use the same checksum-verified path through the
-optional binary-release auth operating model. Operators run
-`mars auth github setup` once. When setup verifies access through
-GitHub CLI auth, it stores that token as an owner-only local fallback under
-`~/.mars/` so future update runs do not depend on keychain access.
-Then `mars update tool` resolves auth in this order: `GH_TOKEN`,
-`GITHUB_TOKEN`, GitHub CLI auth from `gh auth token`, then the local fallback.
-Token values are never printed, written to target repos, or included in traces,
-telemetry, doctor output, JSON, errors, tickets, or docs.
+Official release metadata is anonymous-first. `mars auth github check` makes
+one exact, no-redirect anonymous request to the official `api.github.com`
+release-metadata endpoint. Only an exact `401`, `403`, or `404` may trigger
+credential resolution and one authenticated retry to the same origin and path;
+transport failures, redirects, unexpected statuses, and custom origins never
+receive credentials. The check classifies access as `anonymous`,
+`authenticated`, or `unavailable` without credential-derived output.
+
+Private forks and rate-limit fallback retain the optional binary-release auth
+model. Operators may run `mars auth github setup`; verified GitHub CLI or
+explicit token auth may be stored as an owner-only local fallback under
+`~/.mars/`. `mars auth github clear-local` idempotently removes only the stored
+config `github_token`, preserving all other fields and leaving environment
+variables, GitHub CLI and GitHub App credentials, repositories, and remote state
+unchanged. Token values are never printed, written to target repos, or included
+in traces, telemetry, doctor output, JSON, errors, tickets, or docs.
 
 When release metadata exposes GitHub asset API URLs, the updater downloads from
 those authenticated API URLs instead of browser download URLs so private assets
@@ -288,12 +295,11 @@ do not fail behind a misleading 404. Missing or invalid auth points to
 `mars auth github setup`; headless installs may use `GH_TOKEN`,
 `GITHUB_TOKEN`, or `mars auth github setup --token <token>`.
 
-Source checkout onboarding runs `mars setup --skip-github`, so private
-release auth is not required to install local inference assets. Plain
-`mars setup` still includes a private-release auth check for packaged
-binary users; `--skip-github` and `--test-mode` skip that external auth check.
-`mars doctor` reports private-release auth readiness with a concrete
-fix, and agents can use the read-only `github_auth_check` tool before binary
+Source checkout and packaged-user onboarding both run ordinary `mars setup`
+without a private-release-auth step or GitHub credential requirement.
+`--skip-github` remains scoped to optional GitHub integration setup.
+`mars doctor` reports anonymous, authenticated, or unavailable release access
+with a concrete fix, and agents can use the read-only `github_auth_check` tool before binary
 update, release verification, install repair, or version-drift remediation.
 
 Source-development updates remain available through `mars update tool

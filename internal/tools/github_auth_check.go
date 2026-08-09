@@ -28,7 +28,7 @@ type githubAuthCheckArgs struct {
 }
 
 func registerGithubAuthCheck(r *Registry) error {
-	return r.Register("github_auth_check", "Check private GitHub release authentication readiness without revealing tokens.", json.RawMessage(githubAuthCheckSchema), handleGithubAuthCheck)
+	return r.Register("github_auth_check", "Classify anonymous or optional authenticated GitHub release metadata access without revealing tokens.", json.RawMessage(githubAuthCheckSchema), handleGithubAuthCheck)
 }
 
 func handleGithubAuthCheck(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {

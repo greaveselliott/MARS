@@ -132,6 +132,74 @@ func Save(path string, cfg Config) error {
 	return secureConfigLeaf(path)
 }
 
+// ClearStoredGitHubToken removes only the persisted github_token field from
+// the selected config file. It deliberately does not load environment
+// overrides or copy the pre-rename config into the canonical location.
+func ClearStoredGitHubToken(path string) (bool, error) {
+	path = storedConfigPath(path)
+	if err := secureConfigLeaf(path); err != nil {
+		return false, err
+	}
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("config: read %s: %w", path, err)
+	}
+
+	var document yaml.Node
+	if err := yaml.Unmarshal(data, &document); err != nil {
+		return false, fmt.Errorf("config: parse %s: %w", path, err)
+	}
+	if !removeTopLevelYAMLField(&document, "github_token") {
+		return false, nil
+	}
+	updated, err := yaml.Marshal(&document)
+	if err != nil {
+		return false, fmt.Errorf("config: marshal %s: %w", path, err)
+	}
+	if err := os.WriteFile(path, updated, 0o600); err != nil {
+		return false, fmt.Errorf("config: write %s: %w", path, err)
+	}
+	if err := secureConfigLeaf(path); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func storedConfigPath(path string) string {
+	if strings.TrimSpace(path) != "" {
+		return path
+	}
+	canonical := DefaultPath()
+	if _, err := os.Lstat(canonical); err == nil || !os.IsNotExist(err) {
+		return canonical
+	}
+	return LegacyPath()
+}
+
+func removeTopLevelYAMLField(document *yaml.Node, field string) bool {
+	if document == nil || document.Kind != yaml.DocumentNode || len(document.Content) != 1 {
+		return false
+	}
+	mapping := document.Content[0]
+	if mapping.Kind != yaml.MappingNode {
+		return false
+	}
+	removed := false
+	kept := mapping.Content[:0]
+	for i := 0; i+1 < len(mapping.Content); i += 2 {
+		if mapping.Content[i].Value == field {
+			removed = true
+			continue
+		}
+		kept = append(kept, mapping.Content[i], mapping.Content[i+1])
+	}
+	mapping.Content = kept
+	return removed
+}
+
 func secureConfigLeaf(path string) error {
 	info, err := os.Lstat(path)
 	if os.IsNotExist(err) {

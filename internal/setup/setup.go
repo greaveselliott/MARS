@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars/internal/config"
-	"github.com/greaveselliott/mars/internal/githubauth"
 	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/greaveselliott/mars/internal/models"
 	"github.com/greaveselliott/mars/internal/shellpath"
@@ -115,10 +114,6 @@ func buildSteps(baseDir string, cfg Config) []Step {
 		configureShellPathStep(cfg),
 	}
 
-	if !cfg.SkipGitHub && !cfg.TestMode {
-		steps = append(steps, githubPrivateReleaseAuthStep())
-	}
-
 	if inferenceMode != models.RoutingLocal {
 		cfg.SkipDownload = true
 	}
@@ -132,24 +127,6 @@ func buildSteps(baseDir string, cfg Config) []Step {
 	}
 
 	return steps
-}
-
-func githubPrivateReleaseAuthStep() Step {
-	return Step{
-		Name: "github-private-release-auth",
-		Check: func() (bool, error) {
-			report := githubauth.Check(context.Background(), githubauth.Options{})
-			return report.Status == githubauth.StatusOK, nil
-		},
-		Execute: func() error {
-			report := githubauth.Check(context.Background(), githubauth.Options{})
-			if report.Status == githubauth.StatusOK {
-				slog.Info("setup: GitHub private release auth ready", "auth_source", report.AuthSource)
-				return nil
-			}
-			return fmt.Errorf("%s — %s", report.Message, report.NextAction)
-		},
-	}
 }
 
 func configureShellPathStep(cfg Config) Step {

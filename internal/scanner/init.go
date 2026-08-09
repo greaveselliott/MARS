@@ -958,7 +958,7 @@ delivery:
     paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/design-docs/documentation-sync-architecture.md, docs/design-docs/cli-tool-skill-sync.md, docs/features/README.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
-  - when: private release auth, GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, update tool auth, release asset auth, or version-drift auth repair
+  - when: GitHub release access, optional release auth, GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, update tool auth, release asset auth, or version-drift repair
     paths: docs/design-docs/release-versioning.md, .harness/skills/github-private-release-auth/SKILL.md
   - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
     paths: docs/design-docs/skill-evolution.md, .harness/skills/self-improvement/SKILL.md
@@ -1002,35 +1002,40 @@ name: github-private-release-auth
 scope: all
 ---
 
-# GitHub Private Release Auth Skill
+# GitHub Release Access Skill
 
 Use this before update, release verification, install repair, version-drift
-remediation, or any workflow that needs private MARS GitHub Release
-assets.
+remediation, or any workflow that needs MARS GitHub Release access.
 
 ## Workflow
 
-1. Run ` + "`mars auth github check`" + ` or the ` + "`github_auth_check`" + ` tool.
-2. If auth is missing, ask the operator to run ` + "`gh auth login`" + `, then
-   ` + "`mars auth github setup`" + `.
-3. For headless installs, use ` + "`GH_TOKEN`" + `, ` + "`GITHUB_TOKEN`" + `, or
+1. Run ` + "`mars auth github check`" + ` or the ` + "`github_auth_check`" + ` tool. The check makes
+   one exact no-redirect anonymous request to the official release metadata
+   endpoint and reports ` + "`anonymous`" + `, ` + "`authenticated`" + `, or ` + "`unavailable`" + `.
+2. Continue without credentials when access is ` + "`anonymous`" + `. Only an exact 401,
+   403, or 404 from that official endpoint may resolve an optional credential
+   and retry once at the exact same origin and path.
+3. For a private fork or access that requires authentication, run
+   ` + "`gh auth login`" + `, then ` + "`mars auth github setup`" + `. Headless installs can use
+   ` + "`GH_TOKEN`" + `, ` + "`GITHUB_TOKEN`" + `, or
    ` + "`mars auth github setup --token <token>`" + ` with repository contents
    read access.
-4. Retry the blocked update or release command only after the auth check is
-   ` + "`ok`" + `.
+4. Use ` + "`mars auth github clear-local`" + ` to remove only the ` + "`github_token`" + ` stored
+   in MARS config. It does not change environment credentials, GitHub CLI auth,
+   GitHub App credentials, repositories, remotes, or remote state.
 
 ## Security Rules
 
 - Never paste token values into chat, docs, commits, traces, tickets, logs, or
   tool output.
-- Prefer GitHub CLI auth over storing a local token.
-- If local token storage is required, it belongs under ` + "`~/.mars/`" + `, never
-  in a target repository.
+- Prefer anonymous public access when it is available.
+- Store local fallback tokens only through ` + "`mars auth github setup`" + `;
+  they belong under ` + "`~/.mars/`" + `, never in a target repository.
 
 ## Stop Conditions
 
-- Stop and return a blocker when the token is rejected, SSO authorization is
-  required, or the authenticated account cannot see the private release repo.
+- Stop and return a blocker when release access is ` + "`unavailable`" + ` and the
+  required workflow cannot proceed.
 - Stop and record a release blocker when asset verification depends on missing
   credentials.
 `,
@@ -1289,7 +1294,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - For releases, use this repository's approved producer and artifact contract; MARS does not inject or select GoReleaser, another producer, or a generic release-asset verifier for target repositories. Create tag ` + "`vX.Y.Z`" + ` only at the clean release-note commit, then run the project-owned production and verification gates before advertising installer or update availability. When GitHub Releases are used, independently require the expected unique remote names, uploaded states, sizes, and SHA-256 digests to converge. Upload-process exit zero or a partial list is not completion. If production or verification is blocked, record the blocker explicitly.
-- Private MARS release access is part of getting started and version-drift repair. Run ` + "`mars auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
+- Official MARS release metadata is checked anonymously first. ` + "`mars auth github check`" + ` and the read-only ` + "`github_auth_check`" + ` tool report ` + "`anonymous`" + `, ` + "`authenticated`" + `, or ` + "`unavailable`" + `; optional credentials are resolved only after an exact 401, 403, or 404 from the exact no-redirect official endpoint. Use ` + "`mars auth github clear-local`" + ` to remove only the stored config fallback, and never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
 - Operating rules inherited from MARS apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars update harness --repo .`" + `.
 - To remove MARS from this repo, run ` + "`mars eject --repo .`" + ` for a dry-run; applying the kill switch requires ` + "`--apply --confirm <repo-name>`" + ` and removes working-tree harness artifacts plus the per-repo database without rewriting git history.
@@ -2771,7 +2776,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`code_impact`" + ` | Map changed paths or a git diff to related symbols, likely tests, docs, feature contracts, and tickets. | Non-mutating. Use before Engineer edits, QA review plans, Dogfood validation, and Release risk summaries. MarsDocSync remains documentation authority; code-intel consumes its metadata and cross-links it into impact output. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Planner roles such as CEO, Head of Strategy, COO, CTO, and CTO-weekly may use read-only shell inspection when otherwise policy-safe, but mutating shell commands are blocked so strategy, planning, ticketing, dependency, and implementation ownership cannot be bypassed. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Engineer review rework with only done or in-review product tickets must reopen the dispatch-named source-disposition ticket before validation shell commands or product mutation. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. During Engineer unresolved test/build repair, ` + "`go mod init <module>`" + ` is allowed only when the latest failure says Go cannot find a main module and no ` + "`go.mod`" + ` exists. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. HTTP probes that fail because no server is listening are validation-procedure failures, so reviewers may start the appropriate server with ` + "`background:true`" + ` and rerun a separate probe before approval. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors after the recorded process group is stopped. ` + "`background:true`" + ` requires a non-empty job ID, and cleanup signals only process groups recorded for that job with TERM, a two-second grace period, and KILL only when the owned group remains. Direct argv ` + "`kill`" + ` accepts only a complete set of same-job tracked PIDs without OS fallback; direct shell-form ` + "`kill`" + `/` + "`pkill`" + `/` + "`killall`" + ` commands, argv ` + "`pkill`" + `/` + "`killall`" + `, cross-job PIDs, and untracked PIDs are blocked. This helper policy does not contain arbitrary code already running with acknowledged-host authority. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; acknowledged-host ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading, while observer execution only reports the audit. |
-| ` + "`github_auth_check`" + ` | Check private MARS GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
+| ` + "`github_auth_check`" + ` | Classify anonymous or optional authenticated MARS GitHub Release metadata access. | Non-mutating. Makes an exact no-redirect anonymous official API request first and resolves credentials only after an exact 401, 403, or 404 for one same-URL retry. Returns ` + "`status`" + `, ` + "`access_class`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go get`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
@@ -2854,7 +2859,7 @@ validation; concrete proof belongs after the behavior has been exercised.
 
 - Need MARS behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use ` + "`mars_cli`" + `.
-- Need to verify private MARS release access before update, release
+- Need to classify MARS release access before update, release
   verification, install repair, or version-drift remediation: use
   ` + "`github_auth_check`" + ` or ` + "`mars auth github check`" + `.
 - Need to add, remove, rename, or change a ` + "`mars`" + ` CLI command or flag:
@@ -3153,23 +3158,22 @@ If the repo has no GitHub remote, no release credentials, or the GitHub mirror
 step fails, record the blocker and create or update follow-up work instead of
 claiming the mirror is complete.
 
-## Private Release Auth
+## Release Access
 
-MARS tool updates use private GitHub Release assets. Private release
-auth is a first-class getting-started step, not an ad hoc export:
+Ordinary setup does not require GitHub credentials. Check official MARS release
+metadata anonymously before workflows that depend on release access:
 
 ` + "```bash" + `
-mars auth github setup
 mars auth github check
 mars update tool
 ` + "```" + `
 
-The auth resolver tries ` + "`GH_TOKEN`" + `, then ` + "`GITHUB_TOKEN`" + `, then
-GitHub CLI auth from ` + "`gh auth token`" + `, then the local token stored under
-` + "`~/.mars/`" + `. ` + "`mars auth github setup`" + ` verifies GitHub CLI auth
-and stores that owner-only local fallback so future update runs do not depend on
-keychain access. Headless installs may set ` + "`GH_TOKEN`" + ` or use
-` + "`mars auth github setup --token <token>`" + ` with repository contents read access.
+The check makes one exact no-redirect anonymous request to the official API and
+reports ` + "`anonymous`" + `, ` + "`authenticated`" + `, or ` + "`unavailable`" + `. Only an exact 401,
+403, or 404 may resolve ` + "`GH_TOKEN`" + `, ` + "`GITHUB_TOKEN`" + `, GitHub CLI auth,
+or the local config fallback for one retry to the exact same origin and path.
+Use ` + "`mars auth github setup`" + ` only when optional authenticated access is
+needed. ` + "`mars auth github clear-local`" + ` removes only the stored config token.
 
 Never write tokens to this repo or any target repo. Never print token values in
 logs, traces, telemetry, doctor output, JSON, errors, tickets, or docs. Agents
@@ -3184,7 +3188,7 @@ repair, and version-drift remediation.
 - Do not fabricate commit references.
 - Keep release notes complete, user-facing, and explicit about impact, why, and what changed.
 - Use ` + "`mars release backfill-notes --repo . --check`" + ` when auditing historical changelog compliance.
-- Use ` + "`github_auth_check`" + ` or ` + "`mars auth github check`" + ` before any workflow that depends on private MARS release assets.
+- Use ` + "`github_auth_check`" + ` or ` + "`mars auth github check`" + ` before any workflow that depends on MARS release access.
 - Use ` + "`mars update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
 - Use ` + "`mars update harness --repo .`" + ` when generated harness-owned files need to catch up.
 `,

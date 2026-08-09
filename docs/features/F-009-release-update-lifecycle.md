@@ -25,7 +25,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 8. F-009-S008 - Generated release notes explain impact, why, and what changed before commit buckets.
 9. F-009-S009 - Historical release entries are backfilled to the current narrative standard from marker ranges.
 10. F-009-S010 - The installed CLI reports its version through the explicit command and root-level version flags.
-11. F-009-S011 - Private release auth is an optional binary-release operating model.
+11. F-009-S011 - Official release access is anonymous-first with optional private-fork auth.
 12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
 13. F-009-S013 - Repositories own their producer and remote publication never replaces artifact verification.
 14. F-009-S014 - Version tags can only be created at the release-note commit.
@@ -110,15 +110,18 @@ Given a user wants to confirm the installed MARS binary version
 When `mars version`, `mars --version`, or `mars -v` runs
 Then each entrypoint prints the same version, OS/architecture, commit, and build date line
 
-### F-009-S011: Optional Private Release Auth
+### F-009-S011: Anonymous-First Release Access
 
-Given MARS release assets live in a private GitHub Release repository
-When a user follows optional binary release setup
-Then the documented sequence includes `mars auth github setup`, `mars setup`, `mars doctor`, and `mars update tool`
-And `mars auth github check` reports `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without printing token values
+Given official MARS release metadata is public
+When a user runs ordinary `mars setup` or checks release access
+Then setup completes without a private-release-auth step or GitHub credentials
+And `mars auth github check` makes one exact, no-redirect anonymous request to the official `api.github.com` release-metadata endpoint
+And only an exact `401`, `403`, or `404` may resolve optional credentials and make one authenticated retry to the same origin and path
+And redirects, transport failures, unexpected statuses, and custom origins never receive credentials
+And the check reports access as `anonymous`, `authenticated`, or `unavailable` without printing token or credential-derived values
 And `mars auth github setup` verifies access and stores a local fallback only when auth comes from GitHub CLI or an explicit `--token`
-And `mars setup` checks private-release auth unless `--skip-github` or `--test-mode` is used
-And `mars doctor` reports private-release auth readiness with a concrete fix
+And `mars auth github clear-local` idempotently removes only the stored config `github_token` while preserving all other config fields and leaving environment variables, GitHub CLI and GitHub App credentials, repositories, and remote state unchanged
+And `mars doctor` reports anonymous, authenticated, or unavailable release access with a concrete fix
 And agents can use the read-only `github_auth_check` tool before update, release verification, install repair, or version-drift remediation
 
 ### F-009-S012: Dispatch-To-Release Review
@@ -140,8 +143,8 @@ And `shell_exec` blocks direct `mars` binary invocations with a correction that 
 
 Given a user clones the MARS source repo
 When they follow the README quick start
-Then the primary path installs with `make install`, runs `mars setup --skip-github`, verifies with `mars doctor`, initializes a target repo, and previews an agent run with `--dry-run`
-And the README describes system requirements, GPU expectations, model downloads, and disk/network prerequisites before optional binary release auth
+Then the primary path installs with `make install`, runs `mars setup`, verifies with `mars doctor`, initializes a target repo, and previews an agent run with `--dry-run`
+And the README describes system requirements, GPU expectations, model downloads, disk/network prerequisites, and anonymous-first official release access before optional private-fork auth
 And source checkout updates use `make update-tool` as the recommended command for safely fast-forwarding and reinstalling from the clone
 And release review cannot fail solely because a stale installed binary lacks a newer command surface
 

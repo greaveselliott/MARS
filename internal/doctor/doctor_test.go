@@ -11,8 +11,11 @@ package doctor
 
 import (
 	"errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/greaveselliott/mars/internal/scanner"
@@ -42,7 +45,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["database"])
 	assert.True(t, names["llama-server"])
 	assert.True(t, names["disk-space"])
-	assert.True(t, names["private-release-auth"])
+	assert.True(t, names["release-access"])
 	assert.True(t, names["version-drift"])
 	assert.True(t, names["operating-model"])
 	assert.True(t, names["deterministic-remediation"])
@@ -51,12 +54,56 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["ticket-drain"])
 }
 
-func TestCheckPrivateReleaseAuthSkipsWithSkipRemote(t *testing.T) {
+func TestCheckReleaseAccessSkipsWithSkipRemote(t *testing.T) {
 	t.Parallel()
-	result := checkPrivateReleaseAuth(Config{SkipRemote: true})
-	assert.Equal(t, "private-release-auth", result.Name)
+	result := checkReleaseAccess(Config{SkipRemote: true})
+	assert.Equal(t, "release-access", result.Name)
 	assert.Equal(t, statusOK, result.Status)
 	assert.Contains(t, result.Message, "skipped")
+}
+
+func TestCheckReleaseAccessUsesSelectedConfig(t *testing.T) {
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("MARS_GITHUB_TOKEN", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+
+	configPath := filepath.Join(t.TempDir(), "selected.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("github_token: selected-token\n"), 0o600))
+
+	previousTransport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = previousTransport })
+	requests := 0
+	http.DefaultTransport = doctorRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests++
+		require.Equal(t, "https://api.github.com/repos/greaveselliott/MARS/releases/latest", req.URL.String())
+		if requests == 1 {
+			require.Empty(t, req.Header.Get("Authorization"))
+			return doctorHTTPResponse(http.StatusNotFound), nil
+		}
+		require.Equal(t, "Bearer selected-token", req.Header.Get("Authorization"))
+		return doctorHTTPResponse(http.StatusOK), nil
+	})
+
+	result := checkReleaseAccess(Config{ConfigPath: configPath})
+	require.Equal(t, statusOK, result.Status)
+	require.Contains(t, result.Message, "authenticated")
+	require.Equal(t, 2, requests)
+}
+
+type doctorRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f doctorRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func doctorHTTPResponse(status int) *http.Response {
+	return &http.Response{
+		StatusCode: status,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader("{}")),
+	}
 }
 
 func TestCheckModelRegistryRequiresExactProvenance(t *testing.T) {

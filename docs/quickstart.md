@@ -50,7 +50,7 @@ surface beyond this quickstart.
 Run the first-time setup wizard:
 
 ```bash
-mars setup --skip-github
+mars setup
 mars doctor
 ```
 
@@ -74,7 +74,7 @@ llama_parallel: 1               # default strict-trunk single-agent setting
 llama_flash_attention: auto
 ```
 
-After changing `performance_profile`, run `mars setup --skip-github`
+After changing `performance_profile`, run `mars setup`
 once so any newly required model files are downloaded.
 
 ## Update From A Clone

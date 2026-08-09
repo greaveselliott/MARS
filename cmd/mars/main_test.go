@@ -412,24 +412,81 @@ func TestVersionEntrypointsPrintSameVersionLine(t *testing.T) {
 	}
 }
 
-func TestAuthGitHubCheckCommandReportsMissingAuthWithoutSecrets(t *testing.T) {
-	t.Setenv("GH_TOKEN", "")
-	t.Setenv("GITHUB_TOKEN", "")
-	t.Setenv("MARS_GITHUB_TOKEN", "")
+func TestAuthGitHubCheckCommandUsesAnonymousReleaseAccessWithoutSecrets(t *testing.T) {
+	t.Setenv("GH_TOKEN", "gh-token-must-not-be-read")
+	t.Setenv("GITHUB_TOKEN", "github-token-must-not-be-read")
+	t.Setenv("MARS_GITHUB_TOKEN", "config-env-token-must-not-be-read")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("PATH", t.TempDir())
+	previousTransport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = previousTransport })
+	requests := 0
+	http.DefaultTransport = mainTestRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests++
+		require.Equal(t, "https://api.github.com/repos/greaveselliott/MARS/releases/latest", req.URL.String())
+		require.Empty(t, req.Header.Get("Authorization"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"name":"public release"}`)),
+		}, nil
+	})
 
 	cmd := authGitHubCheckCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--json"})
 
-	err := cmd.Execute()
-	require.Error(t, err)
+	require.NoError(t, cmd.Execute())
+	require.Equal(t, 1, requests)
+	require.Contains(t, out.String(), `"access_class": "anonymous"`)
 	require.Contains(t, out.String(), `"auth_source": "none"`)
-	require.Contains(t, out.String(), "mars auth github setup")
 	require.NotContains(t, out.String(), "Bearer")
-	require.NotContains(t, out.String(), "ghs_")
+	require.NotContains(t, out.String(), "must-not-be-read")
+}
+
+func TestAuthGitHubClearLocalCommandTouchesOnlySelectedStoredFallback(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("GH_TOKEN", "env-gh-token")
+	t.Setenv("GITHUB_TOKEN", "env-github-token")
+	t.Setenv("MARS_GITHUB_TOKEN", "env-config-token")
+	t.Setenv("PATH", t.TempDir())
+
+	legacyPath := filepath.Join(home, ".mars-harness", "config.yaml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(legacyPath), 0o700))
+	legacyContent := []byte("github_token: legacy-token\nmodels_dir: /legacy/models\n")
+	require.NoError(t, os.WriteFile(legacyPath, legacyContent, 0o600))
+	selectedPath := filepath.Join(t.TempDir(), "selected.yaml")
+	require.NoError(t, os.WriteFile(selectedPath, []byte("github_token: selected-token\nmodels_dir: /selected/models\n"), 0o600))
+
+	cmd := authGitHubClearLocalCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--config", selectedPath, "--json"})
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), `"cleared": true`)
+	selected, err := os.ReadFile(selectedPath)
+	require.NoError(t, err)
+	require.NotContains(t, string(selected), "github_token")
+	require.NotContains(t, string(selected), "selected-token")
+	require.Contains(t, string(selected), "models_dir: /selected/models")
+	info, err := os.Stat(selectedPath)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	legacyAfter, err := os.ReadFile(legacyPath)
+	require.NoError(t, err)
+	require.Equal(t, legacyContent, legacyAfter)
+	require.Equal(t, "env-gh-token", os.Getenv("GH_TOKEN"))
+	require.Equal(t, "env-github-token", os.Getenv("GITHUB_TOKEN"))
+	require.Equal(t, "env-config-token", os.Getenv("MARS_GITHUB_TOKEN"))
+
+	second := authGitHubClearLocalCmd()
+	var secondOut bytes.Buffer
+	second.SetOut(&secondOut)
+	second.SetArgs([]string{"--config", selectedPath, "--json"})
+	require.NoError(t, second.Execute())
+	require.Contains(t, secondOut.String(), `"cleared": false`)
 }
 
 func TestMarsCLIToolReferenceTracksCommandTree(t *testing.T) {
@@ -1651,4 +1708,10 @@ func runMainTestGit(t *testing.T, dir string, args ...string) string {
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
 	return string(out)
+}
+
+type mainTestRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f mainTestRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }

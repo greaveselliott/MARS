@@ -1439,10 +1439,11 @@ func authCmd() *cobra.Command {
 func authGitHubCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "github",
-		Short: "Configure and check GitHub auth for private MARS releases",
+		Short: "Check GitHub release access and manage optional local auth",
 	}
 	cmd.AddCommand(authGitHubCheckCmd())
 	cmd.AddCommand(authGitHubSetupCmd())
+	cmd.AddCommand(authGitHubClearLocalCmd())
 	return cmd
 }
 
@@ -1453,7 +1454,7 @@ func authGitHubCheckCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "check",
-		Short: "Check GitHub auth for private MARS release assets",
+		Short: "Classify anonymous or optional authenticated GitHub release access",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			report := githubauth.Check(cmd.Context(), githubauth.Options{ConfigPath: configPath})
 			if jsonOut {
@@ -1470,6 +1471,36 @@ func authGitHubCheckCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars/config.yaml)")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func authGitHubClearLocalCmd() *cobra.Command {
+	var (
+		configPath string
+		jsonOut    bool
+	)
+	cmd := &cobra.Command{
+		Use:   "clear-local",
+		Short: "Remove only the stored GitHub token fallback from MARS config",
+		Long: `Remove only the github_token field stored in the selected MARS config.
+
+This command does not read or change environment credentials, GitHub CLI auth,
+GitHub App credentials, repository configuration, remotes, or remote state.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			report, err := githubauth.ClearLocal(githubauth.Options{ConfigPath: configPath})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(cmd.OutOrStdout(), report)
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), report.Message)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars/config.yaml, with legacy fallback when absent)")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -1542,8 +1573,9 @@ GH_TOKEN or GITHUB_TOKEN instead. Token values are never printed.`,
 }
 
 func printGitHubAuthReport(w io.Writer, report githubauth.Report) {
-	fmt.Fprintln(w, "GitHub private release auth")
+	fmt.Fprintln(w, "GitHub release access")
 	fmt.Fprintf(w, "Status: %s\n", report.Status)
+	fmt.Fprintf(w, "Access class: %s\n", report.AccessClass)
 	fmt.Fprintf(w, "Auth source: %s\n", report.AuthSource)
 	fmt.Fprintf(w, "Repo access: %s\n", report.RepoAccess)
 	fmt.Fprintf(w, "Release access: %s\n", report.ReleaseAccess)
@@ -2744,7 +2776,7 @@ func setupCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&skipDownload, "skip-download", false, "Skip model download")
 	cmd.Flags().BoolVar(&download, "download", false, "Download selected local model bundle artifacts")
-	cmd.Flags().BoolVar(&skipGitHub, "skip-github", false, "Skip GitHub private release auth and optional GitHub integration checks")
+	cmd.Flags().BoolVar(&skipGitHub, "skip-github", false, "Skip optional GitHub integration checks")
 	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing")

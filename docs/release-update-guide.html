@@ -211,19 +211,19 @@ git -C ~/my-project diff</code></pre>
         <section class="doc-section" id="auth">
           <h2>Release Auth</h2>
           <p>
-            Private release auth can grant read access for an approved signed
-            packaged update and optional repository integration. It does not
-            authorize publication or prove artifact authenticity. Normal source
-            checkout install can use <code>mars setup --skip-github</code>. For the full
+            Official release metadata is anonymous-first. Ordinary source
+            checkout install uses <code>mars setup</code> without GitHub
+            credentials. Optional auth can grant access for private forks or a
+            GitHub rate-limit fallback. It does not authorize publication or
+            prove artifact authenticity. For the full
             credential map, open the
             <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.
           </p>
           <div class="workflow-list">
             <article data-doc-filter>
-              <h3>Recommended interactive setup</h3>
-              <pre><code>gh auth login
-mars auth github setup
-mars auth github check</code></pre>
+              <h3>Ordinary public check</h3>
+              <pre><code>mars auth github check --json</code></pre>
+              <p>The command makes one exact, no-redirect anonymous request to the official <code>api.github.com</code> release-metadata endpoint. Only an exact <code>401</code>, <code>403</code>, or <code>404</code> may resolve credentials and retry the same origin and path once.</p>
             </article>
             <article data-doc-filter>
               <h3>Headless setup</h3>
@@ -236,7 +236,13 @@ mars auth github check --json</code></pre>
               <pre><code>mars auth github setup --token "$GH_TOKEN"</code></pre>
               <p>Prefer GitHub CLI auth when possible. The local fallback belongs under <code>~/.mars/</code>, never in a repo.</p>
             </article>
+            <article data-doc-filter>
+              <h3>Remove only the local fallback</h3>
+              <pre><code>mars auth github clear-local</code></pre>
+              <p>This leaves environment variables, GitHub CLI and GitHub App credentials, repositories, and remote state unchanged.</p>
+            </article>
           </div>
+          <p>The check reports <code>anonymous</code>, <code>authenticated</code>, or <code>unavailable</code> without revealing credential-derived information.</p>
         </section>
 
         <section class="doc-section" id="release-notes">

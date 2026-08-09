@@ -37,7 +37,7 @@ func TestMarsCLI_reference(t *testing.T) {
 	require.Contains(t, res.Output, "mars_cli reference")
 	for _, command := range []string{
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
-		"scan", "doctor", "auth github check", "auth github setup", "update check", "update tool", "update harness",
+		"scan", "doctor", "auth github check", "auth github setup", "auth github clear-local", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release backfill-notes", "checks run", "scores", "scores export",
 		"telemetry status", "telemetry preview", "telemetry export", "telemetry send", "telemetry collect", "telemetry triage-foundation",
 		"docsync audit", "trust", "trust set", "models evaluate", "models eligible", "models list", "models override", "models credentials write-local-env", "guardrails secret-scan", "guardrails install-hooks",

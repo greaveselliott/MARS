@@ -96,7 +96,7 @@ docs:
             <table>
               <thead><tr><th>Path</th><th>Scope</th><th>Purpose</th><th>Commit?</th></tr></thead>
               <tbody>
-                <tr><td><code>~/.mars/config.yaml</code></td><td>Machine</td><td>Local runtime preferences, setup state, installed paths, and private release auth fallback.</td><td>No</td></tr>
+                <tr><td><code>~/.mars/config.yaml</code></td><td>Machine</td><td>Local runtime preferences, setup state, installed paths, and optional GitHub auth fallback.</td><td>No</td></tr>
                 <tr><td><code>~/.mars/models/</code></td><td>Machine</td><td>Downloaded GGUF model files and local inference assets.</td><td>No</td></tr>
                 <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td>Machine per target</td><td>Default repo-scoped queue, telemetry, scoring, registry, and job state.</td><td>No</td></tr>
                 <tr><td><code>~/.mars-harness/db/mars.db</code></td><td>Machine shared</td><td>Legacy shared default used by <code>mars serve</code> unless <code>--db</code> is set.</td><td>No</td></tr>
@@ -122,17 +122,17 @@ docs:
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Initialize or repair local setup</h3>
-              <pre><code>mars setup --skip-github
+              <pre><code>mars setup
 mars setup --download
 mars doctor --json
 mars path setup</code></pre>
               <p><code>setup</code> detects hardware, writes config, installs llama-server assets, downloads eligible models, and can configure shell PATH. Use the <a href="shell-integration-reference.html">Shell Integration Reference</a> for profile targets, reload hints, and completion scripts.</p>
             </article>
             <article data-doc-filter>
-              <h3>Release auth</h3>
+              <h3>Release access</h3>
               <pre><code>mars auth github check
-mars auth github setup</code></pre>
-              <p>Resolver order is <code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub CLI auth, then optional local config. Token values must never appear in docs, chat, commits, logs, traces, or command output.</p>
+mars auth github clear-local</code></pre>
+              <p>The official release-metadata check is anonymous-first and reports <code>anonymous</code>, <code>authenticated</code>, or <code>unavailable</code>. Only an exact official <code>401</code>, <code>403</code>, or <code>404</code> may resolve optional credentials and retry the same origin and path once. <code>clear-local</code> removes only the stored config <code>github_token</code>, leaving environment, GitHub CLI and GitHub App credentials, repositories, and remote state unchanged.</p>
             </article>
             <article data-doc-filter>
               <h3>Explicit database path</h3>
@@ -478,7 +478,7 @@ Use this when a repeated failure suggests the harness should improve itself.</co
             <table>
               <thead><tr><th>Need</th><th>Use</th><th>Do not use</th></tr></thead>
               <tbody>
-                <tr><td>GitHub release auth</td><td><code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub CLI auth, or owner-only local config.</td><td>Committed tokens, ticket text, chat, logs, or traces.</td></tr>
+                <tr><td>Optional GitHub release auth</td><td><code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub CLI auth, or owner-only local config for private forks or rate-limit fallback.</td><td>Committed tokens, ticket text, chat, logs, or traces.</td></tr>
                 <tr><td>Cloud model key</td><td><code>api_key_env</code> plus process environment or ignored <code>.harness/.env.local</code>.</td><td>Raw API keys in <code>model-overrides.yaml</code>.</td></tr>
                 <tr><td>JIRA auth</td><td>Env var names such as <code>JIRA_EMAIL</code>, <code>JIRA_API_TOKEN</code>, and <code>JIRA_BEARER_TOKEN</code>.</td><td>Committed auth values or broad unscoped JQL.</td></tr>
                 <tr><td>Tenant-specific IDs</td><td>Env var indirection for cloud ID, board ID, field IDs, and workspace URLs.</td><td>Hardcoded instance-specific constants in Go or generated defaults.</td></tr>

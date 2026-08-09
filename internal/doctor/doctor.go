@@ -81,7 +81,7 @@ func Run(cfg Config) []CheckResult {
 		checkDBAccessible,
 		checkLlamaServer,
 		checkDiskSpace,
-		checkPrivateReleaseAuth,
+		checkReleaseAccess,
 		checkVersionDrift,
 		checkOperatingModelHealth,
 		checkDeterministicRemediationHealth,
@@ -108,25 +108,25 @@ func Run(cfg Config) []CheckResult {
 	return results
 }
 
-func checkPrivateReleaseAuth(cfg Config) CheckResult {
+func checkReleaseAccess(cfg Config) CheckResult {
 	start := time.Now()
-	name := "private-release-auth"
+	name := "release-access"
 	if cfg.SkipRemote {
 		return CheckResult{
 			Name:     name,
 			Status:   statusOK,
-			Message:  "remote private release auth check skipped",
+			Message:  "remote release access check skipped",
 			Duration: nonZeroDurationSince(start),
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	report := githubauth.Check(ctx, githubauth.Options{})
+	report := githubauth.Check(ctx, githubauth.Options{ConfigPath: cfg.ConfigPath})
 	if report.Status == githubauth.StatusOK {
 		return CheckResult{
 			Name:     name,
 			Status:   statusOK,
-			Message:  fmt.Sprintf("%s via %s", report.Message, report.AuthSource),
+			Message:  fmt.Sprintf("%s (%s)", report.Message, report.AccessClass),
 			Duration: nonZeroDurationSince(start),
 		}
 	}

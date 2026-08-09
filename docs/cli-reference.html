@@ -89,10 +89,10 @@ docs:
               surface for setup, target harness lifecycle, agent execution,
               dashboard operation, model routing, tools, trust, telemetry,
               checks, documentation sync, validation, and releases.
-              For install, PATH, private release auth, setup flags, and doctor
+              For install, PATH, anonymous-first release access, optional private-fork auth, setup flags, and doctor
               interpretation, open the
               <a href="install-setup-reference.html">Install And Setup Reference</a>.
-              For private release auth, model provider keys, and integration
+              For release access, optional credentials, model provider keys, and integration
               credential boundaries, open the
               <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.
               For shell profile targets, command-cache repair, and completions,
@@ -138,7 +138,7 @@ docs:
                 First-time machine preparation. It creates <code>~/.mars/</code>,
                 writes config, detects hardware, installs llama.cpp server
                 artifacts, downloads local model bundles when requested, and
-                can check optional GitHub release auth.
+                leaves optional GitHub release credentials separate from ordinary setup.
               </p>
               <dl>
                 <dt>Common flags</dt>
@@ -146,7 +146,7 @@ docs:
                 <dt>Use when</dt>
                 <dd>You are installing MARS on a machine, changing local bundle profile, or repairing missing model/server state.</dd>
                 <dt>Example</dt>
-                <dd><pre><code>mars setup --skip-github
+                <dd><pre><code>mars setup
 mars setup --inference local --local-bundle auto --download --yes --json</code></pre></dd>
               </dl>
             </article>
@@ -169,12 +169,17 @@ mars path setup --install-dir /usr/local/bin --dry-run</code></pre></dd>
               </dl>
             </article>
             <article data-doc-filter>
-              <h3><code>mars auth github check</code> and <code>setup</code></h3>
+              <h3><code>mars auth github check</code>, <code>setup</code>, and <code>clear-local</code></h3>
               <p>
-                Verifies or stores private GitHub Release auth used by binary
-                update and optional release mirror checks. Token resolution
-                checks <code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub
-                CLI auth, then owner-only local config. See the
+                <code>check</code> first makes one exact, no-redirect anonymous
+                request to the official <code>api.github.com</code>
+                release-metadata endpoint. Only an exact <code>401</code>,
+                <code>403</code>, or <code>404</code> may resolve optional
+                credentials and retry the same origin and path once. It reports
+                <code>anonymous</code>, <code>authenticated</code>, or
+                <code>unavailable</code> without disclosing credentials.
+                <code>setup</code> can persist optional auth for private forks or
+                rate-limit fallback. See the
                 <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>
                 for how this differs from model provider credentials.
               </p>
@@ -182,11 +187,10 @@ mars path setup --install-dir /usr/local/bin --dry-run</code></pre></dd>
                 <dt>Flags</dt>
                 <dd><code>--config</code>, <code>--token</code> on setup, <code>--json</code>.</dd>
                 <dt>Security</dt>
-                <dd>Token values must not be committed, printed in logs, pasted in chat, or written to target repositories.</dd>
+                <dd><code>clear-local</code> removes only the stored config <code>github_token</code>. It never changes environment variables, GitHub CLI or GitHub App credentials, repositories, or remote state.</dd>
                 <dt>Example</dt>
-                <dd><pre><code>gh auth login
-mars auth github setup
-mars auth github check --json</code></pre></dd>
+                <dd><pre><code>mars auth github check --json
+mars auth github clear-local</code></pre></dd>
               </dl>
             </article>
             <article data-doc-filter>
@@ -357,7 +361,7 @@ mars serve --addr 127.0.0.1:9091 --concurrency 2 --execution-profile host --ackn
             <table>
               <thead><tr><th>Command</th><th>User purpose</th><th>Important options</th></tr></thead>
               <tbody>
-                <tr><td><code>mars doctor</code></td><td>Checks Go, config, model registry, models directory, database, llama-server, disk space, private release auth, guardrails, workflow health, mirrored operating-model health, and update drift.</td><td><code>--repo</code>, <code>--db</code>, <code>--config</code>, <code>--skip-remote</code>, <code>--json</code>.</td></tr>
+                <tr><td><code>mars doctor</code></td><td>Checks Go, config, model registry, models directory, database, llama-server, disk space, anonymous or optional authenticated release access, guardrails, workflow health, mirrored operating-model health, and update drift.</td><td><code>--repo</code>, <code>--db</code>, <code>--config</code>, <code>--skip-remote</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars checks run</code></td><td>Runs a local check and records whether it passed or failed.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
                 <tr><td><code>mars guardrails secret-scan</code></td><td>Scans repository files for common secret patterns. See the <a href="guardrails-reference.html">Guardrails Reference</a>.</td><td><code>--repo</code>, <code>--staged</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars guardrails install-hooks</code></td><td>Installs optional git hooks for local guardrail checks. See the <a href="guardrails-reference.html">Guardrails Reference</a>.</td><td><code>--repo</code>, <code>--json</code>.</td></tr>

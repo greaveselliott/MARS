@@ -158,18 +158,17 @@ mars path setup</code></pre>
           <h2>Prepare Local Inference</h2>
           <div class="workflow-list">
             <article data-doc-filter>
-              <h3>Source checkout path</h3>
-              <pre><code>mars setup --skip-github
+              <h3>Ordinary setup</h3>
+              <pre><code>mars setup
 mars doctor</code></pre>
-              <p>Use this when you are installing from source and do not need private release update auth yet.</p>
+              <p>Official release access is anonymous-first, so ordinary setup does not require GitHub credentials.</p>
             </article>
             <article data-doc-filter>
-              <h3>Binary update path</h3>
+              <h3>Optional private-fork or rate-limit auth</h3>
               <pre><code>gh auth login
 mars auth github setup
-mars setup
 mars auth github check</code></pre>
-              <p>Use this when you want <code>mars update tool</code> to read private GitHub Release assets.</p>
+              <p>Use optional credentials only when a private fork or GitHub rate limit requires them.</p>
             </article>
             <article data-doc-filter>
               <h3>Dry setup path</h3>
@@ -426,11 +425,11 @@ mars version</code></pre>
               <tbody>
                 <tr><td><code>mars</code> is not found</td><td>Current shell has not loaded the Go bin PATH.</td><td>Rerun <code>make install</code> or run <code>mars path setup</code> from a shell that can find the binary, then open a new terminal. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td></tr>
                 <tr><td><code>mars version</code> shows an old binary</td><td>The shell command cache points at an older path.</td><td><code>hash -r</code>, then <code>which mars</code>.</td></tr>
-                <tr><td>Setup cannot download models</td><td>Network, disk, or release auth problem.</td><td><code>mars setup --dry-run</code> and <code>mars doctor</code>.</td></tr>
-                <tr><td>Model preflight fails</td><td>The active profile requires a missing local model file.</td><td>Run <code>mars setup --skip-github</code>, or bypass local inference with <code>mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code> or <code>mars run engineer --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code>.</td></tr>
+                <tr><td>Setup cannot download models</td><td>Network, disk, or model-artifact availability problem.</td><td><code>mars setup --dry-run</code> and <code>mars doctor</code>.</td></tr>
+                <tr><td>Model preflight fails</td><td>The active profile requires a missing local model file.</td><td>Run <code>mars setup</code>, or bypass local inference with <code>mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code> or <code>mars run engineer --repo ~/my-project --model-endpoint http://127.0.0.1:8080/v1</code>.</td></tr>
                 <tr><td>A target repo changed unexpectedly</td><td>A command ran with acknowledged host authority.</td><td>Use <code>git status</code>; keep the default observer profile for future inspection and initialize deliberately.</td></tr>
                 <tr><td>Dashboard port is unavailable</td><td>Another process owns the default port.</td><td>Run with an explicit literal-loopback address such as <code>--addr 127.0.0.1:9091</code> or stop the other process.</td></tr>
-                <tr><td>Release updater cannot authenticate</td><td>No GitHub token source is configured.</td><td><code>gh auth login</code>, then <code>mars auth github check</code>.</td></tr>
+                <tr><td>Release access is unavailable</td><td>The anonymous official metadata request failed, or optional credentials were not accepted after an exact access denial.</td><td>Run <code>mars auth github check --json</code>; configure credentials only for a private fork or rate-limit fallback.</td></tr>
               </tbody>
             </table>
           </div>

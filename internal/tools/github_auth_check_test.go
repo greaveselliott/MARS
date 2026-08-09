@@ -11,28 +11,43 @@ package tools
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestGithubAuthCheck_reportsMissingAuthWithoutSecrets(t *testing.T) {
-	t.Setenv("GH_TOKEN", "")
-	t.Setenv("GITHUB_TOKEN", "")
-	t.Setenv("MARS_GITHUB_TOKEN", "")
+func TestGithubAuthCheckReportsAnonymousAccessWithoutResolvingSecrets(t *testing.T) {
+	t.Setenv("GH_TOKEN", "gh-secret-must-not-be-read")
+	t.Setenv("GITHUB_TOKEN", "github-secret-must-not-be-read")
+	t.Setenv("MARS_GITHUB_TOKEN", "config-secret-must-not-be-read")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("PATH", t.TempDir())
+	previousTransport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = previousTransport })
+	requests := 0
+	http.DefaultTransport = githubAuthToolRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests++
+		require.Empty(t, req.Header.Get("Authorization"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"name":"public release"}`)),
+		}, nil
+	})
 
 	root, err := NewRoot(t.TempDir())
 	require.NoError(t, err)
 	res, err := handleGithubAuthCheck(context.Background(), root, []byte(`{}`))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "private release auth is not configured")
-	require.Contains(t, res.Output, `"status": "fail"`)
+	require.NoError(t, err)
+	require.Equal(t, 1, requests)
+	require.Contains(t, res.Output, `"status": "ok"`)
+	require.Contains(t, res.Output, `"access_class": "anonymous"`)
 	require.Contains(t, res.Output, `"auth_source": "none"`)
-	require.Contains(t, res.Output, "mars auth github setup")
 	require.NotContains(t, res.Output, "Bearer")
-	require.NotContains(t, res.Output, "ghs_")
+	require.NotContains(t, res.Output, "must-not-be-read")
 }
 
 func TestDefaultRegistry_includesGithubAuthCheck(t *testing.T) {
@@ -40,4 +55,10 @@ func TestDefaultRegistry_includesGithubAuthCheck(t *testing.T) {
 	reg, err := DefaultRegistry()
 	require.NoError(t, err)
 	require.Contains(t, reg.Names(), "github_auth_check")
+}
+
+type githubAuthToolRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f githubAuthToolRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }

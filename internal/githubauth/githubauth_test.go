@@ -10,6 +10,8 @@ package githubauth
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -83,7 +85,129 @@ func TestResolveTokenLoadsConfiguredLocalToken(t *testing.T) {
 	require.Equal(t, "local-token", got.Token.Value)
 }
 
-func TestCheckDistinguishesAuthFailures(t *testing.T) {
+func TestCheckUsesAnonymousFirstAndRetriesOnlyExactOfficialDenials(t *testing.T) {
+	for _, denied := range []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound} {
+		t.Run(http.StatusText(denied), func(t *testing.T) {
+			requestCount := 0
+			resolverCalls := 0
+			client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				requestCount++
+				if requestCount == 1 {
+					require.Empty(t, req.Header.Get("Authorization"))
+					return githubAuthResponse(denied, "private response body"), nil
+				}
+				require.Equal(t, ReleaseAPIURL(""), req.URL.String())
+				require.Equal(t, "Bearer optional-token", req.Header.Get("Authorization"))
+				return githubAuthResponse(http.StatusOK, "authenticated response body"), nil
+			})}
+
+			report := Check(context.Background(), Options{
+				Env: func(string) string { return "" },
+				GHAuthToken: func(context.Context) (string, error) {
+					resolverCalls++
+					return "optional-token", nil
+				},
+				HTTPClient: client,
+			})
+
+			require.Equal(t, StatusOK, report.Status)
+			require.Equal(t, AccessAuthenticated, report.AccessClass)
+			require.Equal(t, SourceGHCLI, report.AuthSource)
+			require.Equal(t, 2, requestCount)
+			require.Equal(t, 1, resolverCalls)
+			require.NotContains(t, report.Message, "optional-token")
+			require.NotContains(t, report.Message, "response body")
+		})
+	}
+}
+
+func TestCheckAnonymousSuccessNeverResolvesCredentials(t *testing.T) {
+	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		require.Equal(t, ReleaseAPIURL(""), req.URL.String())
+		require.Empty(t, req.Header.Get("Authorization"))
+		return githubAuthResponse(http.StatusOK, "ignored response body"), nil
+	})}
+	report := Check(context.Background(), Options{
+		Env: func(string) string { return "env-token" },
+		GHAuthToken: func(context.Context) (string, error) {
+			t.Fatal("anonymous success resolved GitHub CLI credentials")
+			return "", nil
+		},
+		HTTPClient: client,
+	})
+	require.Equal(t, AccessAnonymous, report.AccessClass)
+	require.Equal(t, SourceNone, report.AuthSource)
+}
+
+func TestCheckNeverResolvesCredentialsForTransportRedirectUnexpectedOrCustomOrigin(t *testing.T) {
+	tests := []struct {
+		name       string
+		releaseURL string
+		response   func(*http.Request) (*http.Response, error)
+	}{
+		{
+			name: "transport failure",
+			response: func(*http.Request) (*http.Response, error) {
+				return nil, errors.New("transport detail optional-token private-path")
+			},
+		},
+		{
+			name: "redirect",
+			response: func(*http.Request) (*http.Response, error) {
+				resp := githubAuthResponse(http.StatusFound, "redirect body optional-token")
+				resp.Header.Set("Location", "https://credentials.example.test/private")
+				return resp, nil
+			},
+		},
+		{
+			name: "unexpected status",
+			response: func(*http.Request) (*http.Response, error) {
+				return githubAuthResponse(http.StatusTooManyRequests, "rate limit body optional-token"), nil
+			},
+		},
+		{
+			name:       "custom origin denial",
+			releaseURL: "https://metadata.example.test/private/releases/latest",
+			response: func(*http.Request) (*http.Response, error) {
+				return githubAuthResponse(http.StatusNotFound, "custom private body optional-token"), nil
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
+			resolverCalls := 0
+			client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				requestCount++
+				require.Empty(t, req.Header.Get("Authorization"))
+				return tt.response(req)
+			})}
+			report := Check(context.Background(), Options{
+				ReleaseURL: tt.releaseURL,
+				Env:        func(string) string { return "optional-token" },
+				GHAuthToken: func(context.Context) (string, error) {
+					resolverCalls++
+					return "optional-token", nil
+				},
+				HTTPClient: client,
+			})
+			require.Equal(t, AccessUnavailable, report.AccessClass)
+			require.Equal(t, SourceNone, report.AuthSource)
+			require.Equal(t, 1, requestCount)
+			require.Zero(t, resolverCalls)
+			encoded, err := json.Marshal(report)
+			require.NoError(t, err)
+			for _, forbidden := range []string{"optional-token", "private-path", "response body", "redirect body", "rate limit body", "custom private body", tt.releaseURL} {
+				if forbidden != "" {
+					require.NotContains(t, string(encoded), forbidden)
+				}
+			}
+		})
+	}
+}
+
+func TestAuthenticatedSetupDistinguishesAuthFailures(t *testing.T) {
 	tests := []struct {
 		name        string
 		statusCode  int
@@ -110,13 +234,10 @@ func TestCheckDistinguishesAuthFailures(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader(`{}`)),
 				}, nil
 			})}
-			report := Check(context.Background(), Options{
-				Env:          func(string) string { return "" },
-				DisableGHCLI: true,
-				ConfigToken:  "token",
-				HTTPClient:   client,
-				ReleaseURL:   "https://api.example.test/repos/private/project/releases/latest",
-			})
+			report := checkToken(context.Background(), Options{
+				HTTPClient: client,
+				ReleaseURL: "https://api.example.test/repos/private/project/releases/latest",
+			}, Token{Value: "token", Source: SourceConfig})
 			require.Equal(t, tt.wantStatus, report.Status)
 			require.Contains(t, report.Message, tt.wantMessage)
 			if tt.wantNext != "" {
@@ -135,12 +256,25 @@ func TestCheckWithoutTokenReturnsSetupGuidance(t *testing.T) {
 	report := Check(context.Background(), Options{
 		Env:          func(string) string { return "" },
 		DisableGHCLI: true,
+		HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			return githubAuthResponse(http.StatusNotFound, "private response"), nil
+		})},
 	})
 
 	require.Equal(t, StatusFail, report.Status)
+	require.Equal(t, AccessUnavailable, report.AccessClass)
 	require.Equal(t, SourceNone, report.AuthSource)
 	require.Contains(t, report.NextAction, "mars auth github setup")
 	require.NotContains(t, report.Message, "GH_TOKEN=")
+}
+
+func githubAuthResponse(statusCode int, body string) *http.Response {
+	return &http.Response{
+		StatusCode: statusCode,
+		Status:     http.StatusText(statusCode),
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
 }
 
 func TestSetupPersistsGHCLIFallbackAfterSuccessfulCheck(t *testing.T) {

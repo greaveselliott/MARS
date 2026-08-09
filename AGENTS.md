@@ -203,21 +203,25 @@ MARS is controllable by any AI agent via CLI commands. These are the core operat
 
 ### 1. Setup
 
-First-time install: private release auth, hardware detection, llama-server binary, model download.
+First-time install: hardware detection, llama-server binary, and model download.
 
 ```bash
-mars auth github setup
 mars setup
 ```
 
 Flags: `--skip-download`, `--skip-github`, `--github`, `--test-mode`, `--dry-run`
 
-Private release auth is part of Getting Started because `update tool` reads
-private GitHub Release assets. The resolver tries `GH_TOKEN`, `GITHUB_TOKEN`,
-GitHub CLI auth from `gh auth token`, then the optional local config token. Use
-`mars auth github check` or the `github_auth_check` tool before update,
-release verification, install repair, or version-drift remediation. Never paste
-token values into chat, docs, commits, traces, tickets, logs, or tool output.
+Ordinary setup does not require GitHub credentials. `mars auth github check`
+first makes one exact, no-redirect anonymous request to the official
+`api.github.com` release-metadata endpoint. Only an exact `401`, `403`, or
+`404` response may resolve optional credentials and retry the same origin and
+path once; the result is classified as `anonymous`, `authenticated`, or
+`unavailable` without revealing credentials. Private forks and rate-limit
+fallbacks may still use `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, or the
+optional local config token. `mars auth github clear-local` removes only that
+stored `github_token`; it does not alter environment variables, GitHub CLI or
+GitHub App credentials, repositories, or remote state. Never paste token values
+into chat, docs, commits, traces, tickets, logs, or tool output.
 
 ### 2. Serve
 

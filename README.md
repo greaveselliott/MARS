@@ -125,7 +125,7 @@ cd MARS
 make install
 
 # Download local inference assets and verify the machine.
-mars setup --skip-github
+mars setup
 mars doctor
 
 # Bootstrap and run a target repository.
@@ -327,7 +327,7 @@ safety, or orchestration changes do. See
   install, local setup, target initialization, safe inspection, dashboard
   checks, update paths, and troubleshooting.
 - [docs/install-setup-reference.html](docs/install-setup-reference.html):
-  source install, shell PATH setup, `mars setup`, GitHub private-release auth,
+  source install, shell PATH setup, `mars setup`, GitHub release access,
   inference modes, local bundles, machine state, automation, `doctor`, and
   first-run troubleshooting.
 - [docs/shell-integration-reference.html](docs/shell-integration-reference.html):
@@ -335,7 +335,7 @@ safety, or orchestration changes do. See
   PowerShell completions, automation recipes, and shell-specific
   troubleshooting.
 - [docs/auth-credentials-reference.html](docs/auth-credentials-reference.html):
-  private release auth, model provider credentials, integration env-var names,
+  anonymous-first release access, optional private-fork auth, model provider credentials, integration env-var names,
   local secret storage, secret scanning, and credential troubleshooting.
 - [docs/cli-reference.html](docs/cli-reference.html): detailed CLI command
   reference.
@@ -381,7 +381,7 @@ safety, or orchestration changes do. See
   metrics, evidence workflows, and privacy boundaries.
 - [docs/troubleshooting-guide.html](docs/troubleshooting-guide.html): symptom
   driven recovery for install, setup, models, harness config, agent runs,
-  dashboard ports, git state, release auth, integrations, and DocSync.
+  dashboard ports, git state, release access, optional auth, integrations, and DocSync.
 - [docs/safety-quality-guide.html](docs/safety-quality-guide.html):
   guardrails, secret scanning, blast radius, trust, scores, quality export,
   and telemetry.

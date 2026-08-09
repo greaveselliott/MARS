@@ -413,8 +413,8 @@ Global command surface:
     Example: ["version"]
 
   setup
-    First-time install: config, shell PATH, hardware detection, optional GitHub setup, model/binary download.
-    Flags: --inference <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --download, --yes, --json, --plain, --skip-download, --github, --test-mode, --dry-run, --install-dir <dir>
+    First-time install: config, shell PATH, hardware detection, and model/binary download. Ordinary setup does not require or check GitHub credentials; GitHub integration is an explicit opt-in.
+    Flags: --inference <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --download, --yes, --json, --plain, --skip-download, --skip-github, --github, --test-mode, --dry-run, --install-dir <dir>
     Example: ["setup", "--inference", "local", "--local-bundle", "auto", "--download", "--yes", "--json"]
 
   init
@@ -486,22 +486,32 @@ Global command surface:
     Example: ["code-intel", "benchmark", "--repo", ".", "--trials", "1", "--changed-paths", "internal/app/app.go"]
 
   doctor
-    Diagnose config, models, database, private release auth, repo, and operating-model health.
+    Diagnose config, models, database, public release access, repo, and operating-model health.
     Flags: --config <path>, --db <path>, --repo <path>, --skip-remote, --json
     Example: ["doctor", "--repo", ".", "--json"]
 
   auth github check
-    Check whether private MARS GitHub Release auth is ready without
-    printing token values.
+    Classify official GitHub release metadata access as anonymous,
+    authenticated, or unavailable without printing token values. The exact
+    official endpoint is probed anonymously without redirects first. Only an
+    exact 401, 403, or 404 can resolve optional credentials for one retry to
+    the exact same origin and path.
     Flags: --config <path>, --json
     Example: ["auth", "github", "check", "--json"]
 
   auth github setup
-    Prepare private release auth for update tool. Prefer gh auth login, then
-    run this command; setup saves a verified GitHub CLI fallback under
-    ~/.mars. Headless installs may pass --token.
+    Optionally prepare authenticated release access for private forks or
+    rate-limited access. Prefer gh auth login; this command can save a
+    verified GitHub CLI fallback under ~/.mars. Headless installs may pass --token.
     Flags: --config <path>, --token <token>, --json
     Example: ["auth", "github", "setup"]
+
+  auth github clear-local
+    Remove only the github_token field stored in the selected MARS config.
+    Environment credentials, GitHub CLI auth, GitHub App credentials,
+    repositories, remotes, and remote state are not read or changed.
+    Flags: --config <path>, --json
+    Example: ["auth", "github", "clear-local", "--json"]
 
   tools list
     List every registered built-in tool. This is the universal tool catalog for
@@ -529,9 +539,9 @@ Global command surface:
     Example: ["update", "check", "--repo", ".", "--json"]
 
   update tool
-    Reinstall or upgrade the installed mars binary. Private release
-    auth is checked with GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, then local
-    config; run auth github setup when access is missing.
+    Reinstall or upgrade the installed mars binary from its verified signed
+    release bundle. Optional credentials remain available for private forks
+    or access that requires authentication.
     Flags: --version <latest|tag|branch>, --install-dir <dir>, --source, --dry-run, --json
     Example: ["update", "tool", "--dry-run", "--json"]
 

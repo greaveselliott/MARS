@@ -26,7 +26,7 @@ docs:
     <title>MARS Install And Setup Reference</title>
     <meta
       name="description"
-      content="Detailed user reference for installing MARS, running setup, configuring shell PATH, preparing GitHub private release auth, choosing inference mode and local bundles, understanding ~/.mars state, and diagnosing first-run issues."
+      content="Detailed user reference for installing MARS, running setup, configuring shell PATH, checking anonymous-first GitHub release access, choosing inference mode and local bundles, understanding ~/.mars state, and diagnosing first-run issues."
     >
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="site.css">
@@ -178,7 +178,7 @@ mars path setup --dry-run --json</code></pre>
             is already satisfied before running. A dry run increments skipped
             steps and prints the setup plan without changing local state.
           </p>
-          <pre data-doc-filter><code>mars setup --skip-github
+          <pre data-doc-filter><code>mars setup
 mars setup --inference local --local-bundle auto --yes --json
 mars setup --dry-run</code></pre>
           <div class="wide-table" data-doc-filter>
@@ -189,7 +189,6 @@ mars setup --dry-run</code></pre>
                 <tr><td>Write default config</td><td>When config is missing or needs defaults.</td><td><code>~/.mars/config.yaml</code>.</td></tr>
                 <tr><td>Detect hardware</td><td>During setup.</td><td>Hardware profile metadata in local config/state.</td></tr>
                 <tr><td>Configure shell path</td><td>When profile is not already configured.</td><td>User shell profile snippet.</td></tr>
-                <tr><td>Check private release auth</td><td>Unless <code>--skip-github</code> or <code>--test-mode</code> is used.</td><td>No token output; may require auth setup first.</td></tr>
                 <tr><td>Install llama-server</td><td>For local inference unless downloads are skipped/tested away.</td><td><code>~/.mars/bin/</code>.</td></tr>
                 <tr><td>Download models</td><td>For local inference unless <code>--skip-download</code>, <code>--test-mode</code>, or non-local inference is used.</td><td><code>~/.mars/models/</code>.</td></tr>
                 <tr><td>Optional GitHub integration placeholder</td><td>Only with <code>--github</code> and GitHub checks enabled.</td><td>Local setup metadata.</td></tr>
@@ -200,7 +199,7 @@ mars setup --dry-run</code></pre>
             <table>
               <thead><tr><th>Flag</th><th>User behavior</th></tr></thead>
               <tbody>
-                <tr><td><code>--skip-github</code></td><td>Skip private-release auth and optional GitHub integration checks. Common for source checkout installs.</td></tr>
+                <tr><td><code>--skip-github</code></td><td>Skip optional GitHub integration checks. Official release access is already separate from ordinary setup.</td></tr>
                 <tr><td><code>--github</code></td><td>Opt into optional GitHub status/check integration setup.</td></tr>
                 <tr><td><code>--skip-download</code></td><td>Skip llama-server and model download steps. Use only when compatible artifacts already exist or inference is deferred/cloud.</td></tr>
                 <tr><td><code>--download</code></td><td>Accepted as explicit setup intent; local inference already downloads unless skipped.</td></tr>
@@ -214,23 +213,24 @@ mars setup --dry-run</code></pre>
         </section>
 
         <section class="doc-section" id="github-auth">
-          <h2>GitHub Private Release Auth</h2>
+          <h2>GitHub Release Access</h2>
           <p>
-            Private release auth is used by update and release asset flows. The
-            resolver checks <code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>,
-            GitHub CLI auth, then the optional owner-only local config token.
-            Token values must never be pasted into chat, docs, commits, logs,
-            traces, or screenshots. For the full credential map, provider keys,
+            <code>mars auth github check</code> first makes one exact,
+            no-redirect anonymous request to the official
+            <code>api.github.com</code> release-metadata endpoint. Only an exact
+            <code>401</code>, <code>403</code>, or <code>404</code> may resolve
+            optional credentials and retry the same origin and path once. The
+            result is <code>anonymous</code>, <code>authenticated</code>, or
+            <code>unavailable</code>. Optional auth remains available for
+            private forks and rate-limit fallback. For the full credential map, provider keys,
             integration env-var names, and secret-scanning recipes, open the
             <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.
           </p>
           <div class="workflow-list">
             <article data-doc-filter>
-              <h3>Recommended interactive path</h3>
-              <pre><code>gh auth login
-mars auth github setup
-mars auth github check</code></pre>
-              <p>Setup verifies GitHub CLI auth and stores an owner-only local fallback for future update runs.</p>
+              <h3>Ordinary public check</h3>
+              <pre><code>mars auth github check --json</code></pre>
+              <p>No credentials are resolved unless the exact official endpoint returns <code>401</code>, <code>403</code>, or <code>404</code>.</p>
             </article>
             <article data-doc-filter>
               <h3>Headless path</h3>
@@ -241,8 +241,9 @@ mars auth github check --json</code></pre>
             <article data-doc-filter>
               <h3>Custom config path</h3>
               <pre><code>mars auth github setup --config /private/tmp/mars-config.yaml
-mars auth github check --config /private/tmp/mars-config.yaml --json</code></pre>
-              <p>Useful for isolated validation or temporary machines.</p>
+mars auth github check --config /private/tmp/mars-config.yaml --json
+mars auth github clear-local --config /private/tmp/mars-config.yaml</code></pre>
+              <p><code>clear-local</code> removes only that file's stored <code>github_token</code>; it does not change environment, GitHub CLI or GitHub App credentials, repositories, or remote state.</p>
             </article>
           </div>
         </section>
@@ -327,7 +328,7 @@ mars models list --provider registry --json</code></pre>
           <p>
             <code>mars doctor</code> is the first command to run after setup and
             whenever a target behaves strangely. It checks Go, config, models,
-            database paths, llama-server, disk, private release auth, update
+            database paths, llama-server, disk, release access, update
             drift, and target-specific health when <code>--repo</code> is
             supplied. Every finding is meant to leave you with the next safe
             command or file to inspect.
@@ -380,7 +381,7 @@ mars update check --repo /path/to/repo --skip-remote</code></pre>
                 <tr><td><code>database</code></td><td>The selected SQLite database directory exists. With <code>--repo</code>, the default is <code>~/.mars/db/{repo}/mars.db</code>.</td><td>Run <code>mars setup</code>, <code>mars register --repo ...</code>, or pass a writable <code>--db</code> outside the target repo.</td></tr>
                 <tr><td><code>llama-server</code></td><td>MARS can find <code>llama-server</code> in <code>PATH</code> or <code>~/.mars/bin/</code>.</td><td>Run <code>mars setup</code> for the managed binary, or install llama.cpp yourself.</td></tr>
                 <tr><td><code>disk-space</code></td><td>The machine has at least 5 GiB free where MARS stores local state.</td><td>Free disk before downloading models or running release builds.</td></tr>
-                <tr><td><code>private-release-auth</code></td><td>Private release asset auth works, unless <code>--skip-remote</code> was passed.</td><td>Run <code>mars auth github check</code> and then <code>mars auth github setup</code> if updates cannot read release assets.</td></tr>
+                <tr><td><code>release-access</code></td><td>The official release metadata is reachable anonymously or, after an exact access denial, with optional auth; <code>--skip-remote</code> skips it.</td><td>Run <code>mars auth github check</code>; configure optional auth only for private forks or a rate-limit fallback.</td></tr>
                 <tr><td><code>version-drift</code></td><td>The installed CLI and, when <code>--repo</code> is supplied, the deployed harness are not behind known releases.</td><td>Run the command in the <code>fix</code> field, usually <code>mars update tool</code> or <code>mars update harness --repo ...</code>.</td></tr>
                 <tr><td><code>operating-model</code></td><td>A target repo has the generated operating-model docs MARS expects.</td><td>Run <code>mars update harness --repo ...</code>; create migration tickets for stale user-owned docs.</td></tr>
                 <tr><td><code>deterministic-remediation</code></td><td>MARS has a matching repair recipe for common target setup failures, and the target harness scaffold has required files.</td><td>Run the named init, upgrade, or update command from the <code>fix</code> field.</td></tr>
@@ -435,7 +436,7 @@ mars update check --repo /path/to/repo --skip-remote</code></pre>
                 <tr><td>Preview setup without writes.</td><td><code>mars setup --dry-run --json</code></td></tr>
                 <tr><td>Configure local setup deterministically.</td><td><code>mars setup --inference local --local-bundle auto --yes --json</code></td></tr>
                 <tr><td>Skip external services in tests.</td><td><code>mars setup --test-mode --json</code></td></tr>
-                <tr><td>Check private release auth.</td><td><code>mars auth github check --json</code></td></tr>
+                <tr><td>Classify release access.</td><td><code>mars auth github check --json</code></td></tr>
                 <tr><td>Repair PATH predictably.</td><td><code>mars path setup --shell zsh --install-dir "$HOME/go/bin" --json</code></td></tr>
                 <tr><td>Diagnose a target.</td><td><code>mars doctor --repo /path/to/repo --json</code></td></tr>
               </tbody>
@@ -447,16 +448,15 @@ mars update check --repo /path/to/repo --skip-remote</code></pre>
           <h2>Recipes</h2>
           <div class="reference-stack">
             <article data-doc-filter>
-              <h3>Source checkout, local models, no private release auth</h3>
+              <h3>Ordinary source checkout with local models</h3>
               <pre><code>make install
-mars setup --skip-github
+mars setup
 mars doctor</code></pre>
             </article>
             <article data-doc-filter>
-              <h3>Private release update-ready machine</h3>
+              <h3>Optional private-fork update auth</h3>
               <pre><code>gh auth login
 mars auth github setup
-mars setup
 mars auth github check
 mars update check --repo /path/to/repo</code></pre>
             </article>
@@ -483,7 +483,7 @@ mars version</code></pre>
               <tbody>
                 <tr><td><code>mars: command not found</code></td><td>The install directory is not in the current shell PATH.</td><td>Run <code>mars path setup</code> from a shell that can find the binary, open a fresh terminal, or use the full binary path once.</td></tr>
                 <tr><td>Old version still runs.</td><td>The shell cached an earlier path or another binary appears earlier in PATH.</td><td>Run <code>hash -r</code>, <code>which mars</code>, and <code>mars version</code>.</td></tr>
-                <tr><td>Setup fails on GitHub auth.</td><td>Private release auth is not configured and <code>--skip-github</code> was not supplied.</td><td>Run <code>gh auth login</code> then <code>mars auth github setup</code>, or use <code>mars setup --skip-github</code> for source-only use.</td></tr>
+                <tr><td>Release access is unavailable.</td><td>The anonymous official metadata request failed, or optional credentials were not accepted after an exact access denial.</td><td>Run <code>mars auth github check --json</code>; configure credentials only for a private fork or rate-limit fallback.</td></tr>
                 <tr><td>Setup tries to download models on a machine that should not.</td><td>Local inference is the default and downloads run unless skipped.</td><td>Use <code>mars setup --inference defer --skip-download</code> or <code>--inference cloud</code>.</td></tr>
                 <tr><td>Model download is interrupted.</td><td>Network, disk, or artifact availability issue.</td><td>Free disk, rerun <code>mars setup</code>, then check <code>mars doctor</code>.</td></tr>
                 <tr><td><code>doctor</code> reports database path problems.</td><td>The selected SQLite path is missing, unwritable, or inside a target repo.</td><td>Use the default <code>~/.mars/db/{repo}/mars.db</code> or pass a writable <code>--db</code> outside the worktree.</td></tr>
