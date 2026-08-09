@@ -315,13 +315,39 @@ func TestSecurityHeadersAndVendoredAssets(t *testing.T) {
 			t.Errorf("%s hash=%s want=%s", path, got, want)
 		}
 	}
+	licenses := map[string]string{
+		"static/vendor/htmx-LICENSE.txt":   "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38",
+		"static/vendor/chartjs-LICENSE.md": "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce",
+	}
+	for path, want := range licenses {
+		body, err := content.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		if got := hex.EncodeToString(sum[:]); got != want {
+			t.Errorf("%s hash=%s want=%s", path, got, want)
+		}
+	}
 	htmxLicense, err := content.ReadFile("static/vendor/htmx-LICENSE.txt")
 	if err != nil || !strings.HasPrefix(string(htmxLicense), "Zero-Clause BSD") {
 		t.Fatalf("htmx license metadata is not Zero-Clause BSD: err=%v", err)
 	}
 	assetMetadata, err := content.ReadFile("static/vendor/ASSETS.md")
-	if err != nil || !strings.Contains(string(assetMetadata), "Zero-Clause BSD") || !strings.Contains(string(assetMetadata), "Chart.js 4.4.7") || !strings.Contains(string(assetMetadata), "MIT") {
+	if err != nil {
 		t.Fatalf("vendor asset metadata incomplete: err=%v", err)
+	}
+	for _, required := range []string{
+		"b82cf843e47e575dd8c2ad8fee547d8e2c3bb87f",
+		"57b5c5b78fb2d8504f556bef6e4177735d9929ea",
+		"a34988d1b9f005a458d593aa8d7486537cb878b8ac3b82703db1268983123ecc",
+		"af01b7afdbb70017c079b0dc78ef883f860d28fa2644ed78906a39090d07134f",
+		"sha512-HLxMCdfXDOJirs3vBZl/ZLoY+c7PfM4Ahr2Ad4YXh6d22T5ltbTXFFkpx9Tgb2vvmWFMbIc3LqN2ToNkZJvyYQ==",
+		"sha512-pwkcKfdzTMAU/+jNosKhNL2bHtJc/sSmYgVbuGTEDhzkrhmyihmP7vUc/5ZK9WopidMDHNe3Wm7jOd/WhuHWuw==",
+	} {
+		if !strings.Contains(string(assetMetadata), required) {
+			t.Errorf("vendor asset metadata missing %q", required)
+		}
 	}
 	for _, path := range []string{"static/app.js", "static/login.js", "templates/login.html", "templates/pipeline.html", "templates/orchestration.html", "templates/roles.html", "templates/throughput.html", "templates/debug.html", "templates/evolution.html"} {
 		body, err := content.ReadFile(path)
