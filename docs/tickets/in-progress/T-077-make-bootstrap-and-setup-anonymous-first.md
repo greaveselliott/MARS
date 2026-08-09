@@ -7,13 +7,13 @@ work_type: enabler
 bdd_scenarios: ["F-017-S003"]
 end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-009-release-update-lifecycle.md", "docs/tickets/done/T-066-migrate-release-consumers-to-fail-closed-signed-archives.md"]
-verified_by: "pending QA, Security, Dogfood, Release Manager, and Orchestrator"
+verified_by: "Checkpoint A: QA, Security, and Orchestrator GO; Checkpoints B/C and T-077 closure pending"
 owner: "foundation-maintainer"
-last_attempt: "TBD"
+last_attempt: "Checkpoint A passed at pushed commit 10b62f7d59620022b2e1030c5f33856d0c16e70f"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-anonymous-bootstrap:2026-08-09"
-next_action: "Checkpoint A: make official setup and auth readiness anonymous-first, add clear-local, and keep GitHub integration explicitly optional."
+next_action: "Checkpoint B only: require explicit license/terms acknowledgement before any third-party llama.cpp or model download."
 dedupe_key: "open-source:anonymous-bootstrap-setup"
 metadata:
   classification: "foundation-owned-and-mirrored-doctrine"
@@ -30,26 +30,30 @@ depends_on: [T-058]
 
 ## Context
 
-T-066 completed the fail-closed signed archive consumer and deliberately removed the circular shell binary bootstrap. The current installer therefore stops at source-checkout instructions; setup still requires private-release authentication unless the operator knows to skip it; `auth github check` reports only private-token readiness; no command removes only MARS's stored fallback token; and setup's `--download`/`--yes` flags do not yet create a truthful license-aware download boundary. F-017-S003 requires an anonymous-first path into the already-reviewed signed updater while the repository remains private until the later launch gates.
+T-066 completed the fail-closed signed archive consumer and deliberately removed the circular shell binary bootstrap. At ticket start, the installer stopped at source-checkout instructions; setup still required private-release authentication unless the operator knew to skip it; `auth github check` reported only private-token readiness; no command removed only MARS's stored fallback token; and setup's `--download`/`--yes` flags did not yet create a truthful license-aware download boundary. Checkpoint A has now closed the setup/auth/local-fallback gaps; the download acknowledgement and exact-version bootstrap gaps remain. F-017-S003 requires the complete anonymous-first path into the already-reviewed signed updater while the repository remains private until the later launch gates.
 
 ## Scope And Authority
 
 Keep the repository private, retain `VERSION=0.68.49` and source fallback `0.69.0-dev`, and make no tag, GitHub Release, signature, upload, settings, visibility, or announcement mutation. Reuse the standard Go module proxy/SumDB trust path and the existing signed updater; do not add a second signature verifier, curl-pipe binary downloader, custom cryptography, installer framework, VM lab, or rolling audit. Unsupported automatic Linux llama.cpp acquisition remains disabled under the T-073 disposition. Real official `v0.69.0`/`v0.69.1` publication and logged-out public lifecycle proof remain T-080/T-081.
 
-## Checkpoint A — Anonymous Setup And Auth Semantics
+## Checkpoint A — Anonymous Setup And Auth Semantics — Complete
 
 - Make ordinary `mars setup` independent of GitHub credentials. GitHub App/status integration remains an explicit `--github` opt-in, and private-fork/custom-repository authentication remains optional rather than a prerequisite for official public source or releases. Preserve compatible skip flags without retaining a hidden private-auth step.
 - Make `mars auth github check` test the exact official metadata endpoint anonymously first, then report one fixed `anonymous`, `authenticated`, or `unavailable` class. Optional credentials may be resolved and retried only after an exact 401, 403, or 404 from the no-redirect `api.github.com` official metadata request, and only to that same origin/path. Transport/TLS failure, redirect, unexpected status, or a custom/non-GitHub origin must never trigger credential resolution or receive Authorization. No token, credential-derived text, response body, or private path may appear in text/JSON/errors; a representative regression must prove the first request is unauthenticated and no token crosses origins.
 - Add `mars auth github clear-local`. It removes only `github_token` from the selected MARS config, preserves every other field and owner-only mode, is idempotent, and never alters GH_TOKEN, GITHUB_TOKEN, GitHub CLI/keychain state, GitHub App credentials, repository files, or remote state.
 - Preserve the existing signed release consumer's anonymous-first, redirect-bounded, credential-scoped behavior; do not redesign acquisition. Commit and push this independently green checkpoint.
 
-## Checkpoint B — License-Aware Third-Party Downloads
+Exact pushed commit `10b62f7d59620022b2e1030c5f33856d0c16e70f` completes Checkpoint A in a bounded 33-path packet. Ordinary `mars setup` no longer performs an auth step. `mars auth github check` makes the exact no-redirect official metadata request anonymously first, and only an exact `401`, `403`, or `404` may resolve optional credentials for one retry to the same origin and path. `mars auth github clear-local` removes only the stored config `github_token` while preserving unrelated YAML and owner-only mode. Doctor retains custom `ConfigPath` compatibility when it performs the same release-access check. Transport, redirect, unexpected-status, custom-origin, environment/legacy-contamination, idempotence, setup, doctor, tool, CLI, and generated-guidance regressions pass without changing the signed downloader.
+
+Affected-package normal tests, focused race tests, affected-package vet, `go test ./internal/docsync ./internal/docsconsistency`, `go run ./cmd/mars docsync audit --repo .` (`364` files, `0` findings), formatting, and `git diff --check` passed. QA, Security, and Orchestrator returned GO. This is Checkpoint A evidence only: Checkpoints B and C, T-077, and F-017-S003 remain incomplete. The repository remains private at `VERSION=0.68.49` with Primary Status `primary_blocked`; T-073 legal/rights disposition and the two installed-App findings remain launch no-gos, and no Release, settings, visibility, signing, publication, or announcement authority changed.
+
+## Checkpoint B — License-Aware Third-Party Downloads — Sole Next Action
 
 - Before any llama.cpp archive or model download request, resolve the exact planned artifacts and show a deterministic bounded plan containing artifact identity, byte size, license ID/URL, and applicable terms/notice URLs. Reject incomplete provenance before the download step mutates storage or makes a download request.
 - Require an explicit download choice and acknowledgement. Interactive use may confirm the displayed plan; non-interactive/JSON use must provide the documented `--download --yes` form or fail with that remediation. `--skip-download`, `--inference defer`, and configured cloud routing perform no third-party download and require no acceptance. Do not persist a fabricated legal attestation.
 - Keep current checksum, size, platform, and extraction controls. Do not enable the recorded-but-disabled Linux llama.cpp archives in this ticket; Linux clean-operation evidence may use deferred inference or an independently installed llama-server and must say so. Commit and push this independently green checkpoint.
 
-## Checkpoint C — Exact-Version Go/SumDB Bootstrap Into The Signed Updater
+## Checkpoint C — Exact-Version Go/SumDB Bootstrap Into The Signed Updater — Pending
 
 - Replace the fail-closed placeholder with a small Bash bootstrap that accepts only one exact stable semantic tag, requires Go 1.25.12 or newer, and builds the canonical `github.com/greaveselliott/mars/cmd/mars@<exact-tag>` through an enabled public Go proxy and SumDB with canonical-module private/no-sum bypasses disabled. Floating refs, pseudo-versions, replacements, direct/off proxy mode, disabled SumDB, and malformed versions fail closed.
 - Build only into an owner-controlled temporary staging directory, verify the staged binary's canonical command/module path and exact module version with standard Go build metadata, then invoke that staged MARS binary's existing signed updater with the same explicit version and the selected final install directory. The signed updater remains the sole archive/signature verifier and durable replacement authority; failure preserves any prior final binary and cleans staging. Successful packaged operation does not require Go.
