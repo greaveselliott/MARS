@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S003", "F-018-S004"]
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md"]
+evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md"]
 verified_by: "pending"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-24: pushed exact source 6c044c1 implementing the dormant conventional Go/Syft/GitHub-attestation workflow, compatible consumer, Go 1.27 migration, and zero-called vulnerability baseline"
-blocker: "The two-clean-root no-publish rehearsal, current hosted-state seal, and separately authorized sanitation/immutable-Release transaction are not yet complete."
+last_attempt: "2026-08-24: exact source d411cbe passed the two-clean-root conventional no-publish producer/verifier rehearsal and the public official attestation fixture"
+blocker: "The current hosted-state seal and separately authorized sanitation/future-only immutable-Release transaction are not yet complete."
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
-next_action: "Run the exact AD-315 no-publish producer and verifier twice from clean roots without credentials or hosted mutation; stop with a bounded upstream blocker if it cannot pass within the timebox."
+next_action: "Reacquire and scan the complete current hosted surface, freeze exact live IDs and consequences, and request separate authority for the sanitation/future-only immutable-Release transaction."
 dedupe_key: "open-source:release-production-and-legacy-sanitation"
 metadata:
   baseline_tag_count: "301"
@@ -26,7 +26,7 @@ metadata:
   mutation_authority: "repository-source-tests-docs-only-until-separate-exact-hosted-cleanup-and-setting-approval"
   primary_status: "primary_blocked"
   publication_authority: "denied"
-  producer_admission_status: "dormant_source_implemented_rehearsal_pending"
+  producer_admission_status: "dormant_source_and_no_publish_rehearsal_passed"
   supports: "F-017-S003,F-018-S004"
 source: MARS Launch-Complete Open-Source Delivery Plan — T-078
 created: 2026-08-24
@@ -131,7 +131,8 @@ must not be described as current MARS signing evidence.
 
 ## Checkpoint C — No-Publish Rehearsal
 
-**Status:** Pending; this is the next launch item.
+**Status:** Complete at exact pushed source
+`d411cbe38128b184d10904c50126caad1cca03fc`.
 
 Run the complete producer and independent verifier twice from clean source
 roots without credentials, OIDC, uploads, tags, Releases, visibility changes,
@@ -139,6 +140,15 @@ or hosted attestation. Require the same intended subject digests and equivalent
 SBOM semantics, then exercise the signed-consumer policy against a standard
 public GitHub-attestation fixture or a repository-owned format fixture that is
 explicitly non-release evidence.
+
+Two distinct clean source roots and independent caches/tools produced the
+exact nine unsigned files with networking disabled during production. All four
+archives were byte-identical. Each run's raw SBOMs matched its own canonical
+checksums, and normalized SBOM semantics matched across runs. Exact Go 1.27
+verification, native `mars --version`, the standard public GitHub-attestation
+fixture, and affected normal/race suites passed. No real bundle, tag, upload,
+Release, visibility change, or hosted mutation occurred. Full evidence is in
+`docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md`.
 
 The implementation of Checkpoints A through C is timeboxed to one working day.
 If it cannot pass within that bound, record the exact upstream action, private
@@ -185,8 +195,9 @@ and zero deployments, plus only deliberately retained workflow runs.
 
 - AD-315's dormant standard workflow and compatible consumer are committed and
   independently verified without launch authority.
-- The no-publish rehearsal produces and verifies the exact intended ten-asset
-  contract from two clean roots.
+- The no-publish rehearsal produces and verifies the exact nine unsigned
+  subjects from two clean roots and proves the tenth bundle's consumer format
+  against the standard public fixture; the real tenth asset remains T-080.
 - Coverage and documentation gates pass; no sub-threshold floor is seeded.
 - The hosted surface is fully current before any separately approved sanitation
   or immutable-Release mutation, and exact postconditions pass if that approval
