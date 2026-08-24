@@ -70,8 +70,10 @@ Initialized target repos must receive the same skill-evolution doctrine. The sou
 
 > **Superseded 2026-07-21 by T-065/F-018.** The bespoke publication command
 > described below is no longer reachable. The source-only skill now governs
-> pinned, publication-disabled GoReleaser/Syft snapshots; target repositories
-> choose their own producer. The original rationale is retained as history.
+> Historical snapshots used pinned, publication-disabled GoReleaser/Syft;
+> AD-315 now governs the conventional source release path while target
+> repositories choose their own producer. The original rationale is retained
+> as history.
 
 The recursive improvement loop is a foundation operating-model rule, not a
 single skill. The full loop spans live target replay, evidence review, bounded

@@ -3,7 +3,9 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/release-versioning.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-018-goreleaser-distribution.md
 */
 package docsconsistency
 
@@ -31,7 +33,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 				"non-release semantic commit",
 				"release: notes X.Y.Z",
 				"repository-owned release producer",
-				"pinned GoReleaser/Syft",
+				"GitHub `actions/attest`",
 			},
 		},
 		{
@@ -39,7 +41,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 			needles: []string{
 				"active execution plan",
 				"T-071 through T-079",
-				"publication-disabled snapshot",
+				"no-publish producer",
 				"Do not create or move a tag",
 			},
 		},
@@ -90,7 +92,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	}
 }
 
-func TestReleaseProductionUsesPinnedSourceAndRepositoryOwnedTargetContracts(t *testing.T) {
+func TestReleaseProductionUsesStandardSourceAndRepositoryOwnedTargetContracts(t *testing.T) {
 	root := repoRoot(t)
 	data, err := os.ReadFile(filepath.Join(root, "docs", "design-docs", "release-versioning.md"))
 	if err != nil {
@@ -99,6 +101,7 @@ func TestReleaseProductionUsesPinnedSourceAndRepositoryOwnedTargetContracts(t *t
 	text := strings.Join(strings.Fields(string(data)), " ")
 	for _, needle := range []string{
 		"AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer",
+		"AD-315: Launch Uses Conventional Go Production And GitHub Attestations",
 		"publication-disabled private snapshots",
 		"Generated target repositories do not inherit this Go-specific producer",
 		"signed archive consumer",

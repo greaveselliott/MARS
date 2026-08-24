@@ -16,11 +16,11 @@ go test ./...
 3. Run `go test ./...` and `golangci-lint run`
 4. Commit with a semantic message referencing the milestone if applicable
 5. Check the active execution plan before changing version or release state
-6. During T-071 through T-079, including resumed T-058 corrections, retain the `0.68.49` version floor and do not generate a release-note commit. T-080 alone publishes signed `v0.69.0` and `v0.69.1`; evidence-only T-081 closeout retains `v0.69.1` unless a canary correction requires `v0.69.2`
+6. During T-071 through T-079, including resumed T-058 corrections, retain the `0.68.49` version floor and do not generate a release-note commit. After separately approved public visibility, T-080 alone publishes attested `v0.69.0` and `v0.69.1`; evidence-only T-081 closeout retains `v0.69.1` unless a canary correction requires `v0.69.2`
 7. Push the validated semantic checkpoint to `main`
-8. During T-071 through T-079, run only the exact pinned, publication-disabled snapshot and verification steps in `.github/workflows/release-snapshot.yml`; T-080 follows the protected exact-ten launch workflow and active plan
+8. During T-071 through T-079, run only the no-publish producer and verification rehearsal authorized by AD-315; `.github/workflows/release.yml` remains dormant until the protected public launch sequence
 9. Record unresolved producer, consumer, signing, rehearsal, or cutover gates as blockers
-10. Do not create or move a tag, GitHub Release, upload, signature, announcement, or supported-release claim during T-071 through T-079; T-080 alone creates the two private launch releases, and T-081 still requires separate owner visibility approval
+10. Do not create or move a tag, GitHub Release, upload, attestation, announcement, or supported-release claim during T-071 through T-079; after separate owner visibility approval, T-080 alone creates the two public attested launch releases
 
 Outside an explicitly recorded transition exception, every non-release
 semantic commit follows the versioning rule in `AGENTS.md`; release-note commits

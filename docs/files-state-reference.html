@@ -345,8 +345,8 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
           <h2>Release Assets</h2>
           <p>
             Release notes are repo-owned. Binary release assets are generated
-            output. MARS source currently builds publication-disabled private
-            snapshots with the pinned repository workflow; target repositories
+            output. MARS source uses AD-315's no-publish conventional
+            Go/Syft rehearsal; target repositories
             choose and document their own producer and artifact contract.
           </p>
           <div class="wide-table" data-doc-filter>
@@ -363,9 +363,9 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
           </div>
           <pre><code>mars release notes --repo . --bump auto</code></pre>
           <p>
-            Run the exact pinned build, check, snapshot, and verification steps
-            defined in <code>.github/workflows/release-snapshot.yml</code>. That is
-            the MARS source snapshot workflow,
+            Run the no-publish production and verification steps authorized by
+            AD-315. <code>.github/workflows/release.yml</code> remains dormant
+            until the approved public launch sequence. That is the MARS source workflow,
             not generated target doctrine and not publication authority. The
             standalone verifier and audit are retired; signed consumer and
             remote-convergence proof remain F-018 gates.
@@ -448,7 +448,7 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
             </article>
             <article data-doc-filter>
               <h3>Verify source snapshot output</h3>
-              <p>Run the exact pinned build, check, snapshot, and verification steps defined in <code>.github/workflows/release-snapshot.yml</code>. The <code>dist/</code> directory also contains GoReleaser working metadata; only the exact publishable allowlist is candidate release evidence.</p>
+              <p>Run the no-publish Go/Syft production and verification rehearsal authorized by AD-315. The <code>dist/</code> directory is generated work; only the exact publishable allowlist is candidate release evidence.</p>
             </article>
           </div>
         </section>

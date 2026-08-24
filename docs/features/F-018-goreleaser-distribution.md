@@ -1,4 +1,4 @@
-# F-018: GoReleaser Distribution
+# F-018: Supported Release Distribution
 
 - Feature ID: F-018
 - Goals: G-OSS-001, G-004
@@ -7,9 +7,21 @@
 
 ## Business Logic
 
-MARS uses pinned GoReleaser as the source-only producer for supported binary releases. Generated target harnesses do not inherit this Go-specific implementation. A supported release exists only after deterministic local output, signed checksums, SBOMs, a fresh-download comparison, immutable GitHub publication, and consumer verification all pass.
+MARS uses a repository-owned, source-only producer for supported binary
+releases. Generated target harnesses do not inherit this Go-specific
+implementation. A supported release exists only after deterministic output,
+checksums, SBOMs, GitHub/Sigstore keyless provenance, a fresh-download
+comparison, immutable GitHub publication, and consumer verification all pass.
 
-Private snapshot evidence proves build behavior but is never a supported-release claim. The launch contract reserves signed `v0.69.0` as a rollback bridge and signed `v0.69.1` as the supported latest release. Their tags and Releases remain deferred until T-080 after the independent private F-017 gates pass; public visibility remains a separately approved T-081 action.
+Private snapshot evidence proves build behavior but is never a
+supported-release claim. T-065 through T-068 retain their historical
+GoReleaser evidence. AD-315 supersedes GoReleaser/Cosign as the launch
+implementation: the supported Go toolchain builds the four targets, ordinary
+deterministic archive/checksum commands package them, upstream Syft creates the
+SBOMs, and GitHub `actions/attest` creates keyless provenance after visibility
+changes under separate approval. The launch contract reserves attested
+`v0.69.0` as a rollback bridge and attested `v0.69.1` as the supported latest
+release.
 
 ## Step-By-Step Behavior
 
@@ -18,9 +30,16 @@ Private snapshot evidence proves build behavior but is never a supported-release
 3. T-066 migrates installation and updates to fail-closed archive, checksum, signature, identity, metadata, and extraction verification.
 4. T-067 raised the MARS source floor to Go 1.25.12 under the owner's 2026-07-22 approval; historical private release evidence used Go 1.26.5, while T-078 must replan production onto a current supported, scan-clean Go patch before producer execution. Packaged MARS operation does not require an externally installed Go toolchain, and generated targets choose their own toolchain.
 5. T-068 runs reproducible private snapshots and clean installation fixtures without creating a tag, Release, signature, or supported-release claim.
-6. T-071 restored the green application vulnerability baseline and T-077 completed anonymous bootstrap; T-078 must admit a current exact scan-clean GoReleaser/Syft producer plus separate Cosign signing/publishing job. Its first GoReleaser v2.17.1/Go 1.26.5 selection failed pre-execution called-symbol admission.
-7. T-080 publishes and verifies signed private `v0.69.0` as the rollback bridge, then signed private `v0.69.1` as latest.
-8. T-081 separately changes visibility and independently verifies both releases logged out before announcement.
+6. T-071 restored the green application vulnerability baseline and T-077
+   completed anonymous bootstrap. T-078's first GoReleaser/Cosign route failed
+   producer admission and then expanded into bespoke security infrastructure;
+   that work is preserved as a non-authorizing checkpoint.
+7. T-078/T-079 replace the stale producer with the conventional AD-315 dormant
+   workflow, compatible consumer, no-publish rehearsal, hosted sanitation, and
+   private contribution controls.
+8. After a separately approved public-visibility change, T-080 publishes and
+   verifies attested `v0.69.0` as the rollback bridge and attested `v0.69.1` as
+   latest. T-081 owns the 48-hour canary and announcement.
 
 ## Scenario Schedule
 
@@ -104,26 +123,38 @@ And no supported tag, GitHub Release, public signature, announcement, or visibil
 ### F-018-S004: Immutable Public Publication
 
 Given F-018-S001 through F-018-S003 and every private F-017 prerequisite pass
+And the owner separately approves public visibility
 When the exact `v0.69.0` and `v0.69.1` release workflows run through T-080
-Then the unprivileged GoReleaser build job has no OIDC or write authority
-And only the protected signing/publisher job receives `id-token: write`, `attestations: write`, and `contents: write`
+Then the unprivileged Go build/archive/Syft producer job has no OIDC or write authority
+And only the protected attestation job receives `id-token: write` and `attestations: write`
+And only the subsequent publisher job receives `contents: write`
 And each same-tag, same-commit Release converges on exactly ten uploaded Release assets: four archives, four SPDX SBOMs, `checksums.txt`, and `checksums.txt.sigstore.json`, excluding provider-generated source archives and attestations from that uploaded-asset count
 And fresh downloads match the verified local artifacts before success
-And GitHub attestations and the keyless checksum signature verify against the pinned workflow identity and exact commit
+And the GitHub/Sigstore bundle verifies the exact checksum subject set, pinned workflow identity, tag, and commit
 And `v0.69.0` remains only as the rollback bridge while `v0.69.1` is marked latest
-And after the owner separately approves public visibility, logged-out archive download, install, update, rollback, attestation, and per-asset verification pass.
+And logged-out archive download, install, update, rollback, attestation, and per-asset verification pass.
 
 ## Evidence
 
 - **F-018-S001:** Passed 2026-07-21 under T-065. Producer/config checkpoint `dc5685b`, checker checkpoint `6a68ecc`, evidence checkpoint `3b4f7c8`, and bespoke-producer retirement checkpoint `bb1b79b` are pushed. Two clean clones at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9` passed the exact nine-file publishable-set, eight-checksum, byte-identical archive, four-platform build-metadata, one-native-runtime, archive/SBOM binding, and normalized-SPDX comparison contract. A separate clean final-commit snapshot `0.69.0-dev.bb1b79b` passed the same committed environment verifier after producer retirement; full source, cross-build, installed-binary, clean-target, DocSync, QA, Security, Dogfood, Release Manager, and Orchestrator gates passed. No tag, Release, signature, upload, visibility change, or supported-release claim occurred. Private snapshot notices remain provisional until the complete Go dependency notice review passes before cutover. Exact GoReleaser `v2.17.0` binary findings GO-2026-5970 and GO-2026-5932 are accepted only for credential-free, publication-disabled private snapshot evidence with `ko`, signing, announcement, and publication explicitly skipped; they remain a public-cutover no-go pending an acceptable upstream release/removal.
 - **F-018-S002:** Passed 2026-07-22 under T-066. A1 `fcf7397` verifies the exact offline Sigstore/checksum trust contract; A2 `b824b91` verifies canonical bounded archives and binary build metadata; B1 `f3ed495` acquires one immutable replay/drift-checked candidate without mutation; B2 `92d7ddd` performs descriptor-bound durable replacement or provable compensation; B3 `683daf8` wires release-mode updates through those stages before PATH repair; C `f45d5d2` retires circular checksum-only shell bootstrap to a fail-closed reviewed-source route; and D through `64c7d3b` retires weaker verifier/audit consumers and synchronizes source/target doctrine. E at `7fe152c` combines the immutable upstream offline Sigstore vector and explicit authenticated older-version acquisition policy with a production-B2 preverified-candidate update/rollback lifecycle, including pre-mutation identity mismatch rejection, exact digest transitions, final mode/link/lock checks, and no transaction residue. The exact Go 1.26.5 focused normal/race set, preserved full-source/race/coverage evidence, exact `govulncheck v1.6.0`, four ten-second fuzz targets, whole-source vet lint fallback, docsconsistency, DocSync, and four-platform CGO-disabled metadata-inspected builds passed. An isolated-prefix native source candidate then passed source DocSync, retired-command and authority-free dry-run checks, fresh-target initialization/commit/DocSync, producer-neutral generated guidance, and Engineer prompt assembly with Go absent from runtime PATH. Engineer, QA, Security, Dogfood, Release Manager, and Orchestrator are GO. This is not a packaged install, real MARS-signed update, model-backed lifecycle, or executed Linux rehearsal; fresh packaged bootstrap and T-068 remain blocked before cutover. The repository remains private and `primary_blocked`, with no version, tag, Release, signature, upload, visibility, or supported-release claim.
 - **F-018-S003:** Passed 2026-07-22 under T-068. Checkpoint A passed exact private GitHub Actions run `29894376197` at `aa4a16b` with the read-only Ubuntu two-root producer contract, supported source and unsigned-native fixtures, offline consumer/update/rollback tests, cleanup, and zero uploaded artifacts. Checkpoint B passed the corresponding macOS `26.3.1`/arm64 source and unsigned-snapshot split with exact artifact/target hashes; its functional marker passed before a truthfully recorded best-effort cleanup-status false negative, and independent verification proved no residue. Checkpoint C selected exactly `0.69.0` without writes, removed the original 22 exact roots, and failed closed on the pre-existing Linux source gate. T-069 corrected that bounded portability issue; runs `29898672813` at `03008f7` and `29899168382` at final evidence head `2ef9d27` passed both supported Go lanes plus the expected below-minimum rejection, with zero artifacts. Final private-state, no-`v0.69.0`, Pages-disabled, stash/worktree, cleanup, QA, Security, Dogfood, Release Manager, and Orchestrator gates passed. This remains private source, unsigned-snapshot, and offline-preverified fixture evidence—not fresh packaged bootstrap or a supported release. The repository remains private and `primary_blocked`; F-018-S004 and all public-cutover prerequisites remain pending.
-- **F-018-S004:** T-078 is current and blocked before producer execution. Exact SumDB GoReleaser v2.17.1 built with Go 1.26.5 reported 12 called vulnerability IDs and 104 terminal called symbols, including two records without a fixed dependency version; the toolchain and producer graph must be replanned and pass a fresh structured pre-execution scan. Independently, T-072's exact 401-run seal was reproduced and the exact 65-run delta frozen at 466 completed runs on 2026-08-24 was acquired and scan-clean with both admitted offline scanners. Every later run remains in scope before deletion. Hosted workflow proof is blocked by GitHub Billing & plans; destructive cleanup and the future-only immutable-Release setting each require separate exact owner approval. The durable blocked-admission record is `docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md`. Real `v0.69.0`/`v0.69.1` signing remains T-080 and public lifecycle proof remains T-081.
+- **F-018-S004:** T-078's rejected GoReleaser/Cosign and bespoke-containment
+  attempts remain preserved in
+  `docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md`
+  and the local checkpoint named by the owner disposition. AD-315 is now the
+  only launch implementation: conventional Go production, upstream Syft, and
+  GitHub `actions/attest`. The owner has funded the account, accepted the
+  recorded name risk, attested publication authority, and removed account-wide
+  App scope from the launch. The dormant workflow, compatible consumer,
+  no-publish rehearsal, hosted sanitation, immutable-Release transaction,
+  contribution controls, separately approved visibility change, real
+  `v0.69.0`/`v0.69.1` publication, and anonymous lifecycle remain pending.
 
 ## Out of Scope
 
 - Publishing raw binaries or `mars-harness-*` compatibility aliases.
-- Imposing GoReleaser on generated target repositories.
+- Imposing the MARS source producer on generated target repositories.
 - Homebrew, container images, Windows packages, notarization, or public announcement in the first release.
 - Reusing `v0.93.0` or silently selecting replacements if GitHub rejects either owner-selected launch version.
 

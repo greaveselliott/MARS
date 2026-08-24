@@ -236,9 +236,9 @@ mars release notes --repo . --bump auto
 
 In this source repo and in repos initialized by MARS, run the release command after every non-release semantic commit and commit the generated version files as `release: notes X.Y.Z` before pushing `main`.
 Each repository owns its release producer and artifact contract. MARS source
-uses the pinned, publication-disabled GoReleaser/Syft snapshot workflow under
-F-018; generated targets choose their own producer. Do not create a source tag,
-upload, signature, or supported-release claim until the active cutover plan
+uses AD-315's conventional Go/Syft/GitHub-attestation workflow under F-018;
+generated targets choose their own producer. Do not create a source tag,
+upload, attestation, or supported-release claim until the active cutover plan
 explicitly authorizes it.
 
 ## Next Steps

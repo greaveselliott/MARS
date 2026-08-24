@@ -10,6 +10,7 @@ docs:
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-018-goreleaser-distribution.md
 */
 package tools
 
@@ -130,12 +131,12 @@ func handleReleaseOrchestrate(ctx context.Context, root Root, raw json.RawMessag
 9. Run the target repository's approved artifact-contract verifier against the produced output. MARS does not provide a generic release-asset verifier for target repositories.
 10. If production, local verification, or optional remote publication fails, record the blocker before treating release work as complete.`
 	if isMarsFoundationSource(root) {
-		sequence = `1. Read the active F-018 plan and current T-065 through T-067 ticket before changing source release state.
+		sequence = `1. Read the active F-018 plan, AD-315, and current T-078 ticket before changing source release state.
 2. Validate the bounded semantic checkpoint and keep VERSION, CHANGELOG.md, and buildinfo at the retained 0.68.49 floor during this transition.
 3. Commit the checkpoint with its ticket reference and push main after validation.
-4. Run only the exact pinned, publication-disabled snapshot and verification steps authorized by .github/workflows/release-snapshot.yml.
-5. Do not create or move a tag, upload, sign, announce, publish, or claim a supported release.
-6. Record unresolved producer, consumer, signing, rehearsal, or cutover gates as blockers; do not infer publication authority from a successful snapshot.`
+4. Run only the no-publish conventional producer and verification rehearsal authorized by AD-315; keep .github/workflows/release.yml dormant.
+5. Do not create or move a tag, upload, attest, announce, publish, or claim a supported release.
+6. Record unresolved producer, consumer, attestation, rehearsal, or cutover gates as blockers; do not infer publication authority from a successful rehearsal.`
 	}
 	out := strings.TrimSpace(fmt.Sprintf(`# release_orchestrate
 

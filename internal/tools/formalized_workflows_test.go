@@ -10,6 +10,7 @@ docs:
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-018-goreleaser-distribution.md
 */
 package tools
 
@@ -109,8 +110,8 @@ func TestReleaseWorkflowBlocksFoundationSourcePublication(t *testing.T) {
 	result, err := handleReleaseOrchestrate(context.Background(), root, json.RawMessage(`{}`))
 	require.NoError(t, err)
 	require.Contains(t, result.Output, "active F-018 plan")
-	require.Contains(t, result.Output, "Do not create or move a tag, upload, sign, announce, publish")
-	require.Contains(t, result.Output, ".github/workflows/release-snapshot.yml")
+	require.Contains(t, result.Output, "Do not create or move a tag, upload, attest, announce, publish")
+	require.Contains(t, result.Output, ".github/workflows/release.yml")
 	require.NotContains(t, result.Output, "Tag the release-note commit")
 	require.NotContains(t, result.Output, "release notes")
 	require.NotContains(t, result.Output, "release: notes")

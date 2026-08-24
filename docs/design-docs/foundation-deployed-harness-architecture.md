@@ -99,7 +99,7 @@ target runs.
 
 | Behavior | Foundation-only | Mirrored core | Deployed-only |
 | --- | --- | --- | --- |
-| Producing and publishing `mars` binary assets | Source-only. F-018 currently permits pinned publication-disabled snapshots; tags, signatures, uploads, and supported publication require the later approved cutover. | No. | No, unless a target separately chooses and documents an equivalent binary release model. |
+| Producing and publishing `mars` binary assets | Source-only. AD-315/F-018 permit a no-publish conventional Go/Syft rehearsal; tags, attestations, uploads, and supported publication require the later approved public cutover. | No. | No, unless a target separately chooses and documents an equivalent binary release model. |
 | Versioned target release notes | No. | Yes. Targets inherit release notes and changelog discipline appropriate to their repo. | Target-specific versioning policy can extend or override locally. |
 | Live `demo-123` replay | Yes as the canonical source first-run lifecycle replay. | The run-review-act-rerun evidence loop mirrors generically. | A target can define its own representative demo or E2E replay. |
 | BDD feature contracts | No. | Yes. Feature contracts define product behavior before or alongside implementation. | Target contracts describe target product behavior. |

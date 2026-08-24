@@ -117,7 +117,7 @@ docs:
                 <tr><td><code>CHANGELOG.md</code></td><td>Source and targets.</td><td>Generated patch notes with Impact, Why, and What Changed sections.</td></tr>
                 <tr><td><code>internal/buildinfo/version.go</code></td><td>MARS source only.</td><td>Fallback version for source-tree builds when release ldflags are absent.</td></tr>
                 <tr><td><code>.harness/metadata.yaml</code></td><td>Target repos.</td><td>Generated harness version drift signal.</td></tr>
-                <tr><td><code>dist/</code></td><td>MARS source snapshot work.</td><td>Four archives, four SBOMs, checksums, and GoReleaser working metadata. Only the exact publishable allowlist is candidate evidence; the directory itself proves nothing.</td></tr>
+                <tr><td><code>dist/</code></td><td>MARS source rehearsal work.</td><td>Four archives, four SBOMs, checksums, and temporary producer state. Only the exact publishable allowlist is candidate evidence; the directory itself proves nothing.</td></tr>
               </tbody>
             </table>
           </div>
@@ -324,8 +324,8 @@ git commit -m "release: notes X.Y.Z"</code></pre>
               <p>Tags and publication remain separately gated by F-017/F-018.</p>
             </li>
             <li>
-              <h3>Build and verify private snapshot evidence</h3>
-              <p>Run the exact pinned build, check, snapshot, and verification steps defined in <code>.github/workflows/release-snapshot.yml</code>. This MARS source workflow creates local evidence only; it does not tag, upload, sign, announce, or publish.</p>
+              <h3>Build and verify no-publish release evidence</h3>
+              <p>Run the conventional Go/Syft production and verification rehearsal authorized by AD-315. Keep <code>.github/workflows/release.yml</code> dormant; the rehearsal does not tag, upload, attest, announce, or publish.</p>
             </li>
           </ol>
         </section>
@@ -357,7 +357,7 @@ git -C ~/my-project push origin main</code></pre>
           <h2>Assets And Verification</h2>
           <p>
             MARS source uses the pinned, publication-disabled F-018
-            GoReleaser/Syft snapshot workflow. Generated target repositories
+            Go/Syft/GitHub-attestation workflow. Generated target repositories
             choose and document their own producer and verifier. The standalone
             verifier and audit commands are retired. Remote transport success is
             not completion, and unavailable or unverifiable state stays blocked.

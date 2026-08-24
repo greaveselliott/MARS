@@ -144,6 +144,10 @@ GitHub remains optional infrastructure. If the repo has no GitHub remote, no aut
 
 ### AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer
 
+> **Launch implementation superseded 2026-08-24 by AD-315.** The private
+> snapshot evidence and source/target ownership boundary remain historical
+> evidence; GoReleaser is not the launch producer.
+
 MARS source builds publication-disabled private snapshots with the exact
 GoReleaser, Syft, and Go pins declared by T-065 and `.goreleaser.yaml`. The
 default producer has no tag, upload, signing, announcement, or publication
@@ -158,8 +162,9 @@ artifact contract.
 > including resumed T-058 corrections, retain `VERSION=0.68.49` and source
 > fallback `0.69.0-dev`; their validated checkpoints are pushed without
 > release notes, tags, signatures, upload, publication, or announcement.
-> T-080 alone ends the freeze by publishing signed `v0.69.0` as the rollback
-> bridge and signed `v0.69.1` as latest. Evidence-only T-081 settings/canary
+> After separately approved public visibility, T-080 ends the freeze by
+> publishing attested `v0.69.0` as the rollback bridge and attested `v0.69.1`
+> as latest. Evidence-only T-081 canary
 > closeout retains `v0.69.1`; a product, runtime, security, or public-contract
 > correction found during canary requires immutable `v0.69.2` and repetition
 > of the anonymous lifecycle and 48-hour canary.
@@ -475,8 +480,9 @@ retired GitHub Actions workflows would have hosted.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars init`.
-- Build MARS source snapshots with the pinned, publication-disabled
-  GoReleaser/Syft workflow defined by F-018.
+- Build MARS source artifacts with the conventional Go/Syft/GitHub-attestation
+  workflow defined by AD-315 and F-018; historical GoReleaser snapshot evidence
+  remains retained but is not the launch implementation.
 - Let generated target repositories choose and document their own producer and
   artifact contract.
 - Defer source tags, signing, GitHub publication, and fresh-download checks to
@@ -490,6 +496,48 @@ retired GitHub Actions workflows would have hosted.
 - Use the same update vocabulary for binary and deployed target harness updates.
 - Record generated target harness version in `.harness/metadata.yaml`.
 - Check version drift without mutating the installed tool or target repo.
+
+### AD-315: Launch Uses Conventional Go Production And GitHub Attestations
+
+The 2026-08-24 launch review found that T-078 had expanded from release
+admission into a bespoke secure-build platform: direct Docker Engine API
+orchestration, ptrace/Landlock supervision, executable-layout parsing, and a
+transcript-pinned SPDX validator. That work is preserved as a non-authorizing
+checkpoint, but it is not the launch producer.
+
+For the initial supported MARS release, one conventional least-privilege
+workflow owns the source-only producer contract:
+
+- the supported Go toolchain cross-builds the four CGO-disabled binaries;
+- ordinary deterministic archive and SHA-256 commands create the four archives
+  and canonical checksum file;
+- upstream Syft creates one SPDX-JSON SBOM per archive;
+- an independently privileged job uses GitHub's standard `actions/attest`
+  action to create keyless build-provenance evidence for the exact subject
+  digests; and
+- a separate publication job may receive `contents: write` only after the
+  producer, attestation, and independent verification jobs succeed.
+
+Third-party actions are pinned by full commit SHA. Untrusted fork events
+receive no OIDC, attestation, secret, environment, or publication
+authority. The release consumer verifies the GitHub/Sigstore bundle, expected
+repository/workflow/ref/commit identity, checksum subject set, archive
+platform metadata, and bounded archive contents before replacement. It does
+not depend on the bespoke checkpoint's Docker, ptrace, executable-layout, or
+full-SPDX-grammar machinery.
+
+GitHub documents hosted artifact attestations for public repositories on
+current plans, while private/internal repository support requires GitHub
+Enterprise Cloud. The launch therefore completes cleanup, immutable-Release
+settings, contribution controls, and no-publish rehearsal while private;
+visibility then changes under separate approval before `v0.69.0` and
+`v0.69.1` are attested and published. Announcement still waits for anonymous
+verification and the 48-hour canary.
+
+Implementation is timeboxed to one working day for the producer, attestation
+consumer, workflow, and no-publish rehearsal. If the standard path cannot pass
+within that bound, stop with the exact upstream or compatibility blocker rather
+than adding another release-security subsystem.
 
 ## Consequences
 

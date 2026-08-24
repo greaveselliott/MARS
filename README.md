@@ -316,7 +316,8 @@ mars release notes --repo . --bump auto
 mars release backfill-notes --repo . --check
 ```
 
-Source release archives are defined by the pinned GoReleaser/Syft workflow.
+Source release archives are defined by the conventional Go/Syft/GitHub-
+attestation workflow in AD-315 and the active F-018 plan.
 Publication remains disabled until the active F-018 release migration and
 independent open-source cutover gates pass; generated target repositories choose
 their own producer. See

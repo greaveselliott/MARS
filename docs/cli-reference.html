@@ -558,8 +558,8 @@ mars release backfill-notes --repo . --min-version 0.60.0 --max-version 0.68.0 -
               <p>
                 <code>mars release verify-assets</code> and
                 <code>mars release audit</code> were retired by T-066 D1 and are
-                unknown commands. MARS source uses the exact pinned,
-                publication-disabled snapshot contract and F-018 signed archive
+                unknown commands. MARS source uses AD-315's conventional
+                no-publish rehearsal contract and F-018 attested archive
                 consumer; target repositories use their repository-owned
                 producer and verifier. A Release listing, upload exit, asset
                 names, or checksums alone is not authenticity or completion
@@ -600,7 +600,7 @@ mars release backfill-notes --repo . --min-version 0.60.0 --max-version 0.68.0 -
             </article>
             <article data-doc-filter>
               <h3>Separate source and target releases</h3>
-              <p>Source and target repos share release-note concepts but own different producers. MARS source currently creates pinned publication-disabled snapshots under F-018; target repositories choose their own producer and artifact contract.</p>
+              <p>Source and target repos share release-note concepts but own different producers. MARS source uses AD-315's conventional Go/Syft/GitHub-attestation path under F-018; target repositories choose their own producer and artifact contract.</p>
             </article>
           </div>
         </section>
