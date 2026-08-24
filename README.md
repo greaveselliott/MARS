@@ -272,6 +272,42 @@ routes. Packaged updates remain unavailable until an approved F-018 cutover
 publishes the exact signed archive contract; historical raw release assets are
 unsupported and must not be advertised as installable.
 
+The first-install bootstrap is implemented for the future signed releases, but
+no supported launch tag exists yet. After an approved exact tag is published,
+the bootstrap requires Go 1.25.12 or newer once, an existing owner-controlled
+install directory, and an independently reviewed checkout at the exact
+tag—never `latest`, a branch, prerelease, or pseudo-version. Run the
+repository-owned script from that checkout; fetching a script and piping it
+directly into a shell is not a supported installation route. Execute the
+script itself, not `bash scripts/install.sh ...`, so its privileged Bash
+boundary can reject inherited functions and `BASH_ENV` before starting the
+real body in a clean environment:
+
+```bash
+mkdir -p "$HOME/.local/bin"
+chmod 0700 "$HOME/.local/bin"
+./scripts/install.sh vX.Y.Z "$HOME/.local/bin"
+```
+
+It preserves only `PATH`, `HOME`, and `TMPDIR` in the clean environment;
+optional GitHub tokens cross through dedicated descriptors, remain absent from
+Go, and are supplied only to the staged signed updater. It resolves one absolute
+Go executable, disables Go auth and CGO, neutralizes inherited build controls,
+enables `-modcacherw`, validates the resolved
+temporary-root ancestry, and builds the canonical command through the public
+Go proxy and checksum database in owner-only temporary staging. The staged
+command independently validates its running Go module identity, exact tag,
+canonical SHA-256 `h1` sum, and lack of replacements before delegating the same
+version and final directory to the existing signed updater. The script does not
+download or verify release archives itself, and the bootstrap handoff does not
+modify shell profiles. Follow recovery-required updater guidance before
+retrying; do not assume the prior binary was preserved after an unprovable
+post-commit failure.
+A successful installer exit also means staging removal was verified. Cleanup
+failure preserves the original installer error and adds a path-free warning,
+or reports that the binary was installed but staging cleanup remains incomplete
+when the signed update had already succeeded.
+
 MARS and initialized target repos use semantic versions and generated
 patch notes:
 

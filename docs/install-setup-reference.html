@@ -138,6 +138,50 @@ mars version</code></pre>
             build fails, your shell can still execute an older
             source-root binary.
           </div>
+          <article data-doc-filter>
+            <h3>Exact signed-release bootstrap</h3>
+            <p>
+              The bootstrap is implemented for future approved signed tags,
+              but no supported launch tag exists yet. Once one is published,
+              independently review a checkout at that exact tag, create an
+              owner-controlled destination, and run the repository-owned script
+              from that checkout. Pass the exact stable tag—never
+              <code>latest</code>, a branch, prerelease, or pseudo-version. A
+              network-fetched script piped directly into a shell is not a
+              supported route. Execute <code>./scripts/install.sh</code>
+              directly; invoking it through an explicit shell interpreter
+              fails closed so the privileged Bash shebang can suppress
+              inherited functions and <code>BASH_ENV</code>.
+            </p>
+            <pre><code>mkdir -p "$HOME/.local/bin"
+chmod 0700 "$HOME/.local/bin"
+./scripts/install.sh vX.Y.Z "$HOME/.local/bin"</code></pre>
+            <p>
+              First bootstrap requires stable Go 1.25.12 or newer. The script
+              starts the real body in a clean environment carrying only
+              <code>PATH</code>, <code>HOME</code>, and <code>TMPDIR</code>;
+              optional GitHub tokens cross through dedicated descriptors,
+              remain absent from Go, and enter only the staged signed updater;
+              resolves one absolute Go executable;
+              disables Go auth and CGO; neutralizes inherited build controls;
+              applies <code>-modcacherw</code>; validates every resolved temporary-root ancestor; and
+              builds only the canonical MARS module through the public Go proxy
+              and SumDB in owner-only temporary staging. The staged command independently
+              validates its running command/module, exact tag, canonical
+              SHA-256 <code>h1</code> sum, and lack of replacements before it
+              delegates the same tag and destination to the existing signed
+              updater without ordinary shell-profile mutation. It does not
+              download, checksum, or verify release archives itself.
+              Pre-commit rejection leaves an existing destination unchanged;
+              recovery-required failures instead require preserved transaction
+              evidence and trusted-source repair. Successful script exit
+              requires verified staging removal. Ordinary failures retain their
+              original error and add a fixed path-free warning when cleanup is
+              incomplete; a post-install cleanup failure reports that the
+              binary was installed but staging cleanup remains incomplete.
+              Later packaged operation is Go-free.
+            </p>
+          </article>
         </section>
 
         <section class="doc-section" id="path">

@@ -252,13 +252,15 @@ publication modes have a stable contract.
 
 ### AD-068: The Installed Command Can Update Itself
 
-> **Packaged-path amendment 2026-07-22 by AD-313/T-066/F-018.** Release-mode
+> **Packaged-path amendments 2026-07-22 by AD-313/T-066/F-018 and T-077.** Release-mode
 > update now accepts only the canonical signed archive contract and verifies
 > its offline Sigstore evidence, immutable tag/full commit, platform/build
 > metadata, checksum, digest, and bounded archive structure before durable
-> replacement. The raw asset/checksum-only packaged path below is retained as
-> historical evidence and is unsupported. Source checkout install/update is the
-> current supported route until an approved cutover publishes signed archives.
+> replacement. The raw asset/checksum-only packaged path is unsupported.
+> T-077 supplies a non-circular first bootstrap through exact-version Go/SumDB
+> module installation into that same signed updater. Source checkout
+> install/update remains the current supported route until an approved cutover
+> publishes signed archives.
 
 Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars` command owns its own update surface through `mars update tool`.
 
@@ -267,10 +269,41 @@ The primary path for anyone cloning this repo is source checkout installation:
 fast-forwards a clean clone from `origin/main`, reinstalls with `go install`,
 refreshes shell PATH setup, and prints the installed version.
 
-The packaged-user path remains available for binary release assets. It downloads
-the matching `mars-{os}-{arch}` asset, verifies `checksums.txt`, and
-atomically replaces the binary in the directory containing the currently running
-command. This avoids requiring Go or a source checkout for packaged users.
+First packaged installation runs the repository-owned `scripts/install.sh`
+from an independently reviewed checkout of exactly the requested stable
+`vMAJOR.MINOR.PATCH` tag, with one existing owner-controlled absolute install
+directory. Fetching a shell script and piping it directly into a shell is not a
+supported route. Execute the reviewed script directly so its `#!/bin/bash -p`
+boundary suppresses inherited Bash functions and `BASH_ENV`; an explicit
+`bash scripts/install.sh ...` invocation fails closed. The privileged entry
+starts the real body in a clean environment carrying only `PATH`, `HOME`, and
+`TMPDIR`. Optional `GH_TOKEN`/`GITHUB_TOKEN` values remain non-exported, cross
+that boundary over dedicated inherited descriptors rather than process
+arguments, stay absent from Go, and enter only the staged signed updater's
+environment.
+An ordinary explicit-Bash mistake receives fixed direct-execution remediation;
+a poisoned non-privileged Bash startup is already outside this boundary. The script requires stable Go
+1.25.12 or newer only for this first bootstrap. It resolves one absolute Go
+executable, sanitizes the build environment, validates every
+resolved temporary-root ancestor as private current-user or safe root-owned
+state, creates exact owner-only staging, and forces the canonical module
+through `https://proxy.golang.org` and `sum.golang.org` with direct,
+workspace, private-module, no-sum, compiler-control, and replacement paths
+unavailable. Go receives `-modcacherw` so verified module-cache files remain
+removable from owner-only staging. The staged command independently checks its running
+`runtime/debug.BuildInfo` for the canonical command/module, same exact tag,
+canonical SHA-256 `h1` module sum, and absence of replacements before the
+bootstrap-only updater admission can apply. The existing signed updater remains
+the sole archive/signature verifier and durable replacement authority; the
+bootstrap handoff skips ordinary shell-profile mutation. Pre-commit rejection
+leaves an existing final binary unchanged. If durable replacement instead
+reports recovery required, preserve `.mars-update.transaction`, do not run the
+destination binary, and repair from the reviewed source checkout before
+retrying. A successful script exit requires verified staging removal. An
+ordinary failure keeps its original error and adds a fixed, path-free warning
+if staging removal is incomplete; if the signed binary was installed first,
+cleanup failure is reported explicitly as installed-with-incomplete-cleanup.
+Successful packaged operation and later packaged updates do not require Go.
 
 Official release metadata is anonymous-first. `mars auth github check` makes
 one exact, no-redirect anonymous request to the official `api.github.com`

@@ -62,11 +62,47 @@ When `mars update tool` installs the tool
 Then the consumer verifies the signature, workflow identity, immutable tag and
 full commit, platform/build metadata, archive checksum, digest, and bounded
 structure before replacement
-And failure preserves or restores the prior fixed binary and remains blocked
+And a pre-commit failure preserves the prior fixed binary, while a failed
+post-commit compensation returns recovery-required guidance, preserves the
+transaction evidence, and remains blocked until trusted-source repair
 And private releases are authenticated through the Getting Started auth resolver in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then optional local config token
 And `mars auth github setup` saves a verified GitHub CLI token as the owner-only local fallback without printing the token
 And private release assets are downloaded through GitHub asset API URLs when release metadata provides them
 And missing or invalid auth points to `mars auth github setup`
+
+Given a fresh machine has stable Go 1.25.12 or newer, one existing
+owner-controlled install directory, and an independently reviewed checkout at
+the same exact release tag
+When `./scripts/install.sh` is executed directly and receives one exact stable
+`vMAJOR.MINOR.PATCH` tag
+Then it builds only `github.com/greaveselliott/mars/cmd/mars@<exact-tag>` in
+owner-only temporary staging through `https://proxy.golang.org` and
+`sum.golang.org`, with workspace, replacement, direct, private-module, and
+no-sum bypasses disabled, and no network-fetched script may be piped into a shell
+And the privileged Bash shebang suppresses inherited functions and `BASH_ENV`,
+an explicit shell-interpreter invocation fails closed, and the real body starts
+with only inherited `PATH`, `HOME`, and `TMPDIR`; optional GitHub tokens cross
+over dedicated descriptors, remain absent from Go, and are exported only to the
+staged signed updater
+And the script resolves one absolute Go executable, disables Go auth and CGO,
+neutralizes inherited compiler/tool controls, applies `-modcacherw`,
+validates the resolved temporary-root ancestry as private current-user or safe
+root-owned directories, and uses a private staging `TMPDIR`/`GOTMPDIR`
+And the staged command's running `runtime/debug.BuildInfo` must name the
+canonical command and module, exact requested version, canonical SHA-256 `h1`
+module sum, and no replacements before bootstrap admission
+And the staged command invokes `mars update tool` with the same exact tag and
+selected final install directory, leaving archive/signature verification and
+durable replacement solely to the signed updater and skipping ordinary shell
+PATH mutation during the handoff
+And pre-commit rejection leaves an existing final binary unchanged, while a
+recovery-required result preserves transaction evidence and requires
+trusted-source repair before retry
+And successful script exit requires verified private-staging removal; an
+ordinary failure retains its original error plus a fixed path-free cleanup
+warning when removal is incomplete, while a post-install cleanup failure says
+the binary was installed but staging cleanup remains incomplete
+And later packaged operation does not require Go.
 
 ### F-009-S005: Unified Harness Update
 
@@ -199,7 +235,7 @@ None.
 - F-009-S001: `go test ./internal/release -run TestPrepareGeneratesVersionAndChangelog`
 - F-009-S002: `go test ./internal/release -run TestPrepareUsesChangelogMarkerAsBase`
 - F-009-S003: `go test ./internal/release -run TestPrepareClassifiesDeliveryEvidenceFromDoneTickets`
-- F-009-S004: `go test ./internal/selfupdate -run 'Test(RunRelease|VerifyMARSReleaseArchive|VerifySigstoreChecksumsEvidenceRealOfflineFixture|MARSSigstorePolicyBindsExactWorkflowAndCommit|FetchVerifiedMARSRelease|ReplaceVerifiedMARSRelease)'`
+- F-009-S004: `go test ./internal/selfupdate -run 'Test(InstallScript|RunRelease|VerifyMARSReleaseArchive|VerifySigstoreChecksumsEvidenceRealOfflineFixture|MARSSigstorePolicyBindsExactWorkflowAndCommit|FetchVerifiedMARSRelease|ReplaceVerifiedMARSRelease)'`
 - F-009-S005: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
 - F-009-S006: `go test ./cmd/mars -run TestReleaseLegacyConsumerCommandsAreRetired`
 - F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance

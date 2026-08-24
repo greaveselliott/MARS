@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"testing"
 
@@ -28,6 +29,7 @@ import (
 const (
 	testRunCurrentCommit = "abcdef0123456789abcdef0123456789abcdef01"
 	testRunReleaseCommit = "0123456789abcdef0123456789abcdef01234567"
+	testExactModuleSum   = "h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="
 )
 
 func TestResolvePlanDefaultsToSignedReleaseInCurrentExecutableDir(t *testing.T) {
@@ -68,6 +70,115 @@ func TestResolvePlanSelectsSourceForMain(t *testing.T) {
 
 	require.Equal(t, MethodSource, plan.Method)
 	require.Equal(t, []string{"go", "install", DefaultPackage + "@main"}, plan.Command)
+}
+
+func TestRunExactModuleBootstrapValidatesRunningIdentityAndSkipsShellPath(t *testing.T) {
+	installDir := t.TempDir()
+	download := testRunVerifiedDownload(t, "v0.69.1")
+	events := make([]string, 0, 3)
+	deps := runReleaseDependencies{
+		readRuntimeBuildInfo: func() (*debug.BuildInfo, bool) {
+			events = append(events, "identity")
+			return testExactModuleBuildInfo("v0.69.1", testExactModuleSum), true
+		},
+		captureCurrent: func(string, string) (signedPriorExpectation, error) {
+			t.Fatal("an exact bootstrap must not borrow the staged command as prior signed-release identity")
+			return signedPriorExpectation{}, nil
+		},
+		acquire: func(_ context.Context, _ *http.Client, tag, currentVersion, currentCommit, _, _ string) (verifiedMARSReleaseDownload, error) {
+			events = append(events, "acquire")
+			require.Equal(t, "v0.69.1", tag)
+			require.Empty(t, currentVersion, "validated module bootstrap is not a prior signed release")
+			require.Empty(t, currentCommit)
+			return download, nil
+		},
+		replace: func(_ context.Context, gotDir string, got verifiedMARSReleaseDownload, prior signedPriorExpectation) (signedReplaceResult, error) {
+			events = append(events, "replace")
+			require.Equal(t, installDir, gotDir)
+			require.Equal(t, download, got)
+			require.False(t, prior.required)
+			return testRunReplaceResult(download), nil
+		},
+		ensurePath: func(shellpath.Config) (shellpath.Result, error) {
+			t.Fatal("bootstrap skip-shell-path must not call shellpath.Ensure")
+			return shellpath.Result{}, nil
+		},
+	}
+
+	plan, err := runWithReleaseDependencies(context.Background(), Config{
+		Version: "v0.69.1", CurrentVersion: "0.69.1", CurrentCommit: "unknown",
+		InstallDir: installDir, ExactBootstrap: true, SkipShellPath: true,
+	}, deps)
+	require.NoError(t, err)
+	require.Equal(t, []string{"identity", "acquire", "replace"}, events)
+	require.Equal(t, "v0.69.1", plan.ReleaseTag)
+	require.Empty(t, plan.ShellPath.InstallDir)
+}
+
+func TestExactModuleBootstrapIdentityRejectsMalformedOrSubstitutedBuilds(t *testing.T) {
+	valid := testExactModuleBuildInfo("v0.69.1", testExactModuleSum)
+	require.True(t, validExactModuleBootstrapIdentity(valid, "v0.69.1"))
+
+	tests := map[string]func(*debug.BuildInfo){
+		"wrong command":          func(info *debug.BuildInfo) { info.Path = "example.com/not-mars/cmd/mars" },
+		"wrong module":           func(info *debug.BuildInfo) { info.Main.Path = "example.com/not-mars" },
+		"wrong version":          func(info *debug.BuildInfo) { info.Main.Version = "v0.69.0" },
+		"main replacement":       func(info *debug.BuildInfo) { info.Main.Replace = &debug.Module{Path: "./local"} },
+		"dependency replacement": func(info *debug.BuildInfo) { info.Deps[0].Replace = &debug.Module{Path: "./local"} },
+	}
+	for name, mutate := range tests {
+		t.Run(name, func(t *testing.T) {
+			info := testExactModuleBuildInfo("v0.69.1", testExactModuleSum)
+			mutate(info)
+			require.False(t, validExactModuleBootstrapIdentity(info, "v0.69.1"))
+		})
+	}
+	for _, requested := range []string{"", DefaultVersion, "v0.69.0", "v0.69.1-rc.1"} {
+		t.Run("request "+requested, func(t *testing.T) {
+			require.False(t, validExactModuleBootstrapIdentity(valid, requested))
+		})
+	}
+}
+
+func TestExactModuleBootstrapSumRequiresCanonicalSHA256H1(t *testing.T) {
+	require.True(t, validExactModuleSum(testExactModuleSum))
+	for _, sum := range []string{
+		"", "h1:", "h1:testsum", "sha256:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+		"h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU",                  // missing padding
+		"h1:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU=",                 // URL alphabet
+		"h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFV=",                 // non-canonical pad bits
+		"h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=\n",               // whitespace
+		"h1:QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFB", // wrong digest size
+	} {
+		t.Run(sum, func(t *testing.T) { require.False(t, validExactModuleSum(sum)) })
+	}
+}
+
+func TestExactModuleBootstrapDoesNotWeakenNormalIdentityAdmission(t *testing.T) {
+	download := testRunVerifiedDownload(t, "v0.69.1")
+	deps := testRunReleaseDependencies(t, &[]string{}, download)
+	deps.acquire = func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error) {
+		t.Fatal("normal exact release admission must reject an unknown stable commit before acquisition")
+		return verifiedMARSReleaseDownload{}, nil
+	}
+	_, err := runWithReleaseDependencies(context.Background(), Config{
+		Version: "v0.69.1", CurrentVersion: "0.69.1", CurrentCommit: "unknown",
+		InstallDir: t.TempDir(), SkipShellPath: true,
+	}, deps)
+	require.ErrorIs(t, err, ErrSignedUpdateIdentity)
+
+	_, err = runWithReleaseDependencies(context.Background(), Config{
+		Version: "main", Method: MethodSource, InstallDir: t.TempDir(), ExactBootstrap: true,
+	}, deps)
+	require.ErrorIs(t, err, ErrExactModuleBootstrap)
+
+	deps.readRuntimeBuildInfo = func() (*debug.BuildInfo, bool) {
+		return testExactModuleBuildInfo("v0.69.1", testExactModuleSum), true
+	}
+	_, err = runWithReleaseDependencies(context.Background(), Config{
+		Version: "0.69.1", InstallDir: t.TempDir(), ExactBootstrap: true, SkipShellPath: true,
+	}, deps)
+	require.ErrorIs(t, err, ErrExactModuleBootstrap, "bootstrap input must be the exact canonical release tag")
 }
 
 func TestRunReleaseWiresAcquisitionReplacementAndShellPath(t *testing.T) {
@@ -376,6 +487,17 @@ func testRunReplaceResult(download verifiedMARSReleaseDownload) signedReplaceRes
 
 func testRunPriorExpectation() signedPriorExpectation {
 	return signedPriorExpectation{required: true, digest: [32]byte{1}}
+}
+
+func testExactModuleBuildInfo(version, sum string) *debug.BuildInfo {
+	return &debug.BuildInfo{
+		Path: DefaultPackage,
+		Main: debug.Module{Path: releaseModulePath, Version: version, Sum: sum},
+		Deps: []*debug.Module{{
+			Path: "github.com/spf13/cobra", Version: "v1.10.1",
+			Sum: "h1:7SmJGaEXJhHeu7nFTnT/PQmN4hIPpLqZlXGmhpRQaok=",
+		}},
+	}
 }
 
 type failRoundTripper struct{ t *testing.T }

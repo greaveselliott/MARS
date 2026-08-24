@@ -51,12 +51,41 @@ When the binary updater `mars update tool` selects the current platform
 Then the expected workflow identity, signature, checksum, tag, commit, and platform are verified before replacement
 And extraction rejects absolute or traversal paths, links, devices, duplicates, missing entries, unexpected entries, and quota violations
 And the installed binary is replaced atomically only after every verification passes
-And any failure preserves the previous binary and provides an actionable recovery command
+And a pre-commit failure preserves the previous binary, while an unprovable
+post-commit compensation fails recovery-required with transaction-preservation
+and trusted-source repair guidance
 
-Given a fresh installation before a non-circular packaged bootstrap exists
-When the shell installer runs
-Then it fails closed without network or mutation and directs the operator to an
-independently reviewed source checkout while source install remains the supported route.
+Given a fresh installation has stable Go 1.25.12 or newer, an existing
+owner-controlled final install directory, and an independently reviewed exact
+release-tag checkout
+When the shell installer is executed directly and receives one exact stable
+semantic tag
+Then it uses owner-only temporary staging and builds only the canonical MARS
+command and module at that exact tag through the public Go proxy and SumDB,
+with direct, private/no-sum, workspace, replacement, and floating-version paths
+unavailable, without a network-fetched script-to-shell route
+And its privileged Bash shebang suppresses inherited functions and `BASH_ENV`,
+an explicit shell-interpreter invocation fails closed, and a clean environment
+preserves only `PATH`, `HOME`, and `TMPDIR`; optional GitHub tokens cross over
+dedicated descriptors, remain absent from Go, and are supplied only to the
+staged signed updater
+And the exact absolute Go executable runs with Go auth and CGO disabled,
+compiler/tool controls neutralized and `-modcacherw` enabled, resolved
+temporary-root ancestry restricted to private current-user or safe root-owned
+directories, and private staging `TMPDIR`/`GOTMPDIR`
+And the staged command's running `runtime/debug.BuildInfo` must confirm the
+canonical command/module, exact module version, canonical SHA-256 `h1` sum, and
+absence of replacements before bootstrap admission
+And the staged command delegates the same exact tag and final directory to the
+existing signed updater, which remains the sole archive/signature verifier and
+durable replacement authority, without ordinary shell PATH mutation
+And pre-commit rejection leaves an existing final binary unchanged; a
+recovery-required result instead preserves transaction evidence and requires
+trusted-source repair before retry
+And successful script exit requires verified private-staging removal; an
+ordinary failure preserves its original error plus a fixed path-free warning
+when cleanup is incomplete, while post-install cleanup failure reports that the
+binary was installed but staging cleanup remains incomplete.
 
 ### F-018-S003: Private Rehearsal Without Publication
 
@@ -66,7 +95,8 @@ Then fork-safe CI runs `goreleaser check` and a clean snapshot without secrets o
 And two-build reproducibility and hostile artifact tests pass
 And clean macOS/Linux source setup plus direct native execution of contract-verified unsigned snapshots pass as private fixture evidence
 And offline synthetic/preverified consumer update and rollback pass without treating those snapshots as supported packaged installs
-And fresh shell/package bootstrap remains fail-closed pending a non-circular trust mechanism
+And the exact-version Go/SumDB bootstrap is exercised only through bounded
+private fixtures until a real official tag and signed Release exist
 And offline synthetic fixtures or pinned upstream public test vectors may exercise consumer verification without representing a MARS release
 And the read-only snapshot workflow succeeds with publication, signing, attestation, upload, draft, tag, and Release authority absent
 And no supported tag, GitHub Release, public signature, announcement, or visibility change occurs.

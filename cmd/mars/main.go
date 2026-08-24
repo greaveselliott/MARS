@@ -1348,12 +1348,18 @@ local target checks still complete.`,
 }
 
 func updateToolCmd() *cobra.Command {
+	return updateToolCmdWithRun(selfupdate.Run)
+}
+
+func updateToolCmdWithRun(run func(context.Context, selfupdate.Config) (selfupdate.Plan, error)) *cobra.Command {
 	var (
-		updateVersion string
-		installDir    string
-		sourceUpdate  bool
-		dryRun        bool
-		jsonOut       bool
+		updateVersion  string
+		installDir     string
+		sourceUpdate   bool
+		dryRun         bool
+		jsonOut        bool
+		exactBootstrap bool
+		skipShellPath  bool
 	)
 	cmd := &cobra.Command{
 		Use:     "tool",
@@ -1367,6 +1373,9 @@ replaces the currently running mars binary. Use --source for source-development
 updates through go install, or pass --version main which selects the source path
 automatically.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if run == nil {
+				return selfupdate.ErrSignedUpdateConfig
+			}
 			method := selfupdate.UpdateMethod("")
 			if sourceUpdate {
 				method = selfupdate.MethodSource
@@ -1378,8 +1387,10 @@ automatically.`,
 				InstallDir:     installDir,
 				Method:         method,
 				DryRun:         dryRun,
+				ExactBootstrap: exactBootstrap,
+				SkipShellPath:  skipShellPath,
 			}
-			plan, err := selfupdate.Run(cmd.Context(), cfg)
+			plan, err := run(cmd.Context(), cfg)
 			if err != nil {
 				return err
 			}
@@ -1419,6 +1430,10 @@ automatically.`,
 	cmd.Flags().BoolVar(&sourceUpdate, "source", false, "Use go install instead of signed release archives")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without downloading or replacing the binary")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	cmd.Flags().BoolVar(&exactBootstrap, "bootstrap-exact-module", false, "Admit an independently verified exact-module bootstrap")
+	cmd.Flags().BoolVar(&skipShellPath, "skip-shell-path", false, "Skip shell PATH configuration")
+	_ = cmd.Flags().MarkHidden("bootstrap-exact-module")
+	_ = cmd.Flags().MarkHidden("skip-shell-path")
 	return cmd
 }
 

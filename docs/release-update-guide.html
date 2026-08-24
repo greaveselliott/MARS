@@ -166,6 +166,7 @@ mars update check --repo ~/my-project --json</code></pre>
               <thead><tr><th>Path</th><th>Command</th><th>Use when</th></tr></thead>
               <tbody>
                 <tr><td>Source checkout</td><td><code>make update-tool</code></td><td>Current supported route from a clean clone; fast-forward and reinstall the checked source.</td></tr>
+                <tr><td>First exact signed install</td><td><code>scripts/install.sh vX.Y.Z /absolute/install/dir</code></td><td>Implemented but unusable until an approved exact signed tag exists. Requires stable Go 1.25.12+ once, an independently reviewed checkout at the same tag, and an existing owner-controlled directory.</td></tr>
                 <tr><td>Packaged dry run</td><td><code>mars update tool --dry-run</code></td><td>Use only after an approved signed release exists; previewing never grants installation authority.</td></tr>
                 <tr><td>Latest signed release</td><td><code>mars update tool</code></td><td>Blocked until F-018 cutover publishes the exact signed archive contract.</td></tr>
                 <tr><td>Specific signed release</td><td><code>mars update tool --version vX.Y.Z</code></td><td>Requires that exact approved signed contract; historical raw assets are unsupported.</td></tr>
@@ -181,6 +182,31 @@ mars update check --repo ~/my-project --json</code></pre>
             source-maintained update helper to fast-forward, reinstall, and run
             path setup. Regenerate completions separately when you want updated
             shell tab completion scripts.
+          </div>
+          <div class="callout">
+            <strong>Bootstrap trust boundary:</strong>
+            run the repository-owned shell script only from an independently
+            reviewed checkout at the same exact stable tag; piping a
+            network-fetched script directly into a shell is unsupported.
+            Execute <code>./scripts/install.sh</code> directly; an explicit
+            shell-interpreter invocation fails closed so the privileged Bash
+            shebang can suppress inherited functions and <code>BASH_ENV</code>.
+            Its clean body preserves only <code>PATH</code>, <code>HOME</code>,
+            and <code>TMPDIR</code>; optional GitHub tokens cross through
+            dedicated descriptors, remain absent from Go, and enter only the
+            staged signed updater. The script resolves
+            one absolute Go executable, disables Go auth and CGO, neutralizes
+            inherited build controls, applies <code>-modcacherw</code>, and builds the canonical
+            Go module through the public Go proxy and SumDB in owner-only
+            temporary staging. The staged command validates its own running
+            command/module, exact tag, canonical SHA-256 <code>h1</code> sum,
+            and lack of replacements before invoking the signed updater with
+            the same tag and final directory. Archive, checksum, signature, and
+            durable replacement authority stay entirely inside that updater;
+            the bootstrap handoff skips ordinary shell-profile mutation.
+            Pre-commit rejection leaves an existing destination unchanged. A
+            recovery-required result instead requires preserving transaction
+            evidence and repairing from the reviewed checkout before retrying.
           </div>
         </section>
 

@@ -49,6 +49,7 @@ import (
 	"github.com/greaveselliott/mars/internal/queue"
 	"github.com/greaveselliott/mars/internal/scanner"
 	"github.com/greaveselliott/mars/internal/scoring"
+	"github.com/greaveselliott/mars/internal/selfupdate"
 	"github.com/greaveselliott/mars/internal/serve"
 	"github.com/greaveselliott/mars/internal/setup"
 	harnesstools "github.com/greaveselliott/mars/internal/tools"
@@ -794,6 +795,46 @@ func TestUpdateToolDryRunDoesNotExposeOrResolveReleaseURLs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateToolBootstrapFlagsAreHiddenAndMapToSelfUpdate(t *testing.T) {
+	installDir := t.TempDir()
+	var captured selfupdate.Config
+	cmd := updateToolCmdWithRun(func(_ context.Context, cfg selfupdate.Config) (selfupdate.Plan, error) {
+		captured = cfg
+		return selfupdate.Plan{
+			Method: selfupdate.MethodReleaseAssets, Version: "0.69.1", ReleaseTag: "v0.69.1",
+			InstallDir: installDir, BinaryPath: filepath.Join(installDir, selfupdate.DefaultBinary),
+		}, nil
+	})
+	cmd.SetArgs([]string{
+		"--version", "v0.69.1", "--install-dir", installDir,
+		"--bootstrap-exact-module", "--skip-shell-path", "--json",
+	})
+	var runErr error
+	out := captureStdout(t, func() { runErr = cmd.Execute() })
+	require.NoError(t, runErr)
+	require.True(t, captured.ExactBootstrap)
+	require.True(t, captured.SkipShellPath)
+	require.Equal(t, "v0.69.1", captured.Version)
+	require.Equal(t, installDir, captured.InstallDir)
+	require.Contains(t, out, `"release_tag": "v0.69.1"`)
+
+	help := updateToolCmd()
+	help.SetArgs([]string{"--help"})
+	helpOut := captureStdout(t, func() { require.NoError(t, help.Execute()) })
+	require.NotContains(t, helpOut, "bootstrap-exact-module")
+	require.NotContains(t, helpOut, "skip-shell-path")
+}
+
+func TestUpdateToolBootstrapFlagAloneCannotBypassRunningBinaryIdentity(t *testing.T) {
+	cmd := updateToolCmd()
+	cmd.SetArgs([]string{
+		"--version", "v0.69.1", "--install-dir", t.TempDir(),
+		"--bootstrap-exact-module", "--skip-shell-path",
+	})
+	err := cmd.Execute()
+	require.ErrorIs(t, err, selfupdate.ErrExactModuleBootstrap)
 }
 
 func TestDocSyncAuditCommandReportsStatus(t *testing.T) {

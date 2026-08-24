@@ -12,6 +12,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"debug/buildinfo"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	runtimedebug "runtime/debug"
 	"strings"
 
 	"github.com/greaveselliott/mars/internal/childenv"
@@ -35,6 +37,7 @@ const (
 
 var (
 	ErrSignedUpdateIdentity    = errors.New("update tool: current release identity is unavailable; select an exact signed version or reinstall from a trusted source checkout")
+	ErrExactModuleBootstrap    = errors.New("update tool: exact-module bootstrap identity is invalid; run only the reviewed install script from an independently reviewed exact release checkout")
 	ErrSignedUpdateDestination = errors.New("update tool: implicit latest updates may replace only the running mars binary; omit --install-dir or select an exact signed version")
 	ErrSignedUpdateConfig      = errors.New("update tool: signed release mode supports only the canonical mars binary and an exact release version")
 	ErrSignedUpdateShellPath   = errors.New("update tool: signed binary replacement committed but shell PATH setup failed")
@@ -58,6 +61,7 @@ type Config struct {
 	Method         UpdateMethod
 	DryRun         bool
 	SkipShellPath  bool
+	ExactBootstrap bool
 	HTTPClient     *http.Client
 }
 
@@ -154,6 +158,9 @@ func runWithReleaseDependencies(ctx context.Context, cfg Config, deps runRelease
 		return Plan{}, err
 	}
 	if plan.Method == MethodSource {
+		if cfg.ExactBootstrap {
+			return Plan{}, ErrExactModuleBootstrap
+		}
 		return runSource(ctx, cfg, plan)
 	}
 	return runReleaseAssetsWithDependencies(ctx, cfg, plan, deps)
@@ -193,23 +200,39 @@ func runSource(ctx context.Context, cfg Config, plan Plan) (Plan, error) {
 }
 
 type runReleaseDependencies struct {
-	acquire        func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error)
-	replace        func(context.Context, string, verifiedMARSReleaseDownload, signedPriorExpectation) (signedReplaceResult, error)
-	ensurePath     func(shellpath.Config) (shellpath.Result, error)
-	captureCurrent func(string, string) (signedPriorExpectation, error)
+	acquire              func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error)
+	replace              func(context.Context, string, verifiedMARSReleaseDownload, signedPriorExpectation) (signedReplaceResult, error)
+	ensurePath           func(shellpath.Config) (shellpath.Result, error)
+	captureCurrent       func(string, string) (signedPriorExpectation, error)
+	readRuntimeBuildInfo func() (*runtimedebug.BuildInfo, bool)
 }
 
 func productionRunReleaseDependencies() runReleaseDependencies {
 	return runReleaseDependencies{
-		acquire:        fetchVerifiedMARSRelease,
-		replace:        replaceVerifiedMARSReleaseExpected,
-		ensurePath:     shellpath.Ensure,
-		captureCurrent: captureCurrentMARSExecutableDestination,
+		acquire:              fetchVerifiedMARSRelease,
+		replace:              replaceVerifiedMARSReleaseExpected,
+		ensurePath:           shellpath.Ensure,
+		captureCurrent:       captureCurrentMARSExecutableDestination,
+		readRuntimeBuildInfo: runtimedebug.ReadBuildInfo,
 	}
 }
 
 func runReleaseAssetsWithDependencies(ctx context.Context, cfg Config, plan Plan, deps runReleaseDependencies) (Plan, error) {
+	bootstrap := false
+	if cfg.ExactBootstrap {
+		if cfg.Version != plan.ReleaseTag || deps.readRuntimeBuildInfo == nil {
+			return Plan{}, ErrExactModuleBootstrap
+		}
+		info, ok := deps.readRuntimeBuildInfo()
+		if !ok || !validExactModuleBootstrapIdentity(info, plan.ReleaseTag) {
+			return Plan{}, ErrExactModuleBootstrap
+		}
+		bootstrap = true
+	}
 	if cfg.DryRun {
+		if cfg.SkipShellPath {
+			return plan, nil
+		}
 		if deps.ensurePath == nil {
 			return Plan{}, ErrSignedUpdateConfig
 		}
@@ -219,11 +242,11 @@ func runReleaseAssetsWithDependencies(ctx context.Context, cfg Config, plan Plan
 		}
 		return plan, nil
 	}
-	if ctx == nil || deps.acquire == nil || deps.replace == nil || deps.ensurePath == nil || deps.captureCurrent == nil {
+	if ctx == nil || deps.acquire == nil || deps.replace == nil || deps.captureCurrent == nil || (!cfg.SkipShellPath && deps.ensurePath == nil) {
 		return Plan{}, ErrSignedUpdateConfig
 	}
 	_, latest, ok := normalizeSignedReleaseRequest(plan.ReleaseTag)
-	if !ok || !validSignedCurrentIdentity(cfg.CurrentVersion, cfg.CurrentCommit, latest) {
+	if !ok || (!bootstrap && !validSignedCurrentIdentity(cfg.CurrentVersion, cfg.CurrentCommit, latest)) {
 		return Plan{}, ErrSignedUpdateIdentity
 	}
 	expectedPrior := signedPriorExpectation{}
@@ -234,7 +257,16 @@ func runReleaseAssetsWithDependencies(ctx context.Context, cfg Config, plan Plan
 		}
 		expectedPrior = captured
 	}
-	download, err := deps.acquire(ctx, cfg.HTTPClient, plan.ReleaseTag, cfg.CurrentVersion, cfg.CurrentCommit, runtime.GOOS, runtime.GOARCH)
+	acquisitionCurrentVersion := cfg.CurrentVersion
+	acquisitionCurrentCommit := cfg.CurrentCommit
+	if bootstrap {
+		// An exact go-install bootstrap is not an installed signed release. Its
+		// independently checked module identity replaces only the prior-release
+		// replay input; the requested release remains the same exact tag.
+		acquisitionCurrentVersion = ""
+		acquisitionCurrentCommit = ""
+	}
+	download, err := deps.acquire(ctx, cfg.HTTPClient, plan.ReleaseTag, acquisitionCurrentVersion, acquisitionCurrentCommit, runtime.GOOS, runtime.GOARCH)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -262,6 +294,31 @@ func runReleaseAssetsWithDependencies(ctx context.Context, cfg Config, plan Plan
 	}
 	plan.ShellPath = pathResult
 	return plan, nil
+}
+
+func validExactModuleBootstrapIdentity(info *runtimedebug.BuildInfo, requestedTag string) bool {
+	tag, latest, ok := normalizeSignedReleaseRequest(requestedTag)
+	if !ok || latest || tag != requestedTag || info == nil || info.Path != DefaultPackage ||
+		info.Main.Path != releaseModulePath || info.Main.Version != tag || info.Main.Replace != nil ||
+		!validExactModuleSum(info.Main.Sum) {
+		return false
+	}
+	for _, dependency := range info.Deps {
+		if dependency == nil || dependency.Replace != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func validExactModuleSum(sum string) bool {
+	const prefix = "h1:"
+	if !strings.HasPrefix(sum, prefix) || strings.TrimSpace(sum) != sum {
+		return false
+	}
+	encoded := strings.TrimPrefix(sum, prefix)
+	digest, err := base64.StdEncoding.Strict().DecodeString(encoded)
+	return err == nil && len(digest) == sha256.Size && base64.StdEncoding.EncodeToString(digest) == encoded
 }
 
 func validSignedCurrentIdentity(version, commit string, latest bool) bool {
