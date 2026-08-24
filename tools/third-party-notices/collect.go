@@ -26,7 +26,7 @@ import (
 
 const (
 	mainModule       = "github.com/greaveselliott/mars"
-	requiredGo       = "go1.26.5"
+	requiredGo       = "go1.27.0"
 	noticesPath      = "THIRD_PARTY_NOTICES"
 	collectionWindow = 2 * time.Minute
 )

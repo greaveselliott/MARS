@@ -140,9 +140,9 @@ flowchart LR
     ChecksRun["mars checks run\nnamed local command"]
     ReleaseNotes["steady-state release notes\nafter transition authorization"]
     ReleasePlanGate["active F-018 plan\nauthority and cutover gate"]
-    Snapshot["pinned GoReleaser snapshot\nsource-only, publication-disabled"]
+    Snapshot["conventional Go/Syft rehearsal\nsource-only, publication-disabled"]
     LocalDist["four archives + SBOMs\nchecksums.txt"]
-    VerifyLocal["T-065 contract checker\nclean-root producer gate"]
+    VerifyLocal["artifact contract checker\nclean-root producer gate"]
   end
 
   subgraph MarsRuntime ["MARS runtime"]
@@ -168,12 +168,12 @@ flowchart LR
   Webhook -. optional signal .-> Fixer
 
   Intent --> ReleasePlanGate
-  ReleasePlanGate -->|T-065 through T-067| Snapshot --> LocalDist --> VerifyLocal
+  ReleasePlanGate -->|T-071 through T-079| Snapshot --> LocalDist --> VerifyLocal
   ReleasePlanGate -. after transition authorization .-> ReleaseNotes
   ReleaseNotes -. later approved F-018 cutover .-> GHRelease --> VerifyMirror --> UpdateTool
 ```
 
-The important boundary is that local checks and current private snapshot
+The important boundary is that local checks and current private rehearsal
 evidence are source of truth. Later approved GitHub publication can add
 distribution reach, but
 they do not replace the local gates.
@@ -209,8 +209,8 @@ surface is:
 | `mars trust set <role> <repo> <level> --reason <text>` | Apply an audited trust override. |
 | `mars models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
 | `mars release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
-| `mars release publish-assets` | Retired by T-065; source production now uses the pinned publication-disabled GoReleaser/Syft workflow, while targets own their producer. |
-| Pinned GoReleaser snapshot workflow | Build the publication-disabled MARS source archive/SBOM/checksum contract; the workflow grants no tag, signing, upload, or publication authority. |
+| `mars release publish-assets` | Retired by T-065; source production now uses the conventional Go/Syft/GitHub-attestation workflow under the active plan, while targets own their producer. |
+| Dormant source release workflow | Build and verify the MARS archive/SBOM/checksum contract, attest in a separate job, and publish only after explicit cutover authority enables the otherwise-dormant jobs. |
 
 There is no current top-level `status`, `interventions`, or `stop --now`
 command. Graceful stop is exposed through Ctrl+C, terminal key `q`, and the
@@ -366,8 +366,9 @@ provides the same operational controls during `start` and `serve`: `p`, `r`,
 ### Release (`internal/release/`)
 
 Release notes infer semantic versions from commits, update source build info,
-and prepend generated changelog entries. MARS source production uses the pinned,
-publication-disabled GoReleaser/Syft workflow defined by F-018. The F-018 signed
+and prepend generated changelog entries. MARS source production uses the
+conventional Go/Syft/GitHub-attestation workflow defined by AD-315 and F-018.
+The F-018 signed
 archive consumer authenticates checksum bytes, identity, immutable source commit,
 platform/build metadata, archive digest and structure before durable replacement.
 Generated targets choose their own producer and verifier. The former standalone
@@ -500,13 +501,13 @@ from different projects physically separate by default.
 
 ## Release and Versioning Flow
 
-The active release plan defines source version authority. During T-065 through
-T-067:
+The active release plan defines source version authority. During T-071 through
+T-079:
 
 1. Retain the `0.68.49` version floor and do not create a release-note commit.
 2. Validate, commit, and push each bounded semantic checkpoint to `main`.
-3. Run only pinned, publication-disabled GoReleaser snapshots and their
-   clean-root contract.
+3. Run only the conventional no-publish producer and verification rehearsal;
+   keep `.github/workflows/release.yml` dormant.
 4. Defer tags, signing, uploads, and supported-release claims to the separately
    approved F-018/F-017 cutover.
 

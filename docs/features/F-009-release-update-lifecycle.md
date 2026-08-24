@@ -190,7 +190,7 @@ And release review cannot fail solely because a stale installed binary lacks a n
 Given a source or target repository needs release artifacts
 When Release Manager prepares the release
 Then the repository's approved producer and artifact contract are used
-And generated target repositories do not inherit MARS's GoReleaser implementation
+And generated target repositories do not inherit MARS's source-specific implementation
 And remote publication never replaces local artifact verification
 
 ### F-009-S014: Release Tag Commit Invariant
@@ -212,7 +212,8 @@ And unavailable or unverifiable remote evidence is blocked, never clean
 
 ### F-009-S018: Retired Bespoke GitHub Mirror Publisher
 
-Given T-065 has replaced source production with the F-018 GoReleaser contract
+Given source production uses the AD-315 conventional F-018 contract and the
+older bespoke publisher remains retired
 When the MARS release command tree and source packages are inspected
 Then `release publish-assets` is unknown and no bespoke GitHub create, upload,
 clobber, or convergence implementation is reachable

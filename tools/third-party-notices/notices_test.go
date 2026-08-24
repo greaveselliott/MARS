@@ -23,7 +23,7 @@ func TestRepositoryPolicyInputsAreExact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load repository policy: %v", err)
 	}
-	if p.GoLicenses.Version != "v2.0.1" || p.Toolchain.Version != "go1.26.5" || len(p.BrowserAssets) != 2 || len(p.Overrides) != 3 {
+	if p.GoLicenses.Version != "v2.0.1" || p.Toolchain.Version != "go1.27.0" || len(p.BrowserAssets) != 2 || len(p.Overrides) != 3 {
 		t.Fatalf("unexpected exact policy: %+v", p)
 	}
 }

@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	snapshotVersionPattern  = regexp.MustCompile(`^0\.69\.0-dev\.[0-9a-f]{7,12}$`)
+	snapshotVersionPattern  = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-dev\.[0-9a-f]{7,12})?$`)
 	snapshotCommitPattern   = regexp.MustCompile(`^[0-9a-f]{40}$`)
 	snapshotChecksumPattern = regexp.MustCompile(`^([0-9a-f]{64})  ([A-Za-z0-9._-]+)$`)
 )
@@ -77,12 +77,12 @@ type goReleaserSnapshotReport struct {
 	nativeBinary         []byte
 }
 
-func TestVerifyGoReleaserSnapshotDistFromEnvironment(t *testing.T) {
-	if os.Getenv("MARS_GORELEASER_VERIFY") != "1" {
-		t.Skip("set MARS_GORELEASER_VERIFY=1 after producing a GoReleaser snapshot")
+func TestVerifyReleaseDistFromEnvironment(t *testing.T) {
+	if os.Getenv("MARS_RELEASE_VERIFY") != "1" {
+		t.Skip("set MARS_RELEASE_VERIFY=1 after producing a conventional release distribution")
 	}
 	want := goReleaserSnapshotExpectationFromEnvironment(t)
-	report, err := verifyGoReleaserSnapshotDist(os.Getenv("MARS_GORELEASER_DIST"), want)
+	report, err := verifyGoReleaserSnapshotDist(os.Getenv("MARS_RELEASE_DIST"), want)
 	if err != nil {
 		t.Fatalf("snapshot contract: %v", err)
 	}
@@ -90,8 +90,8 @@ func TestVerifyGoReleaserSnapshotDistFromEnvironment(t *testing.T) {
 		t.Fatalf("native snapshot identity: %v", err)
 	}
 
-	if second := strings.TrimSpace(os.Getenv("MARS_GORELEASER_COMPARE_DIST")); second != "" {
-		if err := requireDistinctGoReleaserSnapshotRoots(os.Getenv("MARS_GORELEASER_DIST"), second); err != nil {
+	if second := strings.TrimSpace(os.Getenv("MARS_RELEASE_COMPARE_DIST")); second != "" {
+		if err := requireDistinctGoReleaserSnapshotRoots(os.Getenv("MARS_RELEASE_DIST"), second); err != nil {
 			t.Fatalf("comparison snapshot roots: %v", err)
 		}
 		other, err := verifyGoReleaserSnapshotDist(second, want)
@@ -222,7 +222,7 @@ func TestGoReleaserArchiveRejectsHostileMembers(t *testing.T) {
 	want := goReleaserSnapshotExpectation{
 		FullCommit: strings.Repeat("a", 40),
 		CommitTime: time.Date(2026, 7, 21, 21, 0, 0, 0, time.UTC),
-		GoVersion:  "go1.26.5",
+		GoVersion:  "go1.27.0",
 		Documents: map[string][]byte{
 			"LICENSE":             []byte("license"),
 			"NOTICE":              []byte("notice"),
@@ -333,9 +333,9 @@ func TestGoReleaserSBOMNormalizationDropsOnlyApprovedVolatileFields(t *testing.T
 func TestGoReleaserBuildInfoContractAcceptsExactMetadataBeforeRejectingDirty(t *testing.T) {
 	when := time.Date(2026, 7, 21, 21, 0, 0, 0, time.UTC)
 	platform := goReleaserSnapshotPlatforms[0]
-	want := goReleaserSnapshotExpectation{FullCommit: strings.Repeat("a", 40), CommitTime: when, GoVersion: "go1.26.5"}
+	want := goReleaserSnapshotExpectation{FullCommit: strings.Repeat("a", 40), CommitTime: when, GoVersion: "go1.27.0"}
 	info := &debug.BuildInfo{
-		GoVersion: "go1.26.5",
+		GoVersion: "go1.27.0",
 		Path:      "github.com/greaveselliott/mars/cmd/mars",
 		Main:      debug.Module{Path: "github.com/greaveselliott/mars"},
 		Settings: []debug.BuildSetting{
@@ -427,7 +427,7 @@ func validateGoReleaserSnapshotExpectation(want goReleaserSnapshotExpectation) e
 	if want.CommitTime.IsZero() {
 		return errors.New("commit time is required")
 	}
-	if want.GoVersion != "go1.26.5" {
+	if want.GoVersion != "go1.27.0" {
 		return fmt.Errorf("unexpected Go toolchain %q", want.GoVersion)
 	}
 	for _, name := range []string{"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES"} {
@@ -847,9 +847,9 @@ func executeNativeSnapshotBinary(t *testing.T, binary []byte, want goReleaserSna
 
 func goReleaserSnapshotExpectationFromEnvironment(t *testing.T) goReleaserSnapshotExpectation {
 	t.Helper()
-	commitTime, err := time.Parse(time.RFC3339, strings.TrimSpace(os.Getenv("MARS_GORELEASER_COMMIT_TIME")))
+	commitTime, err := time.Parse(time.RFC3339, strings.TrimSpace(os.Getenv("MARS_RELEASE_COMMIT_TIME")))
 	if err != nil {
-		t.Fatalf("parse MARS_GORELEASER_COMMIT_TIME: %v", err)
+		t.Fatalf("parse MARS_RELEASE_COMMIT_TIME: %v", err)
 	}
 	documents := make(map[string][]byte, 3)
 	for _, name := range []string{"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES"} {
@@ -860,10 +860,10 @@ func goReleaserSnapshotExpectationFromEnvironment(t *testing.T) goReleaserSnapsh
 		documents[name] = data
 	}
 	return goReleaserSnapshotExpectation{
-		Version:    strings.TrimSpace(os.Getenv("MARS_GORELEASER_VERSION")),
-		FullCommit: strings.TrimSpace(os.Getenv("MARS_GORELEASER_COMMIT")),
+		Version:    strings.TrimSpace(os.Getenv("MARS_RELEASE_VERSION")),
+		FullCommit: strings.TrimSpace(os.Getenv("MARS_RELEASE_COMMIT")),
 		CommitTime: commitTime,
-		GoVersion:  strings.TrimSpace(os.Getenv("MARS_GORELEASER_GO_VERSION")),
+		GoVersion:  strings.TrimSpace(os.Getenv("MARS_RELEASE_GO_VERSION")),
 		Documents:  documents,
 	}
 }

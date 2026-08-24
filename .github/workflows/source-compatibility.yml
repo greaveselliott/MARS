@@ -27,7 +27,7 @@ jobs:
       - name: Install exact notice toolchain
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.26.5
+          go-version: 1.27.0
           cache: false
 
       - name: Prestage SumDB-verified modules
@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.25.12", "1.26.5"]
+        go-version: ["1.25.12", "1.27.0"]
     steps:
       - name: Check out source without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -74,7 +74,7 @@ jobs:
           CGO_ENABLED=0 go build ./cmd/mars
           go test ./...
           go vet ./...
-          GOBIN="$RUNNER_TEMP" go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+          GOBIN="$RUNNER_TEMP" go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           "$RUNNER_TEMP/govulncheck" ./...
 
   below-minimum:

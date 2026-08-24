@@ -149,7 +149,7 @@ func TestCheckGoVersionEnforcesExactMarsSourceFloor(t *testing.T) {
 		{name: "malformed", output: "go version devel", wantStatus: statusFail, wantText: "could not parse"},
 		{name: "below floor", output: "go version go1.25.11 darwin/arm64", wantStatus: statusFail, wantText: "need >= 1.25.12"},
 		{name: "minimum", output: "go version go1.25.12 darwin/arm64", wantStatus: statusOK, wantText: "go 1.25.12"},
-		{name: "release", output: "go version go1.26.5 darwin/arm64", wantStatus: statusOK, wantText: "go 1.26.5"},
+		{name: "release", output: "go version go1.27.0 darwin/arm64", wantStatus: statusOK, wantText: "go 1.27.0"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestParseGoVersion(t *testing.T) {
 	}{
 		{"go version go1.25.11 darwin/arm64", 1, 25, 11, false},
 		{"go version go1.25.12 linux/amd64", 1, 25, 12, false},
-		{"go version go1.26.5 linux/arm64", 1, 26, 5, false},
+		{"go version go1.27.0 linux/arm64", 1, 27, 0, false},
 		{"go version go1.25rc1 linux/amd64", 0, 0, 0, true},
 		{"go version go1.25.12rc1 linux/amd64", 0, 0, 0, true},
 		{"no version here", 0, 0, 0, true},

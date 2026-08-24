@@ -27,10 +27,10 @@
     }
   ],
   "toolchain": {
-    "version": "go1.26.5",
-    "license_path": "third_party/licenses/go-1.26.5/LICENSE",
+    "version": "go1.27.0",
+    "license_path": "third_party/licenses/go-1.27.0/LICENSE",
     "license_sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
-    "patents_path": "third_party/licenses/go-1.26.5/PATENTS",
+    "patents_path": "third_party/licenses/go-1.27.0/PATENTS",
     "patents_sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
   },
   "overrides": [

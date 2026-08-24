@@ -2,7 +2,7 @@ module github.com/greaveselliott/mars/tools/third-party-notices
 
 go 1.25.12
 
-toolchain go1.26.5
+toolchain go1.27.0
 
 require (
 	github.com/google/go-licenses/v2 v2.0.1

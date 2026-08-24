@@ -6,7 +6,7 @@ GOPATH := $(shell $(GO) env GOPATH)
 INSTALL_BIN := $(if $(GOBIN),$(GOBIN),$(GOPATH)/bin)
 
 FUZZTIME ?= 10s
-GOVULNCHECK_VERSION := v1.6.0
+GOVULNCHECK_VERSION := v1.7.0
 GOVULNCHECK ?= $(INSTALL_BIN)/govulncheck
 export GOVULNCHECK
 
@@ -69,7 +69,7 @@ dependency-notices:
 	@set -eu; \
 		goroot="$$($(GO) env GOROOT)"; \
 		toolgo="$$goroot/bin/go"; \
-		test "$$($$toolgo env GOVERSION)" = "go1.26.5"; \
+		test "$$($$toolgo env GOVERSION)" = "go1.27.0"; \
 		tmp="$$(mktemp -d "$${TMPDIR:-/tmp}/mars-notices.XXXXXX")"; \
 		trap 'rm -rf "$$tmp"' EXIT; \
 		cd tools/third-party-notices; \

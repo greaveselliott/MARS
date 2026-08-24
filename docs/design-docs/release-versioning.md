@@ -233,9 +233,10 @@ assets.
 
 ### AD-141: Foundation Release Publication Uses A Source-Only Skill
 
-> **Superseded 2026-07-21 by AD-313/T-065/F-018.** The skill remains
-> source-only but now governs publication-disabled GoReleaser/Syft snapshots;
-> the original publisher sequence below is retained as historical evidence.
+> **Launch implementation superseded 2026-08-24 by AD-315.** The skill remains
+> source-only and now governs the conventional Go/Syft/GitHub-attestation
+> sequence; the original publisher sequence below is retained as historical
+> evidence.
 
 The source harness release path has a repeated judgment-heavy sequence after
 each non-release semantic commit: generate release notes, commit and push them,

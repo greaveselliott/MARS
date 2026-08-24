@@ -139,7 +139,7 @@ func TestMakeVulnFailsClosedWhenScannerIsMissing(t *testing.T) {
 	if !strings.Contains(text, "vulnerability scanning is required") {
 		t.Fatalf("missing fail-closed explanation:\n%s", text)
 	}
-	if !strings.Contains(text, "go install golang.org/x/vuln/cmd/govulncheck@v1.6.0") {
+	if !strings.Contains(text, "go install golang.org/x/vuln/cmd/govulncheck@v1.7.0") {
 		t.Fatalf("missing pinned remediation command:\n%s", text)
 	}
 }

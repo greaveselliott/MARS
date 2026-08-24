@@ -72,15 +72,15 @@ tool calls.
   configured Go install bin (`GOBIN`, or `GOPATH/bin` when unset), matching
   where `go install` writes the tool. A missing scanner fails closed with the
   pinned remediation
-  `go install golang.org/x/vuln/cmd/govulncheck@v1.6.0`. Package-load,
+  `go install golang.org/x/vuln/cmd/govulncheck@v1.7.0`. Package-load,
   vulnerability-database, and reachable-vulnerability failures propagate the
   scanner's non-zero result instead of being treated as optional evidence.
 
 ### AD-314: Source Builds Require Go 1.25.12 While Packaged Operation Does Not Require An External Go Toolchain
 
 The canonical MARS source module declares `go 1.25.12` and retains
-`toolchain go1.26.5` for release and snapshot builds. Read-only CI exercises
-the exact 1.25.12 and 1.26.5 toolchains with `GOTOOLCHAIN=local`, while an
+`toolchain go1.27.0` for release builds. Read-only CI exercises
+the exact 1.25.12 and 1.27.0 toolchains with `GOTOOLCHAIN=local`, while an
 exact 1.25.11 lane must fail specifically at the module floor without
 auto-downloading a newer compiler.
 
@@ -123,6 +123,13 @@ do not inherit the MARS source floor and choose their own toolchain.
   `59ab946`. Local and remote `govulncheck v1.6.0` report zero called
   application vulnerabilities; two uncalled findings remain visible and are
   not described as zero advisories.
+- **2026-08-24 — launch production moved to exact Go 1.27 and govulncheck v1.7:**
+  AD-315's conventional source producer uses Go 1.27.0, and source CI retains
+  Go 1.25.12 compatibility while adding the exact Go 1.27.0 lane. The
+  vulnerability remediation command moved to `govulncheck v1.7.0`. Its first
+  exact-toolchain scan found called GO-2026-5970 in `x/text v0.38.0`; upgrading
+  to `x/text v0.39.0` restored zero called vulnerabilities. Earlier Go
+  1.26.5/v1.6 evidence remains historical rather than current guidance.
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
   `cmd/mars` (test additions between runs) and packages landing on

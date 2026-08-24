@@ -74,9 +74,9 @@ func (s SignedChecksums) matchesIdentity(tag, fullCommit string) bool {
 	return s.tag == tag && s.fullCommit == fullCommit
 }
 
-// VerifyMARSSignedChecksums verifies the Sigstore evidence over the exact raw
-// checksums bytes, then enforces the canonical eight-artifact MARS contract.
-// It performs no network or filesystem I/O and does not inspect archives.
+// VerifyMARSSignedChecksums verifies the GitHub/Sigstore provenance attestation
+// for the exact eight subjects named by the canonical checksums file. It
+// performs no network or filesystem I/O and does not inspect archives.
 func VerifyMARSSignedChecksums(checksums, bundleJSON []byte, tag, fullCommit string) (SignedChecksums, error) {
 	policy, err := newSigstoreReleasePolicy(marsReleaseRepository, marsReleaseWorkflow, tag, fullCommit)
 	if err != nil {
@@ -89,12 +89,16 @@ func VerifyMARSSignedChecksums(checksums, bundleJSON []byte, tag, fullCommit str
 	// reuse cannot change the bytes authenticated by this invocation.
 	checksumsSnapshot := bytes.Clone(checksums)
 	bundleSnapshot := bytes.Clone(bundleJSON)
-	if err := verifySigstoreChecksumsEvidence(checksumsSnapshot, bundleSnapshot, pinnedTrustedRootJSON, pinnedTrustedRootSHA256, policy); err != nil {
-		return SignedChecksums{}, ErrSignedReleaseEvidence
-	}
 	digests, err := parseCanonicalMARSSignedChecksums(checksumsSnapshot, strings.TrimPrefix(tag, "v"))
 	if err != nil {
 		return SignedChecksums{}, ErrSignedReleaseChecksums
+	}
+	expectedSubjects := make(map[string]map[string]string, len(digests))
+	for name, digest := range digests {
+		expectedSubjects[name] = map[string]string{"sha256": hex.EncodeToString(digest[:])}
+	}
+	if err := verifySigstoreProvenanceEvidence(expectedSubjects, bundleSnapshot, pinnedTrustedRootJSON, pinnedTrustedRootSHA256, policy); err != nil {
+		return SignedChecksums{}, ErrSignedReleaseEvidence
 	}
 	return SignedChecksums{digests: digests, tag: tag, fullCommit: fullCommit}, nil
 }
@@ -107,10 +111,16 @@ func newSigstoreReleasePolicy(repository, workflow, tag, fullCommit string) (sig
 	if !exactReleaseTagPattern.MatchString(tag) || !exactCommitPattern.MatchString(fullCommit) {
 		return sigstoreReleasePolicy{}, ErrSignedReleaseIdentity
 	}
+	return newSigstoreWorkflowPolicy(repository, workflow, "refs/tags/"+tag, fullCommit)
+}
+
+func newSigstoreWorkflowPolicy(repository, workflow, ref, fullCommit string) (sigstoreReleasePolicy, error) {
+	if !exactCommitPattern.MatchString(fullCommit) || !strings.HasPrefix(ref, "refs/") || strings.ContainsAny(ref, "\r\n\x00") {
+		return sigstoreReleasePolicy{}, ErrSignedReleaseIdentity
+	}
 	if repository == "" || workflow == "" || strings.ContainsAny(repository+workflow, "\r\n\x00") {
 		return sigstoreReleasePolicy{}, ErrSignedReleaseIdentity
 	}
-	ref := "refs/tags/" + tag
 	repositoryURI := "https://github.com/" + repository
 	workflowURI := repositoryURI + "/.github/workflows/" + workflow + "@" + ref
 	san, err := verify.NewSANMatcher(workflowURI, "")
@@ -139,6 +149,89 @@ func newSigstoreReleasePolicy(repository, workflow, tag, fullCommit string) (sig
 		return sigstoreReleasePolicy{}, ErrSignedReleaseIdentity
 	}
 	return sigstoreReleasePolicy{identity: identity}, nil
+}
+
+func verifySigstoreProvenanceEvidence(expectedSubjects map[string]map[string]string, bundleJSON, trustedRootJSON []byte, trustedRootSHA256 string, policy sigstoreReleasePolicy) error {
+	if len(expectedSubjects) == 0 || len(expectedSubjects) > expectedSignedChecksumCount || len(bundleJSON) == 0 || len(bundleJSON) > maxSigstoreBundleBytes {
+		return ErrSignedReleaseEvidence
+	}
+	artifactDigests := make([]verify.ArtifactDigest, 0, len(expectedSubjects))
+	for name, digestSet := range expectedSubjects {
+		if name == "" || len(digestSet) != 1 {
+			return ErrSignedReleaseEvidence
+		}
+		for algorithm, digestText := range digestSet {
+			digest, err := hex.DecodeString(digestText)
+			if err != nil || len(digest) == 0 || hex.EncodeToString(digest) != digestText {
+				return ErrSignedReleaseEvidence
+			}
+			artifactDigests = append(artifactDigests, verify.ArtifactDigest{Algorithm: algorithm, Digest: digest})
+		}
+	}
+	rootDigest := sha256.Sum256(trustedRootJSON)
+	if hex.EncodeToString(rootDigest[:]) != trustedRootSHA256 {
+		return ErrSignedReleaseEvidence
+	}
+	trustedRoot, err := root.NewTrustedRootFromJSON(trustedRootJSON)
+	if err != nil {
+		return ErrSignedReleaseEvidence
+	}
+	entity := &bundle.Bundle{}
+	if err := entity.UnmarshalJSON(bundleJSON); err != nil {
+		return ErrSignedReleaseEvidence
+	}
+	version, err := entity.Version()
+	if err != nil || version != "v0.3" || !entity.HasInclusionProof() {
+		return ErrSignedReleaseEvidence
+	}
+	entries, err := entity.TlogEntries()
+	if err != nil || len(entries) != 1 {
+		return ErrSignedReleaseEvidence
+	}
+	signature, err := entity.SignatureContent()
+	if err != nil || signature.EnvelopeContent() == nil || signature.MessageSignatureContent() != nil {
+		return ErrSignedReleaseEvidence
+	}
+	verifier, err := verify.NewVerifier(
+		trustedRoot,
+		verify.WithTransparencyLog(1),
+		verify.WithObserverTimestamps(1),
+		verify.WithSignedCertificateTimestamps(1),
+	)
+	if err != nil {
+		return ErrSignedReleaseEvidence
+	}
+	result, err := verifier.Verify(entity, verify.NewPolicy(
+		verify.WithArtifactDigests(artifactDigests),
+		verify.WithCertificateIdentity(policy.identity),
+	))
+	if err != nil || result == nil || result.Statement == nil ||
+		result.Statement.Type != "https://in-toto.io/Statement/v1" ||
+		result.Statement.PredicateType != "https://slsa.dev/provenance/v1" ||
+		result.Statement.Predicate == nil || len(result.Statement.Subject) != len(expectedSubjects) {
+		return ErrSignedReleaseEvidence
+	}
+	seen := make(map[string]struct{}, len(result.Statement.Subject))
+	for _, subject := range result.Statement.Subject {
+		if subject == nil || subject.Name == "" || subject.Uri != "" || len(subject.Content) != 0 ||
+			subject.DownloadLocation != "" || subject.MediaType != "" || subject.Annotations != nil {
+			return ErrSignedReleaseEvidence
+		}
+		expected, ok := expectedSubjects[subject.Name]
+		if !ok || len(subject.Digest) != len(expected) {
+			return ErrSignedReleaseEvidence
+		}
+		if _, duplicate := seen[subject.Name]; duplicate {
+			return ErrSignedReleaseEvidence
+		}
+		seen[subject.Name] = struct{}{}
+		for algorithm, digest := range expected {
+			if subject.Digest[algorithm] != digest {
+				return ErrSignedReleaseEvidence
+			}
+		}
+	}
+	return nil
 }
 
 func verifySigstoreChecksumsEvidence(checksums, bundleJSON, trustedRootJSON []byte, trustedRootSHA256 string, policy sigstoreReleasePolicy) error {

@@ -51,7 +51,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 				"mars release notes --repo . --bump auto",
 				"non-release semantic commit",
 				"release: notes X.Y.Z",
-				"AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer",
+				"AD-315: Launch Uses Conventional Go Production And GitHub Attestations",
 			},
 		},
 	}

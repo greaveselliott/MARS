@@ -268,7 +268,7 @@ func TestValidateMARSReleaseBuildInfo(t *testing.T) {
 	}
 
 	mutations := map[string]func(*debug.BuildInfo){
-		"toolchain":          func(info *debug.BuildInfo) { info.GoVersion = "go1.26.4" },
+		"toolchain":          func(info *debug.BuildInfo) { info.GoVersion = "go1.26.5" },
 		"command path":       func(info *debug.BuildInfo) { info.Path = "attacker.invalid/mars" },
 		"module path":        func(info *debug.BuildInfo) { info.Main.Path = "attacker.invalid/module" },
 		"module replacement": func(info *debug.BuildInfo) { info.Main.Replace = &debug.Module{Path: "local"} },
@@ -329,7 +329,7 @@ func TestMARSReleaseArchiveErrorsAreFixedAndRedacted(t *testing.T) {
 func TestVerifyMARSReleaseArchiveFromEnvironment(t *testing.T) {
 	archivePath := os.Getenv("MARS_TEST_RELEASE_ARCHIVE")
 	if archivePath == "" {
-		t.Skip("set MARS_TEST_RELEASE_ARCHIVE to run the clean GoReleaser archive proof")
+		t.Skip("set MARS_TEST_RELEASE_ARCHIVE to run the clean release archive proof")
 	}
 	tag := os.Getenv("MARS_TEST_RELEASE_TAG")
 	commit := os.Getenv("MARS_TEST_RELEASE_COMMIT")

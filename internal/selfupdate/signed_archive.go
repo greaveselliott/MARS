@@ -26,7 +26,7 @@ const (
 	maxReleaseBinaryBytes   = 48 << 20
 	maxReleaseDocumentBytes = 2 << 20
 	releaseTarBlockBytes    = 512
-	releaseGoVersion        = "go1.26.5"
+	releaseGoVersion        = "go1.27.0"
 	releaseModulePath       = "github.com/greaveselliott/mars"
 )
 

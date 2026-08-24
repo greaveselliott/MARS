@@ -14,10 +14,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/sigstore/sigstore-go/pkg/fulcio/certificate"
+	"github.com/sigstore/sigstore-go/pkg/verify"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,6 +34,9 @@ var goreleaserFixtureChecksums []byte
 
 //go:embed testdata/goreleaser-v2.17.0-checksums.txt.sigstore.json
 var goreleaserFixtureBundle []byte
+
+//go:embed testdata/actions-attest-v4-provenance.sigstore.json
+var actionsAttestFixtureBundle []byte
 
 func TestVerifySigstoreChecksumsEvidenceRealOfflineFixture(t *testing.T) {
 	policy, err := newSigstoreReleasePolicy("goreleaser/goreleaser", "release.yml", goreleaserFixtureTag, goreleaserFixtureCommit)
@@ -73,6 +79,48 @@ func TestVerifySigstoreChecksumsEvidenceRealOfflineFixture(t *testing.T) {
 	t.Run("unsupported bundle version", func(t *testing.T) {
 		unsupported := strings.Replace(string(goreleaserFixtureBundle), "application/vnd.dev.sigstore.bundle.v0.3+json", "application/vnd.dev.sigstore.bundle.v0.2+json", 1)
 		require.ErrorIs(t, verifySigstoreChecksumsEvidence(goreleaserFixtureChecksums, []byte(unsupported), pinnedTrustedRootJSON, pinnedTrustedRootSHA256, policy), ErrSignedReleaseEvidence)
+	})
+}
+
+func TestVerifySigstoreProvenanceEvidenceRealOfficialFixture(t *testing.T) {
+	const (
+		commit   = "73ab4386a5094f406a9291405fdd77345ce9702c"
+		ref      = "refs/heads/main"
+		workflow = "https://github.com/actions/attest/.github/workflows/prober.yml@refs/heads/main"
+	)
+	san, err := verify.NewSANMatcher(workflow, "")
+	require.NoError(t, err)
+	issuer, err := verify.NewIssuerMatcher(sigstoreActionsIssuer, "")
+	require.NoError(t, err)
+	identity, err := verify.NewCertificateIdentity(san, issuer, certificate.Extensions{
+		GithubWorkflowSHA:        commit,
+		GithubWorkflowRepository: "actions/attest",
+		GithubWorkflowRef:        ref,
+		BuildSignerURI:           workflow,
+		BuildSignerDigest:        commit,
+		RunnerEnvironment:        "github-hosted",
+		SourceRepositoryURI:      "https://github.com/actions/attest",
+		SourceRepositoryDigest:   commit,
+		SourceRepositoryRef:      ref,
+		BuildConfigURI:           "https://github.com/actions/attest/.github/workflows/prober-public-good.yml@refs/heads/main",
+		BuildConfigDigest:        commit,
+		BuildTrigger:             "schedule",
+	})
+	require.NoError(t, err)
+	expected := map[string]map[string]string{
+		"artifact": {"sha256": "62c4d929a5c695f8b77f0023df50fb6b6e132e8949632f27a476cdfd6b17dfb3"},
+	}
+	policy := sigstoreReleasePolicy{identity: identity}
+	require.NoError(t, verifySigstoreProvenanceEvidence(expected, actionsAttestFixtureBundle, pinnedTrustedRootJSON, pinnedTrustedRootSHA256, policy))
+
+	t.Run("wrong subject digest", func(t *testing.T) {
+		wrong := map[string]map[string]string{"artifact": {"sha256": strings.Repeat("0", 64)}}
+		require.ErrorIs(t, verifySigstoreProvenanceEvidence(wrong, actionsAttestFixtureBundle, pinnedTrustedRootJSON, pinnedTrustedRootSHA256, policy), ErrSignedReleaseEvidence)
+	})
+	t.Run("wrong workflow identity", func(t *testing.T) {
+		wrong, err := newSigstoreWorkflowPolicy("actions/attest", "release.yml", ref, commit)
+		require.NoError(t, err)
+		require.ErrorIs(t, verifySigstoreProvenanceEvidence(expected, actionsAttestFixtureBundle, pinnedTrustedRootJSON, pinnedTrustedRootSHA256, wrong), ErrSignedReleaseEvidence)
 	})
 }
 
@@ -158,6 +206,20 @@ func TestVerifyMARSSignedChecksumsErrorsAreFixedAndRedacted(t *testing.T) {
 
 	_, err = VerifyMARSSignedChecksums(checksums, goreleaserFixtureBundle, "0.69.0", strings.Repeat("a", 40))
 	require.ErrorIs(t, err, ErrSignedReleaseIdentity)
+}
+
+func TestVerifyMARSReleaseAttestationFromEnvironment(t *testing.T) {
+	if os.Getenv("MARS_RELEASE_ATTESTATION_VERIFY") != "1" {
+		t.Skip("set MARS_RELEASE_ATTESTATION_VERIFY=1 for a real release attestation")
+	}
+	dist := os.Getenv("MARS_RELEASE_DIST")
+	checksums, err := os.ReadFile(filepath.Join(dist, "checksums.txt"))
+	require.NoError(t, err)
+	bundle, err := os.ReadFile(filepath.Join(dist, "checksums.txt.sigstore.json"))
+	require.NoError(t, err)
+	verified, err := VerifyMARSSignedChecksums(checksums, bundle, os.Getenv("MARS_RELEASE_TAG"), os.Getenv("MARS_RELEASE_COMMIT"))
+	require.NoError(t, err)
+	require.Equal(t, expectedSignedChecksumCount, verified.Len())
 }
 
 func canonicalMARSChecksumsFixture(version string) []byte {

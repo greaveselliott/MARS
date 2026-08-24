@@ -28,7 +28,7 @@ import (
 
 const (
 	policyPath   = "third_party/licenses/overrides.json"
-	policySHA256 = "352a6555a6a2991ad9735f8ea5a9d122c57aa5727f03b1e96873af0d086f4a4d"
+	policySHA256 = "83aa14d06524b684df0d86042ab34d2d55b166477c8788b3411c9de27c9bb3b0"
 	maxInputSize = 1 << 20
 )
 
@@ -46,10 +46,10 @@ var expectedPolicy = Policy{
 		{Name: "Chart.js 4.4.7", License: "MIT", Path: "internal/dashboard/static/vendor/chartjs-LICENSE.md", SHA256: "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce"},
 	},
 	Toolchain: ToolchainInput{
-		Version:       "go1.26.5",
-		LicensePath:   "third_party/licenses/go-1.26.5/LICENSE",
+		Version:       "go1.27.0",
+		LicensePath:   "third_party/licenses/go-1.27.0/LICENSE",
 		LicenseSHA256: "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
-		PatentsPath:   "third_party/licenses/go-1.26.5/PATENTS",
+		PatentsPath:   "third_party/licenses/go-1.27.0/PATENTS",
 		PatentsSHA256: "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
 	},
 	Overrides: []Override{

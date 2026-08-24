@@ -1,0 +1,213 @@
+# MarsDocSync:
+# docs:
+# - docs/design-docs/release-versioning.md
+# - docs/features/F-018-goreleaser-distribution.md
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    if: ${{ false }} # Dormant until the separately approved T-080 cutover.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the exact tag without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install exact Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.0
+          cache: false
+
+      - name: Admit the tag and install upstream Syft
+        id: preflight
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = greaveselliott/MARS
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF_TYPE" = tag
+          test "$GITHUB_REF" = "refs/tags/$GITHUB_REF_NAME"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(go env GOVERSION)" = go1.27.0
+          version=${GITHUB_REF_NAME#v}
+          test "v$version" = "$GITHUB_REF_NAME"
+          test "$(tr -d '\n' < VERSION)" = "$version"
+          commit_time=$(git show -s --format=%cI "$GITHUB_SHA")
+          tool_bin="$RUNNER_TEMP/release-tools"
+          mkdir -m 700 "$tool_bin"
+          GOBIN="$tool_bin" GOTOOLCHAIN=local GOENV=off \
+            GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOPRIVATE= GONOSUMDB= \
+            go install github.com/anchore/syft/cmd/syft@v1.51.0
+          go version -m "$tool_bin/syft" | grep -F $'\tmod\tgithub.com/anchore/syft\tv1.51.0\t'
+          go version -m "$tool_bin/syft" | grep -F ': go1.27.0'
+          printf 'version=%s\ncommit_time=%s\nsyft=%s\n' "$version" "$commit_time" "$tool_bin/syft" >> "$GITHUB_OUTPUT"
+
+      - name: Produce four archives, four SBOMs, and checksums
+        env:
+          MARS_RELEASE_SYFT: ${{ steps.preflight.outputs.syft }}
+        run: |
+          set -euo pipefail
+          bash scripts/release-produce.sh \
+            "$GITHUB_WORKSPACE" "$RUNNER_TEMP/mars-dist" \
+            "${{ steps.preflight.outputs.version }}" "$GITHUB_SHA" \
+            "${{ steps.preflight.outputs.commit_time }}"
+
+      - name: Verify the unsigned distribution before transfer
+        env:
+          MARS_RELEASE_VERIFY: "1"
+          MARS_RELEASE_DIST: ${{ runner.temp }}/mars-dist
+          MARS_RELEASE_VERSION: ${{ steps.preflight.outputs.version }}
+          MARS_RELEASE_COMMIT: ${{ github.sha }}
+          MARS_RELEASE_COMMIT_TIME: ${{ steps.preflight.outputs.commit_time }}
+          MARS_RELEASE_GO_VERSION: go1.27.0
+        run: go test ./internal/release -run '^TestVerifyReleaseDistFromEnvironment$' -count=1
+
+      - name: Upload the immutable unsigned distribution
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mars-release-dist-${{ github.sha }}
+          path: ${{ runner.temp }}/mars-dist
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  attest:
+    if: ${{ false }} # Dormant until the separately approved T-080 cutover.
+    needs: produce
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - name: Download the exact unsigned distribution
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: mars-release-dist-${{ github.sha }}
+          path: dist
+
+      - name: Attest the eight checksummed release subjects
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-checksums: dist/checksums.txt
+          show-summary: false
+
+      - name: Add the offline Sigstore bundle
+        run: |
+          set -euo pipefail
+          cp -- "${{ steps.attest.outputs.bundle-path }}" dist/checksums.txt.sigstore.json
+          test "$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')" = 10
+
+      - name: Upload the attested distribution
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mars-release-attested-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  verify:
+    if: ${{ false }} # Dormant until the separately approved T-080 cutover.
+    needs: attest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out the exact tag without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install exact Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.0
+          cache: false
+
+      - name: Download the exact attested distribution
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: mars-release-attested-${{ github.sha }}
+          path: dist
+
+      - name: Independently verify artifacts and attestation
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME#v}
+          commit_time=$(git show -s --format=%cI "$GITHUB_SHA")
+          MARS_RELEASE_VERIFY=1 MARS_RELEASE_DIST="$GITHUB_WORKSPACE/dist" \
+            MARS_RELEASE_VERSION="$version" MARS_RELEASE_COMMIT="$GITHUB_SHA" \
+            MARS_RELEASE_COMMIT_TIME="$commit_time" MARS_RELEASE_GO_VERSION=go1.27.0 \
+            go test ./internal/release -run '^TestVerifyReleaseDistFromEnvironment$' -count=1
+          MARS_RELEASE_ATTESTATION_VERIFY=1 MARS_RELEASE_DIST="$GITHUB_WORKSPACE/dist" \
+            MARS_RELEASE_TAG="$GITHUB_REF_NAME" MARS_RELEASE_COMMIT="$GITHUB_SHA" \
+            go test ./internal/selfupdate -run '^TestVerifyMARSReleaseAttestationFromEnvironment$' -count=1
+
+  publish:
+    if: ${{ false }} # Dormant until exact hosted state and T-080 authority are revalidated.
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download the verified attested distribution
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: mars-release-attested-${{ github.sha }}
+          path: dist
+
+      - name: Create, converge, and publish one immutable Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: greaveselliott/MARS
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$GH_REPO"
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF_TYPE" = tag
+          tag=$GITHUB_REF_NAME
+          test "$GITHUB_REF" = "refs/tags/$tag"
+          test "$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')" = 10
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release publisher: $tag already exists; revalidate exact hosted state before retrying" >&2
+            exit 1
+          fi
+          gh release create "$tag" --draft --verify-tag --title "$tag" --notes-from-tag
+          gh release upload "$tag" dist/*
+          release_json=$(gh api "repos/$GH_REPO/releases/tags/$tag")
+          test "$(jq -r '.draft' <<<"$release_json")" = true
+          test "$(jq -r '.assets | length' <<<"$release_json")" = 10
+          for file in dist/*; do
+            name=$(basename "$file")
+            local_digest=$(sha256sum "$file" | cut -d' ' -f1)
+            remote_digest=$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .digest' <<<"$release_json")
+            test "$remote_digest" = "sha256:$local_digest"
+          done
+          gh release edit "$tag" --draft=false --latest

@@ -356,7 +356,7 @@ git -C ~/my-project push origin main</code></pre>
         <section class="doc-section" id="assets">
           <h2>Assets And Verification</h2>
           <p>
-            MARS source uses the pinned, publication-disabled F-018
+            MARS source uses the conventional AD-315/F-018
             Go/Syft/GitHub-attestation workflow. Generated target repositories
             choose and document their own producer and verifier. The standalone
             verifier and audit commands are retired. Remote transport success is
@@ -366,7 +366,7 @@ git -C ~/my-project push origin main</code></pre>
             <table>
               <thead><tr><th>Surface</th><th>Gate</th><th>What success proves</th></tr></thead>
               <tbody>
-                <tr><td>Repository-approved producer</td><td>Build/package contract</td><td>For MARS source, the pinned snapshot produces four archives, four SBOMs, and <code>checksums.txt</code> without publication authority. Targets define their own equivalent contract.</td></tr>
+                <tr><td>Repository-approved producer</td><td>Build/package contract</td><td>For MARS source, the no-publish rehearsal produces four archives, four SBOMs, and <code>checksums.txt</code> without publication authority. Targets define their own equivalent contract.</td></tr>
                 <tr><td>F-018 signed archive consumer</td><td>Authenticity and safe replacement</td><td>Signature, workflow identity, immutable commit, platform/build metadata, checksum, archive, and durable transaction all pass.</td></tr>
                 <tr><td>Repository-owned remote gate</td><td>Identity and inventory convergence</td><td>The repository-approved artifacts exactly match the immutable release; MARS source specifically requires F-018 signed identity. Missing, partial, inaccessible, or unverifiable state is blocked.</td></tr>
                 <tr><td><code>gh release view vX.Y.Z</code></td><td>Transport inspection only</td><td>A Release object can be observed; this alone proves neither authenticity nor completion.</td></tr>

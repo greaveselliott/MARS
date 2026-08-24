@@ -28,7 +28,7 @@ release.
 1. T-064 removes the unsupported private v0.93 lineage and restores the retained v0.68.49 release floor without publishing a replacement.
 2. T-065 builds pinned GoReleaser and Syft modules with the pinned Go toolchain, defines the four archive targets, and removes the bespoke publication path only after the replacement producer passes.
 3. T-066 migrates installation and updates to fail-closed archive, checksum, signature, identity, metadata, and extraction verification.
-4. T-067 raised the MARS source floor to Go 1.25.12 under the owner's 2026-07-22 approval; historical private release evidence used Go 1.26.5, while T-078 must replan production onto a current supported, scan-clean Go patch before producer execution. Packaged MARS operation does not require an externally installed Go toolchain, and generated targets choose their own toolchain.
+4. T-067 raised the MARS source floor to Go 1.25.12 under the owner's 2026-07-22 approval; historical private release evidence used Go 1.26.5, while AD-315 selects exact Go 1.27.0 for launch production. Packaged MARS operation does not require an externally installed Go toolchain, and generated targets choose their own toolchain.
 5. T-068 runs reproducible private snapshots and clean installation fixtures without creating a tag, Release, signature, or supported-release claim.
 6. T-071 restored the green application vulnerability baseline and T-077
    completed anonymous bootstrap. T-078's first GoReleaser/Cosign route failed
