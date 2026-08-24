@@ -248,6 +248,7 @@ func TestRun_executesPreflightToolBeforeFirstModelTurn(t *testing.T) {
 func TestRun_refreshesCodeGraphAfterMutation(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	dir := t.TempDir()
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -282,6 +283,7 @@ func TestRun_refreshesCodeGraphAfterMutation(t *testing.T) {
 func TestRunRefreshesCodeGraphAfterCompletingModelToolCallBatch(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	dir := t.TempDir()
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -388,6 +390,7 @@ func TestCodeGraphMutationToolShellHeuristics(t *testing.T) {
 func TestRun_stopsAfterTerminalTool(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -737,6 +740,7 @@ func TestRun_reviewEvidenceReminderAllowsOneTerminalCorrection(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	writeReviewEvidenceFixture(t, dir)
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -870,6 +874,7 @@ func TestRun_reviewEvidenceReminderRejectsRepeatedNonTerminalTool(t *testing.T) 
 	t.Parallel()
 	dir := t.TempDir()
 	writeReviewEvidenceFixture(t, dir)
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -930,6 +935,7 @@ func TestRun_reviewEvidenceReminderAcceptsTerminalTool(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	writeReviewEvidenceFixture(t, dir)
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -975,6 +981,7 @@ func TestRun_reviewEvidenceAllowsDocSyncBeforeTerminalBoundary(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	writeReviewEvidenceFixture(t, dir)
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -1030,6 +1037,7 @@ func TestRun_reviewEvidenceDoesNotForceTerminalBeforeTestCommandWhenTestsExist(t
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "features"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "features", "F-001-product-walking-skeleton.md"), []byte("# F-001\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "main_test.go"), []byte("/* MarsDocSync: [\"docs/features/F-001-product-walking-skeleton.md\"] */\npackage main\n"), 0o644))
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -1073,6 +1081,7 @@ func TestRun_reviewNoopAfterBuildAllowsMissingTestCorrection(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "features"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "features", "F-001-product-walking-skeleton.md"), []byte("# F-001\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "main_test.go"), []byte("/* MarsDocSync: [\"docs/features/F-001-product-walking-skeleton.md\"] */\npackage main\n"), 0o644))
+	initLoopGitRepo(t, dir)
 	root, err := tools.NewRoot(dir)
 	require.NoError(t, err)
 	reg, err := tools.DefaultRegistry()
@@ -1135,9 +1144,12 @@ func initLoopGitRepo(t *testing.T, dir string) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")
 	}
-	require.NoError(t, runLoopGit(t, dir, "init"))
+	require.NoError(t, runLoopGit(t, dir, "init", "-q"))
 	require.NoError(t, runLoopGit(t, dir, "config", "user.email", "harness@test.local"))
 	require.NoError(t, runLoopGit(t, dir, "config", "user.name", "Harness Test"))
+	require.NoError(t, runLoopGit(t, dir, "config", "commit.gpgsign", "false"))
+	require.NoError(t, runLoopGit(t, dir, "add", "-A"))
+	require.NoError(t, runLoopGit(t, dir, "commit", "--allow-empty", "--no-verify", "-m", "seed loop fixture"))
 }
 
 func runLoopGit(t *testing.T, dir string, args ...string) error {
