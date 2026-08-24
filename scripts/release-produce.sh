@@ -55,7 +55,7 @@ if ! tar --version 2>/dev/null | grep -F 'GNU tar' >/dev/null; then
   echo "release producer: GNU tar is required; run on the supported Ubuntu producer" >&2
   exit 1
 fi
-if ! date -u -d "$commit_time" '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
+if ! commit_time=$(date -u -d "$commit_time" '+%Y-%m-%dT%H:%M:%SZ'); then
   echo "release producer: commit time must be valid RFC3339" >&2
   exit 1
 fi
