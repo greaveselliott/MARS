@@ -119,6 +119,6 @@ done
 (
   cd "$dist_dir"
   test "$(find . -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.sbom.json' \) | wc -l | tr -d ' ')" = 8
-  sha256sum ./*.tar.gz ./*.sbom.json | sed 's#  \./#  #' | LC_ALL=C sort > checksums.txt
+  sha256sum ./*.tar.gz ./*.sbom.json | sed 's#  \./#  #' | LC_ALL=C sort -k2,2 > checksums.txt
   test "$(find . -maxdepth 1 -type f | wc -l | tr -d ' ')" = 9
 )

@@ -166,7 +166,7 @@ func TestConventionalReleaseProducerContract(t *testing.T) {
 		"darwin-amd64 darwin-arm64 linux-amd64 linux-arm64",
 		"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES", "mars",
 		"--format=ustar", "--owner=root", "--group=root", "gzip -n",
-		"spdx-json", "sha256sum", "checksums.txt",
+		"spdx-json", "sha256sum", "sort -k2,2", "checksums.txt",
 		"COSIGN_PASSWORD", "COSIGN_PRIVATE_KEY",
 	} {
 		require.Contains(t, text, required)
