@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-077 — make bootstrap and setup anonymous-first
+**Current Ticket:** T-078 — admit production release signing and sanitize legacy hosted objects
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,9 +13,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071; T-072; T-073 machine checkpoints complete and owner/legal hold parked; T-074; T-075; T-076; resumed T-058; T-077; T-078; T-079; resume and close T-073; T-080; T-081.
-**Current Failing Scenario:** F-017-S003 — T-077 Checkpoints A and B passed at exact pushed commits `10b62f7d59620022b2e1030c5f33856d0c16e70f` and `04d6ba6844126dc84eb6bedc13c78bd31f8d371d`; Checkpoint C implementation passed at exact pushed commit `85c689c0a73215ab887542e012aac66ca1b43c40`. T-077 still requires the pre-existing T-075 agent-test fixture correction, four CGO-disabled builds, and clean credential-free installed macOS/Linux source/setup evidence. F-017-S001 is independently blocked on T-073's owner/legal hold.
-**Walking Skeleton Slice:** T-077 Checkpoints A through C remove private-release authentication as an ordinary setup prerequisite, report anonymous/authenticated/unavailable readiness without disclosure, add local-fallback-only clearing, require one stable provenance-complete download plan plus explicit acknowledgement before any third-party request or artifact write, and provide an exact-version Go/SumDB bootstrap whose runtime identity must pass before delegating to the existing signed updater.
-**Learning Or MVP Outcome:** Reuse the existing Go/SumDB and signed-updater trust paths in three bounded commits instead of building another installer or verification system. Real tags, releases, logged-out public lifecycle proof, and unsupported Linux llama.cpp acquisition stay outside T-077.
+**Current Failing Scenario:** F-017-S003 — T-077 passed its bounded private bootstrap/setup gate at exact source `56b8de336cf4d1439944cc7eb8ea0f5ad4043f2b` with four Go 1.26.5 builds, clean credential-free macOS/Linux setup, independent QA/Security review, and verified evidence cleanup. T-078 is current for the protected production producer/signing contract and legacy hosted-object sanitation. Its hosted workflow proof is externally blocked before step one until the owner resolves GitHub Billing & plans; destructive cleanup remains separately approval-gated. F-017-S001 is independently blocked on T-073's owner/legal hold.
+**Walking Skeleton Slice:** T-078 admits the exact GoReleaser/Syft/Cosign chain, proves a fork-safe split producer/signer workflow and exact-ten final artifact contract from two roots, refreshes the stale 401-to-465 workflow-run cleanup seal and every later delta, and prepares exact legacy cleanup without tags, publication, or deletion absent separate owner authority.
+**Learning Or MVP Outcome:** Keep producer admission, independently verified output, hosted sanitation, and real launch publication as distinct authority boundaries. T-078 uses synthetic/local release identities; T-080 alone owns the signed launch tags and T-081 owns public cutover.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
 ## Primary Outcome Contract
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; signed `v0.69.1` is the supported release with signed `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings.
-- **Next Primary Action:** Correct the pre-existing T-075 `internal/agent` Git-fixture drift without weakening fail-closed secret scanning, then run T-077's four cross-builds and clean credential-free installed macOS/Linux source/setup lanes while the repository remains private.
+- **Current Primary Blocker:** T-073 checkpoint A found live U.S. registration 8092258 for `MARS` in directly overlapping Class 42 AI-agent/process-automation services. On 2026-08-09 the owner directed that `MARS` be retained, so qualified trademark counsel's written disposition is required and the absent/adverse result remains a launch no-go. Owner authority over retained first-party, Cursor/automation, predecessor, and historical PNG material remains unsigned. The two all-repository write-capable Apps remain T-079/T-080 launch no-go findings. GitHub-hosted jobs additionally fail before step one on an owner-account Billing & plans condition.
+- **Next Primary Action:** Execute T-078's local producer/provenance and exact-ten rehearsal checkpoints, acquire/scan/reseal the 64-run hosted delta observed on 2026-08-24 plus every later run, and keep deletion, launch tags, signing, upload, and publication denied until their separately recorded authority gates pass.
 
 ## Starting Baseline
 
@@ -32,7 +32,7 @@
 - `VERSION=0.68.49`; source fallback is `0.69.0-dev`.
 - T-070 passed the advertised-Git audit with zero unresolved findings. That evidence does not cover retained GitHub-hosted content or complete F-017-S001.
 - F-018-S001 through F-018-S003 passed as private producer, consumer, and rehearsal evidence only.
-- Reconciled T-072 closure: 301 tags, 57 Release objects, 500 legacy assets, 401 then-completed workflow runs, 77 deployments, one collaborator, zero packages, zero linked projects, an uninitialized zero-page Wiki, and no current Actions artifacts or caches. The 2026-08-24 T-078 preflight found 462 live completed runs, so the 61-run delta must be acquired, scanned, reconciled, and resealed before any run deletion. Two installed Apps are all-repository and write-capable; scope reduction or removal remains a T-079/T-080 launch no-go.
+- Reconciled T-072 closure: 301 tags, 57 Release objects, 500 legacy assets, 401 then-completed workflow runs, 77 deployments, one collaborator, zero packages, zero linked projects, an uninitialized zero-page Wiki, and no current Actions artifacts or caches. The 2026-08-24 T-078 creation preflight found 462 live completed runs; the final closeout recheck found 465, so the currently observed 64-run delta plus every later run must be acquired, scanned, reconciled, and resealed before any run deletion. Two installed Apps are all-repository and write-capable; scope reduction or removal remains a T-079/T-080 launch no-go.
 - Rulesets, branch protection, CodeQL, Dependabot alerts, secret scanning, and push protection are not yet enabled.
 
 ## Assumption Confidence Matrix
@@ -46,7 +46,7 @@
 | Elliott's authority can be converted into a complete publication attestation | Owner stated authority; exact prompt/AI/automation/media and conflict clauses remain unsigned | 0.70 | T-073 committed owner attestation and provenance review |
 | The `MARS` product name can be retained for launch | Owner directed retention; a live U.S. exact-word registration directly overlaps AI agent and process-automation services and UK/EU/WIPO also contain exact software marks | 0.10 | Obtain qualified trademark counsel's written disposition for the intended use and launch territories; absent/adverse evidence is `no_go` |
 | No reachable runtime P0/P1 remains after scheduled hardening | T-074 through T-076 and the exact-current T-058 browser replay pass | 1.0 | Complete — F-017-S002 |
-| Exact-tag Go/SumDB bootstrap is non-circular on clean macOS/Linux | Implementation and hostile private fixtures pass at `85c689c`; native clean-lane proof is absent | 0.85 | T-077 clean-HOME macOS/Linux source/setup; real signed official tags under T-080/T-081 |
+| Exact-tag Go/SumDB bootstrap is non-circular on clean macOS/Linux | T-077 implementation, hostile fixtures, four exact builds, and clean credential-free macOS/Linux source/setup pass through `56b8de3` | 1.0 | Complete for private source/setup; real signed official tags remain T-080/T-081 |
 | GoReleaser v2.17.1, Syft v1.50.0, and Cosign v3.0.6 can satisfy the producer gate | Official versions are selected; exact admission is pending | 0.80 | T-078 provenance, binary scan, and two-root proof |
 | Required GitHub controls can be configured with owner authority | Owner has repository administration; controls were disabled on 2026-08-08 | 0.80 | T-079 disposable rehearsal and private configuration |
 | `v0.69.0` and `v0.69.1` remain available for immutable release commits | As of 2026-08-08, no launch tags used these names | 0.95 | T-080 exact pre-tag remote recheck |
@@ -384,7 +384,7 @@ Release, settings, visibility, signing, publication, or announcement state.
 The repository remains private at `VERSION=0.68.49` and Primary Status remains
 `primary_blocked`.
 
-## Active Walking Skeleton — T-077
+## Completed Walking Skeleton — T-077
 
 Checkpoint A is complete at exact pushed commit
 `10b62f7d59620022b2e1030c5f33856d0c16e70f`. The bounded 33-path packet makes
@@ -417,7 +417,7 @@ consistency and DocSync tests, DocSync across 366 files with zero findings,
 formatting, and diff checks passed. QA, Security, and Orchestrator returned GO.
 
 Checkpoint C implementation is complete at exact pushed commit
-`85c689c0a73215ab887542e012aac66ca1b43c40`. The bounded 13-file packet
+`85c689c70ef801a2747acabf537739c9ebad3c12`. The bounded 13-file packet
 executes only through a privileged Bash startup boundary, carries optional
 GitHub credentials outside `env(1)` arguments and Go, closes their transport
 descriptors before external commands, constrains the exact Go build to the
@@ -435,14 +435,45 @@ the hostile installer suite, Bash 3.2 syntax and native descriptor-close proof,
 CLI/help mirror checks, documentation consistency, DocSync across 366 files
 with zero findings, and diff checks passed. QA, Security, Release Manager, and
 Orchestrator returned GO on frozen installer hashes `87c2bc1d…` and
-`d055e830…`. T-077 remains incomplete pending the separately classified
-pre-existing T-075 agent-test fixture correction, four CGO-disabled builds,
-and clean credential-free installed macOS/Linux source/setup evidence. A real
-official-tag signed lifecycle remains T-080/T-081. The repository remains
-private at `VERSION=0.68.49` with Primary Status `primary_blocked`; T-073
-legal/rights disposition and the two all-repository write-capable App findings
-remain launch no-gos. No release, settings, visibility, signing, publication,
-or announcement authority changed.
+`d055e830…`. Exact source `56b8de3` then passed four Go 1.26.5 CGO-disabled
+Darwin/Linux AMD64/ARM64 builds and independently reviewed clean-HOME macOS
+arm64 plus native Linux arm64 non-root source/setup lanes. The Linux installer
+suite passed under GNU `stat`; both platforms ran deferred setup twice at
+`4/0` then `0/4` steps with no download artifacts, GitHub tokens, local
+fallback, llama-server, or model. The T-075 test-fixture drift was corrected
+test-only at the same source without weakening fail-closed scanning. QA and
+Security recomputed the retained evidence, and all four temporary roots were
+removed and verified absent. The exact report is
+`docs/validation/reports/2026-08-24-t077-bootstrap-setup-closure.md`.
+
+T-077 passes. A real official-tag signed lifecycle remains T-080/T-081, so
+F-017-S003 remains incomplete. The repository remains private at
+`VERSION=0.68.49` with Primary Status `primary_blocked`; T-073 legal/rights,
+the two all-repository write-capable App findings, and the GitHub Billing &
+plans hosted-CI condition remain launch no-gos. No release, settings,
+visibility, signing, publication, or announcement authority changed.
+
+## Active Walking Skeleton — T-078
+
+T-078 was created through `ticket_create` after T-077's reviewed closure. It
+owns exact GoReleaser v2.17.1, Syft v1.50.0, and Cosign v3.0.6 admission; the
+split unprivileged producer and protected maintainer-only signer workflow; an
+independent two-root exact-ten artifact rehearsal; and refreshed, scan-clean
+legacy hosted-object sanitation. T-072's 401-run cleanup seal is stale against
+465 live completed runs, so the 64-run delta and every later delta must be
+acquired, scanned, reconciled, and resealed before deletion.
+
+T-078 authorizes repository source/tests/docs and read-only hosted acquisition.
+It authorizes no launch tag, real signature, upload, supported Release,
+visibility change, App mutation, hosted setting change, or announcement.
+Deleting 500 legacy assets, 77 deployments, one obsolete Release object, or
+refreshed workflow runs, or enabling future-only immutable Releases, requires
+separate exact owner approval naming that mutation plus immediate live-state
+revalidation.
+Hosted workflow proof cannot pass until the owner resolves GitHub Billing &
+plans. The expected post-T-078 surface is 301 tags, 56 historical Release
+objects, zero assets, and zero deployments; T-080 later converges on 303 tags,
+58 Release objects, and 20 exact launch assets.
 
 ## Completion Gates By Ticket
 
@@ -452,8 +483,8 @@ or announcement authority changed.
 - **T-075 — passed 2026-08-09:** All named model/agent-controlled repository paths use the descriptor-relative no-follow interface; index-only and force-added secrets are scanned without reproducing values; four builds and installed Dogfood pass.
 - **T-076 — passed 2026-08-09:** Observer is non-mutating by default; host requires acknowledgement; isolated is unavailable; child environments, job-owned processes, persisted-config credential modes, and shared-database path truth pass. Broader local-state, redaction, export, purge, and retention work is deferred.
 - **T-058 — passed 2026-08-09:** A real browser proved hostile runtime strings inert, browser controls protected, all observed assets same-origin, and logout free of cached privileged DOM against exact current commit `57d7851`.
-- **T-077 — Checkpoints A through C implemented:** Anonymous-first access and config-only `clear-local` pass at `10b62f7`; the stable third-party download plan and explicit acknowledgement boundary pass at `04d6ba6`; the exact-version Go/SumDB bootstrap into the signed updater passes implementation review at `85c689c`; four cross-builds and clean macOS/Linux source/setup closure remain pending.
-- **T-078:** The protected exact-ten signing/publishing workflow passes; the 61-run post-T-072 delta is acquired/scanned/resealed before deletion; all 500 exact legacy assets and exact obsolete hosted objects are removed from active surfaces only under the approved frozen transaction; immutable releases are enabled only after reconciliation.
+- **T-077 — passed 2026-08-24:** Anonymous-first access and config-only `clear-local` pass at `10b62f7`; the stable third-party download plan and explicit acknowledgement boundary pass at `04d6ba6`; the exact-version Go/SumDB bootstrap passes at `85c689c7`; and exact source `56b8de3` passes four builds plus independently reviewed clean macOS/Linux source/setup and verified evidence cleanup.
+- **T-078 — current:** The protected exact-ten producer/signing contract must pass; the 64-run post-T-072 delta observed on 2026-08-24 plus every later run must be acquired/scanned/resealed before deletion; all 500 exact legacy assets and exact obsolete hosted objects may be removed from active surfaces only under a separately approved frozen transaction; future-only immutable Releases may be enabled only after reconciliation and separate exact approval naming that setting mutation. Hosted proof is blocked until GitHub Billing & plans is repaired.
 - **T-079:** Community files, fork-safe CI, Dependabot/private-safe controls, rulesets, Issues, Discussions, installed-App restriction/removal, and a disposable public hostile-fork rehearsal pass. Public-repository-only CodeQL, secret scanning/push protection, private vulnerability reporting, and Pages are staged but become T-081 immediate post-visibility enablement/verification gates.
 - **T-080:** Signed private `v0.69.0` and `v0.69.1` exact-ten releases pass macOS/Linux update and rollback; all final manifests and role sign-offs are complete; expected convergence is 303 tags, 58 Release objects, and 20 assets belonging only to the two launch releases.
 - **T-081:** After separate owner confirmation, visibility changes; public-only CodeQL, secret scanning/push protection, private vulnerability reporting, and Pages are enabled and verified immediately; logged-out public lifecycle and hostile-fork smoke pass twice around a clean 48-hour canary; an announcement is posted and G-OSS-001/F-017/F-018 close.

@@ -6,10 +6,10 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002"]
 end_to_end_evidence: required
-evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08", "commit:66d7e412f0c0dade49c037752c8fa3f0000ee94e", "commit:c8c28cbcc709e12554236e92b7c2e7ba19006784", "commit:d67b04278db608c5fb39d61d3fa0b54c4909cbed", "commit:f99964e79047b3e71d3076d1a05c75b3df9c4e95", "commit:e08deb4bd118ff025abf131e7db8cf4eeb4cf333", "commit:228d859511fb2f7c93e0162424c2e6dc95107e44", "commit:7578549bdd0dde90857f9652e651832d484abdb2", "commit:ff69aaa1bab3680d169e8889866ba73cccb397c9", "commit:16b5527bbe48e8afea82bb70127d383d6f280ed7", "commit:c18030edb44d1b869a03d30e4339ff457641c6e4", "commit:9ba8156942a584f301888a3675942923739993d6", "binary-sha256:c1137731531fded59e600e36ba8f77cd7ef1d6759262ddc223a3b7235831a28f"]
-verified_by: "QA, Security, Dogfood, Release Manager, and Orchestrator on 2026-08-09"
+evidence_links: ["commit:f9993b5941e2fcd4f8e77866526f8a9b81946d3f", "commit:b3b5b9808e001491da793e515cb71444655dbf22", "commit:88f7737bf9be3b804483f676507a193f68ffa7d4", "commit:e30f207c9edc00a42a28b4d31b9ea5e52dba8a08", "commit:66d7e412f0c0dade49c037752c8fa3f0000ee94e", "commit:c8c28cbcc709e12554236e92b7c2e7ba19006784", "commit:d67b04278db608c5fb39d61d3fa0b54c4909cbed", "commit:f99964e79047b3e71d3076d1a05c75b3df9c4e95", "commit:e08deb4bd118ff025abf131e7db8cf4eeb4cf333", "commit:228d859511fb2f7c93e0162424c2e6dc95107e44", "commit:7578549bdd0dde90857f9652e651832d484abdb2", "commit:ff69aaa1bab3680d169e8889866ba73cccb397c9", "commit:16b5527bbe48e8afea82bb70127d383d6f280ed7", "commit:c18030edb44d1b869a03d30e4339ff457641c6e4", "commit:9ba8156942a584f301888a3675942923739993d6", "commit:56b8de336cf4d1439944cc7eb8ea0f5ad4043f2b", "binary-sha256:c1137731531fded59e600e36ba8f77cd7ef1d6759262ddc223a3b7235831a28f"]
+verified_by: "QA, Security, Dogfood, Release Manager, and Orchestrator on 2026-08-09; post-closure test-fixture correction independently reviewed on 2026-08-24"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-09: Checkpoint D and final DocSync correction passed through 9ba8156; T-075 closed"
+last_attempt: "2026-08-24: post-closure internal/agent fixture drift was corrected test-only at 56b8de3; exact nine and full package normal/race/vet gates passed without production-policy change"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-repository-boundary:2026-08-09"
@@ -170,6 +170,28 @@ relative source path, its referenced-doc link produced the missing-doc finding,
 and its live repository audit exited zero with no findings. QA, Security,
 Dogfood, Release Manager, and Orchestrator returned GO. T-075 is complete;
 F-017-S002 remains incomplete pending T-076 and resumed T-058.
+
+## Post-Closure Fixture Correction — 2026-08-24
+
+T-077's source-compatibility replay exposed nine `internal/agent` tests whose
+temporary worktrees had not adopted Checkpoint B's intentional fail-closed Git
+admission boundary. Mutating tool calls and review commands reached the exact
+Git-authoritative scanner in non-Git fixture directories, failed closed, and
+exhausted their later response mocks. This was test-fixture drift, not a
+production scanner regression.
+
+Exact pushed commit `56b8de336cf4d1439944cc7eb8ea0f5ad4043f2b`
+changes only `internal/agent/loop_test.go` (`13` insertions, `1` deletion;
+pre-commit file SHA-256
+`76b8f68c285288d5c5a7f5bd7f5be586a684fe0f30f6ac8ef0f1661f9e98ef4d`).
+The nine affected fixtures now create a deterministic clean Git baseline with
+local identity, commit signing disabled, `git add -A`, and an allow-empty,
+no-hook commit before the loop runs. The exact nine and full `internal/agent`
+normal/race suites, package vet, repository-secret safety normal/race tests,
+three named tool-policy secret tests, and diff check pass. QA and Security
+independently returned GO. No production code, scanner policy, version, or
+public behavior changed, so T-075 remains closed and F-017-S002 is not
+reopened.
 
 ## Acceptance
 

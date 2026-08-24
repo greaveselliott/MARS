@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S003"]
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-009-release-update-lifecycle.md", "docs/tickets/done/T-066-migrate-release-consumers-to-fail-closed-signed-archives.md"]
-verified_by: "Checkpoints A and B: QA, Security, and Orchestrator GO; Checkpoint C implementation: QA, Security, Release Manager, and Orchestrator GO; native closure evidence pending"
+evidence_links: ["commit:10b62f7d59620022b2e1030c5f33856d0c16e70f", "commit:04d6ba6844126dc84eb6bedc13c78bd31f8d371d", "commit:85c689c70ef801a2747acabf537739c9ebad3c12", "commit:56b8de336cf4d1439944cc7eb8ea0f5ad4043f2b", "docs/validation/reports/2026-08-24-t077-bootstrap-setup-closure.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-009-release-update-lifecycle.md"]
+verified_by: "Engineer and Release Manager implementation GO; independent QA and Security closure GO; Orchestrator executed and verified the native Dogfood matrix on 2026-08-24"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-24: Checkpoint C implementation passed at pushed commit 85c689c0a73215ab887542e012aac66ca1b43c40; native closure evidence pending"
+last_attempt: "2026-08-24: four exact Go 1.26.5 builds and independently reviewed clean macOS/Linux source/setup lanes passed at 56b8de3; temporary evidence roots were removed and verified absent"
 blocker: "none"
 blocked_by: []
 trace_id: "launch-anonymous-bootstrap:2026-08-09"
-next_action: "Correct the pre-existing T-075 internal/agent Git-fixture drift, then run four CGO-disabled builds and clean credential-free macOS/Linux installed source/setup lanes."
+next_action: "Complete; create T-078 through ticket_create and begin the production-producer, signing, and legacy-hosted-object sanitation gate without tags or destructive hosted mutation absent exact authority."
 dedupe_key: "open-source:anonymous-bootstrap-setup"
 metadata:
   classification: "foundation-owned-and-mirrored-doctrine"
@@ -30,7 +30,7 @@ depends_on: [T-058]
 
 ## Context
 
-T-066 completed the fail-closed signed archive consumer and deliberately removed the circular shell binary bootstrap. At ticket start, the installer stopped at source-checkout instructions; setup still required private-release authentication unless the operator knew to skip it; `auth github check` reported only private-token readiness; no command removed only MARS's stored fallback token; and setup's `--download`/`--yes` flags did not yet create a truthful license-aware download boundary. Checkpoints A and B closed the setup/auth/local-fallback and download-acknowledgement gaps, and Checkpoint C now implements the exact-version bootstrap into the signed updater. T-077 remains open only for the required native build and clean macOS/Linux installed source/setup evidence. F-017-S003 additionally requires the later production and public lifecycle gates while the repository remains private until cutover.
+T-066 completed the fail-closed signed archive consumer and deliberately removed the circular shell binary bootstrap. At ticket start, the installer stopped at source-checkout instructions; setup still required private-release authentication unless the operator knew to skip it; `auth github check` reported only private-token readiness; no command removed only MARS's stored fallback token; and setup's `--download`/`--yes` flags did not yet create a truthful license-aware download boundary. Checkpoints A and B closed the setup/auth/local-fallback and download-acknowledgement gaps. Checkpoint C implements the exact-version bootstrap into the signed updater and passes the required native build plus clean macOS/Linux source/setup evidence. T-077 is complete. F-017-S003 additionally requires the later production and public lifecycle gates while the repository remains private until cutover.
 
 ## Scope And Authority
 
@@ -57,13 +57,13 @@ Exact pushed commit `04d6ba6844126dc84eb6bedc13c78bd31f8d371d` completes Checkpo
 
 Exact affected-package normal and race tests for `internal/setup`, `cmd/mars`, `internal/tools`, and `internal/scanner`, affected-package vet, `go test ./internal/docsconsistency ./internal/docsync -count=1`, `go run ./cmd/mars docsync audit --repo .` (`366` files, `0` findings), formatting, and `git diff --check` passed. QA, Security, and Orchestrator returned GO. Checkpoint B was complete at this boundary; Checkpoint C implementation evidence is recorded below. T-077 and F-017-S003 remain incomplete. The repository remains private at `VERSION=0.68.49` with Primary Status `primary_blocked`; legal/rights disposition, the two installed-App findings, Release state, settings, visibility, signing, publication, and announcement remain unchanged no-gos.
 
-## Checkpoint C — Exact-Version Go/SumDB Bootstrap Into The Signed Updater — Implementation Complete
+## Checkpoint C — Exact-Version Go/SumDB Bootstrap Into The Signed Updater — Complete
 
 - Replace the fail-closed placeholder with a small Bash bootstrap that accepts only one exact stable semantic tag, requires Go 1.25.12 or newer, and builds the canonical `github.com/greaveselliott/mars/cmd/mars@<exact-tag>` through an enabled public Go proxy and SumDB with canonical-module private/no-sum bypasses disabled. Floating refs, pseudo-versions, replacements, direct/off proxy mode, disabled SumDB, and malformed versions fail closed.
 - Build only into an owner-controlled temporary staging directory, verify the staged binary's canonical command/module path and exact module version with standard Go build metadata, then invoke that staged MARS binary's existing signed updater with the same explicit version and the selected final install directory. The signed updater remains the sole archive/signature verifier and durable replacement authority; pre-commit rejection preserves any prior final binary, while a recovery-required updater result preserves transaction evidence and reports exact recovery guidance. Successful packaged operation does not require Go.
 - Bootstrap/setup must not require or print GitHub credentials. Keep output bounded and free of tokens, response bodies, temporary paths, and module-cache contents. Use standard Bash/Go tools and focused command stubs or a bounded local module-proxy fixture; do not create an installer subsystem. Commit and push this independently green checkpoint.
 
-Exact pushed commit `85c689c0a73215ab887542e012aac66ca1b43c40`
+Exact pushed commit `85c689c70ef801a2747acabf537739c9ebad3c12`
 completes the Checkpoint C implementation in a bounded 13-file packet. Direct
 `#!/bin/bash -p` execution suppresses imported functions and `BASH_ENV`, starts
 the real body in an allowlisted clean environment, keeps optional GitHub tokens
@@ -92,9 +92,23 @@ findings, and `git diff --check` passed. QA, Security, Release Manager, and
 Orchestrator returned GO on exact frozen installer hashes
 `87c2bc1d9769d1cb9f121e34b706dde25e02f6ede5e35380fc07ffb1fa042192`
 and `d055e830091fea197549756c02248385182290088a5ad06ced4fbe848e962911`.
-T-077 remains open for the four cross-builds and installed clean-HOME macOS and
-Linux source/setup lanes. A real official-tag proxy/SumDB plus signed
-install/update/rollback lifecycle remains deliberately assigned to T-080/T-081.
+The native closure passed at exact clean pushed source
+`56b8de336cf4d1439944cc7eb8ea0f5ad4043f2b`. Go 1.26.5 produced CGO-disabled
+Darwin/Linux AMD64/ARM64 binaries with exact VCS metadata. A clean-HOME macOS
+arm64 source install ran deferred setup twice at `4/0` then `0/4` steps. A
+native Linux arm64 non-root lane passed the full installer suite under GNU
+`stat`, retained its exact `ddf7ee…` binary for independent review, and produced
+the same clean setup and postcondition results without GitHub tokens or a local
+fallback. Linux automatic llama.cpp acquisition remained disabled. QA and
+Security independently recomputed the retained evidence and returned GO; all
+four temporary evidence roots were then removed and verified absent. The exact
+matrix, hashes, environment, rejected attempts, cleanup, and GitHub-hosted CI
+billing blocker are recorded in
+`docs/validation/reports/2026-08-24-t077-bootstrap-setup-closure.md`.
+
+A real official-tag proxy/SumDB plus signed install/update/rollback lifecycle
+remains deliberately assigned to T-080/T-081. T-077 therefore closes while
+F-017-S003 remains incomplete.
 
 ## Interfaces And DocSync
 
@@ -103,6 +117,12 @@ Expected implementation surfaces are `internal/githubauth`, config-owned local-t
 ## Validation
 
 For each semantic checkpoint run affected-package normal tests, focused hostile/race tests, package vet, formatting, DocSync/docs consistency, and diff checks. At closure run four CGO-disabled Darwin/Linux AMD64/ARM64 builds once and one installed clean-HOME macOS lane plus one Linux lane without GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, or local fallback. The private bootstrap fixture must prove exact-version/SumDB command composition and prior-binary preservation; actual official-tag anonymous download/update/rollback remains a T-080/T-081 gate and must not be claimed here.
+
+Complete. The exact closure report records all four builds, clean macOS and
+native non-root Linux lanes, frozen installer hashes, independent review,
+rejected/superseded attempts, and verified cleanup. Hosted CI did not start due
+to the GitHub Billing & plans condition; this external blocker is carried into
+T-078 and does not replace the accepted local/native evidence.
 
 ## Acceptance
 
