@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S003", "F-018-S004"]
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md"]
+evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md"]
 verified_by: "pending"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-24: exact source d411cbe passed the two-clean-root conventional no-publish producer/verifier rehearsal and the public official attestation fixture"
-blocker: "The current hosted-state seal and separately authorized sanitation/future-only immutable-Release transaction are not yet complete."
+last_attempt: "2026-08-24: current hosted state was reacquired; 473 completed runs reconcile, the seven-run delta is scan-clean, and exact cleanup/setting manifests are frozen without mutation"
+blocker: "The exact cleanup/future-only immutable-Release transaction needs separate owner approval and postconditions; hosted source compatibility is red on six called Go 1.25.12 vulnerabilities fixed in 1.25.13."
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
-next_action: "Reacquire and scan the complete current hosted surface, freeze exact live IDs and consequences, and request separate authority for the sanitation/future-only immutable-Release transaction."
+next_action: "Present the exact 500-asset, 77-deployment, 473-run cleanup and future-only immutable-Release transaction for separate owner approval; do not mutate on any live-state drift."
 dedupe_key: "open-source:release-production-and-legacy-sanitation"
 metadata:
   baseline_tag_count: "301"
@@ -22,7 +22,7 @@ metadata:
   expected_post_t078_deployment_count: "0"
   expected_post_t078_release_count: "56"
   legacy_asset_count: "500"
-  last_sealed_run_count: "466"
+  last_sealed_run_count: "473"
   mutation_authority: "repository-source-tests-docs-only-until-separate-exact-hosted-cleanup-and-setting-approval"
   primary_status: "primary_blocked"
   publication_authority: "denied"
