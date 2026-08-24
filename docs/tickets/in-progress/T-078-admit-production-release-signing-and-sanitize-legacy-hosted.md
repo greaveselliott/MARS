@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md"]
 verified_by: "pending"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-24: bespoke GoReleaser/Cosign/containment work preserved as a non-authorizing checkpoint; owner approved AD-315 conventional Go/Syft/GitHub-attestation path"
-blocker: "The conventional dormant workflow, compatible attestation consumer, no-publish rehearsal, current hosted-state seal, and separately authorized sanitation/immutable-Release transaction are not yet complete."
+last_attempt: "2026-08-24: pushed exact source 6c044c1 implementing the dormant conventional Go/Syft/GitHub-attestation workflow, compatible consumer, Go 1.27 migration, and zero-called vulnerability baseline"
+blocker: "The two-clean-root no-publish rehearsal, current hosted-state seal, and separately authorized sanitation/immutable-Release transaction are not yet complete."
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
-next_action: "Implement the timeboxed AD-315 dormant producer/attestation/verification workflow and compatible consumer without the deferred bespoke platform; stop with a bounded upstream blocker if it cannot pass within one working day."
+next_action: "Run the exact AD-315 no-publish producer and verifier twice from clean roots without credentials or hosted mutation; stop with a bounded upstream blocker if it cannot pass within the timebox."
 dedupe_key: "open-source:release-production-and-legacy-sanitation"
 metadata:
   baseline_tag_count: "301"
@@ -26,7 +26,7 @@ metadata:
   mutation_authority: "repository-source-tests-docs-only-until-separate-exact-hosted-cleanup-and-setting-approval"
   primary_status: "primary_blocked"
   publication_authority: "denied"
-  producer_admission_status: "standard_path_selected_implementation_pending"
+  producer_admission_status: "dormant_source_implemented_rehearsal_pending"
   supports: "F-017-S003,F-018-S004"
 source: MARS Launch-Complete Open-Source Delivery Plan — T-078
 created: 2026-08-24
@@ -77,6 +77,10 @@ immediate live revalidation, and bounded postcondition checks.
 
 ## Checkpoint A — Conventional Dormant Release Workflow
 
+**Source status:** Complete at pushed commit `6c044c1`. The four jobs remain
+structurally dormant; no tag, OIDC request, attestation, upload, Release, or
+other GitHub mutation ran while establishing this checkpoint.
+
 - Use the supported Go toolchain to produce CGO-disabled Darwin/Linux AMD64 and
   arm64 binaries.
 - Create deterministic archives and SHA-256 checksums with ordinary supported
@@ -101,6 +105,11 @@ the producer and verifier, not a fake attestation claim.
 
 ## Checkpoint B — Compatible Consumer And Exact Asset Contract
 
+**Source status:** Complete at pushed commit `6c044c1`. The updater accepts the
+standard GitHub `actions/attest` SLSA provenance envelope for the exact eight
+checksummed subjects while retaining the older public GoReleaser fixture only
+as an immutable regression vector.
+
 Each launch Release contains exactly ten uploaded assets: four platform
 archives, four SPDX SBOMs, `checksums.txt`, and
 `checksums.txt.sigstore.json`. Provider-generated source archives and hosted
@@ -121,6 +130,8 @@ Historical offline GoReleaser signature fixtures remain regression vectors and
 must not be described as current MARS signing evidence.
 
 ## Checkpoint C — No-Publish Rehearsal
+
+**Status:** Pending; this is the next launch item.
 
 Run the complete producer and independent verifier twice from clean source
 roots without credentials, OIDC, uploads, tags, Releases, visibility changes,
