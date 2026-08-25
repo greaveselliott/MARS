@@ -7,13 +7,13 @@ work_type: enabler
 bdd_scenarios: ["F-017-S004"]
 end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s004-fork-safe-contribution-and-governance"]
-verified_by: "local gates and hosted run 32901437495; final evidence-source run pending"
+verified_by: "local normal/race/vet/docs gates; hosted runs 32901437495 and 32903803262"
 owner: "foundation-maintainer"
 last_attempt: "2026-08-25"
-blocker: "final evidence-source hosted run must pass"
+blocker: "none"
 blocked_by: []
 trace_id: "launch-contribution-controls:2026-08-25"
-next_action: "Commit the exact live ruleset default and durable hosted receipt, rerun local and hosted gates, then move T-079 to done."
+next_action: "Complete; keep public-only controls and genuine hostile-fork smoke in T-080 after separately approved visibility."
 dedupe_key: "open-source:fork-safe-contribution-controls"
 metadata:
   classification: "foundation-owned-and-hosted-settings"
@@ -57,3 +57,4 @@ The private repository has conventional community and fork-safe contribution fil
 - GitHub Discussions, Dependabot alerts/security updates, fork-PR approval/read-only/no-secret policy, GitHub-owned full-SHA Actions policy, the `dependencies` label, and exact ruleset `21491158` are enabled and re-read from GitHub.
 - The complete pre/post receipt and no-mutation boundary are recorded in `docs/validation/reports/2026-08-25-t079-private-contribution-controls.md`.
 - Visibility remains private; Pages, Apps, tags, Releases, assets, immutable Releases, public-only security controls, and T-078 cleanup were not changed.
+- Final source `3502110854aafb561b9c90dec84259629c56cce8` passes hosted run `32903803262`. The narrow authenticated Dependabot exception accepts only GitHub's exact actor/author/committer/support-signoff identity; spoofed identity and trailer fixtures fail.

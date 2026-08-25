@@ -3,7 +3,7 @@
 **Date:** 2026-08-25  
 **Ticket:** T-079  
 **Repository:** `greaveselliott/MARS`  
-**Source checkpoint:** `b807afa8de29756ccf0b6612135aad749e16ee07`  
+**Source checkpoint:** `3502110854aafb561b9c90dec84259629c56cce8`
 **Visibility:** private  
 **Ruleset:** `21491158`  
 **Publication status:** not authorized or performed
@@ -22,18 +22,19 @@ release, public-only, and account-wide surface remains unchanged.
 
 **Primary Status:** `primary_blocked`
 
-T-079 is awaiting the final evidence-source hosted run; the overall launch
-remains blocked on the separately approved remaining gates.
+T-079 is complete; the overall launch remains blocked on the separately
+approved remaining gates.
 
-**Current Primary Blocker:** the final T-079 evidence-source hosted run and
-the separately approval-gated T-078 cleanup remain incomplete.
+**Current Primary Blocker:** the separately approval-gated T-078 cleanup
+remains incomplete.
 
-**Next Primary Action:** push and verify this exact evidence source, close
-T-079, then return to the separately approval-gated T-078 hosted transaction.
+**Next Primary Action:** return to the separately approval-gated T-078 hosted
+transaction before T-080 public cutover.
 
-**Supporting Evidence:** source commit `b807afa8de29756ccf0b6612135aad749e16ee07`,
-hosted run `32901437495`, live ruleset `21491158`, and the exact pre/post
-receipts recorded below.
+**Supporting Evidence:** source commits `b807afa8de29756ccf0b6612135aad749e16ee07`
+and `3502110854aafb561b9c90dec84259629c56cce8`, hosted runs `32901437495`
+and `32903803262`, live ruleset `21491158`, and the exact pre/post receipts
+recorded below.
 
 Public CodeQL/code scanning, secret scanning, push protection, private
 vulnerability reporting, Pages, and a genuine hostile-fork smoke remain
@@ -63,6 +64,10 @@ trailer rather than an author-email-matching trailer. The closure source adds
 one fail-closed bot exception requiring the exact Actions actor, author,
 committer, and trailer identities; spoofed actors, authors, or trailers fail.
 Human contributors remain subject to author-matching sign-off.
+Final source `3502110854aafb561b9c90dec84259629c56cce8` passed hosted run
+[`32903803262`](https://github.com/greaveselliott/MARS/actions/runs/32903803262):
+Go 1.27.0, Go 1.25.13, dependency notices, and the intentional Go 1.25.12
+rejection are all green.
 
 ## Pre-Mutation Revalidation
 
@@ -135,6 +140,8 @@ diff checks, and 86.2% coverage for `internal/release`. The exact hosted run is
 linked above.
 
 The explicit API-default field, authenticated Dependabot DCO exception, and
-this durable evidence are undergoing the final local and hosted source gates
-before T-079 moves to done. A genuine public fork test is deliberately not
-claimed by this private checkpoint.
+durable evidence pass local and hosted source gates. Existing Dependabot pull
+requests retain their pre-fix check results until GitHub rebases them; this
+checkpoint did not mutate, close, merge, or comment on those branches. A
+genuine public fork test is deliberately not claimed by this private
+checkpoint.
