@@ -9,7 +9,7 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md", "docs/validation/reports/2026-08-25-t079-private-contribution-controls.md", "docs/validation/reports/2026-08-26-t080-public-cutover-preflight.md"]
 verified_by: "TBD"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-26: read-only private preflight and exact cutover transaction frozen; local launch gates pass; no visibility, tag, Release, Pages, App, or security-setting mutation performed"
+last_attempt: "2026-08-26: read-only private preflight and exact cutover transaction frozen at 32d0679; hosted source-compatibility run 32911253683 passes; no visibility, tag, Release, Pages, App, or security-setting mutation performed"
 blocker: "separate exact owner approval is required for the frozen public-visibility, public-control, and two-release transaction"
 blocked_by: []
 trace_id: "launch-public-cutover:2026-08-26"

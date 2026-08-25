@@ -31,6 +31,10 @@ Pages, security settings, tags, Releases, or workflow activation first.
 GitHub inspection, the conventional workflow contract, and the passing local
 preflight gates recorded below.
 
+**Private evidence checkpoint:** commit
+`32d0679616e26c070d3dffd914adbf7639704393` and hosted
+[`source-compatibility` run `32911253683`](https://github.com/greaveselliott/MARS/actions/runs/32911253683).
+
 ## Scope Re-Baseline
 
 The owner stopped expansion into custom Docker Engine/API orchestration,
@@ -120,6 +124,10 @@ git diff --check                                            PASS
 The self-update suite's first in-app run could not create its deliberately
 owner-local test directories. The unchanged suite passed when rerun outside
 the app filesystem sandbox; this was environment evidence, not a source fix.
+
+The private checkpoint then passed hosted run `32911253683` in 4m 40s:
+dependency notices, Go 1.25.13, Go 1.27.0, and the intentional below-minimum
+rejection all completed successfully. The run produced no artifact.
 
 ## Consequences of Public Visibility
 
