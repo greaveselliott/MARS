@@ -353,6 +353,14 @@ When changing this source repo, start with [AGENTS.md](AGENTS.md) and the
 Source work follows remote-trunk freshness, no-stale-docs, BDD evidence,
 release notes, local asset publication, and source validation rules.
 
+External contributions use fork pull requests. Read
+[CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md),
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SUPPORT.md](SUPPORT.md), and
+[SECURITY.md](SECURITY.md) before submitting work or reporting a sensitive
+issue. Fork workflows are read-only and receive no repository secrets or
+release authority. Maintainers continue to commit and push validated source
+checkpoints directly to `main` under the repository's trunk workflow.
+
 Docs-only README work does not require clean-project lifecycle validation, but
 runtime, generated-target, dashboard, model/provider, release/update, scoring,
 safety, or orchestration changes do. See

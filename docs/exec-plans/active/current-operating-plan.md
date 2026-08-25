@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-078 — adopt the standard release path and sanitize legacy hosted objects
+**Current Ticket:** T-079 — community, fork-safe CI, and GitHub contribution controls
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071 through T-077 complete; T-073 owner holds resolved by recorded disposition; T-078; T-079; T-080 public cutover and attested launch releases; T-081 canary and announcement.
-**Current Failing Scenario:** F-017-S003 — exact source `d411cbe` implements and tests the dormant AD-315 workflow and passed the two-clean-root no-publish producer/verifier rehearsal, including byte-identical archives, normalized SBOM equivalence, native identity, and the standard public attestation fixture. The current hosted-state seal and separately authorized sanitation/future-only immutable-Release transaction remain incomplete. The rejected GoReleaser/Cosign and bespoke-containment work is preserved as a non-authorizing checkpoint. The owner reports GitHub funding restored; hosted CI still needs a successful rerun.
+**Current Failing Scenario:** F-017-S004 — T-078's conventional dormant producer, no-publish rehearsal, Go 1.25.13 remediation, and hosted CI are proven. Its revised hosted sanitation/future-only immutable-Release transaction remains parked on separate approval and is not silently waived. On 2026-08-25 the owner directed the independent private contribution-control slice to proceed: community files, DCO/CODEOWNERS, fork-safe CI, Dependabot, private-safe repository settings, and an exact ruleset, without changing visibility or enabling public-only controls.
 **Walking Skeleton Slice:** T-078 implements only the standard Go/archive/Syft/GitHub-attestation path, proves the exact-ten contract without publication, refreshes the hosted-state seal, and prepares or performs only separately approved exact sanitation. T-079 closes private contribution controls. T-080 changes visibility under separate approval before creating the two public attested launch releases; T-081 owns the canary and announcement.
 **Learning Or MVP Outcome:** Keep build, attestation, publication, hosted sanitation, visibility, and announcement as distinct authority boundaries while avoiding bespoke infrastructure that is not required for launch.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; attested `v0.69.1` is the supported release with attested `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** Exact pushed commit `a4bbf81` and hosted run `32848968969` pass the approved Go 1.25.13 source floor, exact Go 1.27.0, dependency notices, the intentional Go 1.25.12 rejection, and zero called application vulnerabilities without an exception. The revised hosted cleanup/immutable-Release transaction remains separately approval-gated after deployment-state drift. Public visibility, launch attestations, releases, and announcement remain later gates.
-- **Next Primary Action:** Present the revised exact 500-asset/474-run cleanup plus future-only immutable-Release transaction for separate approval. Revalidate immediately before mutation and stop on any further drift; do not broaden the vulnerability disposition or expand the deferred bespoke platform.
+- **Current Primary Blocker:** F-017-S004 contribution and private repository controls are not yet committed or configured. The separately approval-gated T-078 cleanup remains parked after deployment-state drift; public-only controls, visibility, launch attestations, releases, and announcement remain later gates.
+- **Next Primary Action:** Complete T-079's conventional community, fork-safe CI, Dependabot, Issues/Discussions, and ruleset controls with exact pre/post setting receipts. Keep public-only security controls staged for T-080 and do not change visibility, releases, tags, Pages, Apps, or the parked T-078 cleanup.
 
 ## Starting Baseline
 
@@ -85,7 +85,7 @@ one current ticket at a time. T-058 was resumed rather than recreated.
 | 7 | Resume T-058 — passed 2026-08-09 | F-017-S002 and F-010-S024 | T-076 |
 | 8 | T-077 — anonymous access, trusted bootstrap, and setup | F-017-S003 | T-058 |
 | 9 | T-078 — standard release path and legacy-asset sanitation | F-017-S003 and F-018-S004 | T-077 |
-| 10 | T-079 — community, fork-safe CI, Pages, and GitHub controls | F-017-S004 | T-078 |
+| 10 | T-079 — community, fork-safe CI, Pages, and GitHub controls | F-017-S004 | T-078 source/rehearsal/hosted-CI checkpoints; separately approved T-078 sanitation may remain parked |
 | 11 | T-080 — approved public cutover and attested launch releases | F-017-S003 through F-017-S005 prerequisite | T-079 and explicit owner visibility approval |
 | 12 | T-081 — 48-hour canary and announcement | F-017-S005 | T-080 |
 
@@ -490,8 +490,8 @@ Release objects, and 20 uploaded Release assets.
 - **T-076 — passed 2026-08-09:** Observer is non-mutating by default; host requires acknowledgement; isolated is unavailable; child environments, job-owned processes, persisted-config credential modes, and shared-database path truth pass. Broader local-state, redaction, export, purge, and retention work is deferred.
 - **T-058 — passed 2026-08-09:** A real browser proved hostile runtime strings inert, browser controls protected, all observed assets same-origin, and logout free of cached privileged DOM against exact current commit `57d7851`.
 - **T-077 — passed 2026-08-24:** Anonymous-first access and config-only `clear-local` pass at `10b62f7`; the stable third-party download plan and explicit acknowledgement boundary pass at `04d6ba6`; the exact-version Go/SumDB bootstrap passes at `85c689c7`; and exact source `56b8de3` passes four builds plus independently reviewed clean macOS/Linux source/setup and verified evidence cleanup.
-- **T-078 — current and blocked:** AD-315's dormant standard workflow, compatible GitHub-attestation consumer, and two-root no-publish rehearsal pass through exact source `d411cbe`. Deployment state drifted to zero before the approved sanitation transaction, so no mutation occurred and the revised 500-asset/474-run cleanup plus future-only immutable Releases remains separately approval-gated. Exact pushed source `a4bbf81` and hosted run `32848968969` pass Go 1.25.13, Go 1.27.0, dependency notices, the intentional Go 1.25.12 rejection, and zero called application vulnerabilities without an exception.
-- **T-079:** Community files, fork-safe CI, Dependabot/private-safe controls, rulesets, Issues, Discussions, and a disposable public hostile-fork rehearsal pass. Account-wide GitHub App administration is excluded unless a MARS workflow has an actual dependency. Public-only CodeQL, secret scanning/push protection, private vulnerability reporting, and Pages are staged for immediate post-visibility enablement/verification.
+- **T-078 — parked on separate approval:** AD-315's dormant standard workflow, compatible GitHub-attestation consumer, and two-root no-publish rehearsal pass through exact source `d411cbe`. Deployment state drifted to zero before the approved sanitation transaction, so no mutation occurred and the revised 500-asset/474-run cleanup plus future-only immutable Releases remains separately approval-gated. Exact pushed sources `a4bbf81` and `2dd73fc` plus hosted runs `32848968969` and `32849610523` pass Go 1.25.13, Go 1.27.0, dependency notices, the intentional Go 1.25.12 rejection, and zero called application vulnerabilities without an exception.
+- **T-079 — current:** Community files, fork-safe CI, DCO/CODEOWNERS, Dependabot/private-safe controls, rulesets, Issues, and Discussions. Account-wide GitHub App administration is excluded unless a MARS workflow has an actual dependency. Public-only CodeQL, secret scanning/push protection, private vulnerability reporting, Pages, and the live hostile-fork smoke are staged for immediate post-visibility enablement/verification because a disposable public repository is not required to prove the private source/settings slice.
 - **T-080:** After separate visibility confirmation, public-only controls are enabled and verified; attested public `v0.69.0` and `v0.69.1` exact-ten releases pass macOS/Linux update and rollback; expected convergence is 303 tags, 58 Release objects, and 20 uploaded Release assets belonging only to the two launch releases.
 - **T-081:** Logged-out public lifecycle and hostile-fork smoke pass twice around a clean 48-hour canary; an announcement is posted and G-OSS-001/F-017/F-018 close.
 

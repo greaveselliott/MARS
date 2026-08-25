@@ -86,6 +86,23 @@ func TestReadmePointsAtCurrentOperatingPlan(t *testing.T) {
 	}
 }
 
+func TestSourceExternalContributionNoteRequiresSourceOnlyForkAndMaintainerTrunkBoundaries(t *testing.T) {
+	t.Parallel()
+	valid := "External contributions use fork pull requests.\nMaintainers continue to commit and push validated source checkpoints directly to `main`."
+	if !isSourceExternalContributionNote("README.md", "External contributions use fork pull requests.", valid) {
+		t.Fatal("expected explicit external-contribution note with maintainer trunk boundary to pass")
+	}
+	if isSourceExternalContributionNote("README.md", "External contributions use fork pull requests.", "External contributions use fork pull requests.") {
+		t.Fatal("external-contribution note must not bypass strict trunk checks without the maintainer boundary")
+	}
+	if isSourceExternalContributionNote("docs/design-docs/example.md", "External contributions use fork pull requests.", valid) {
+		t.Fatal("external-contribution exception must stay limited to README.md and CONTRIBUTING.md")
+	}
+	if isSourceExternalContributionNote("README.md", "Open a pull request for ordinary work.", valid) {
+		t.Fatal("external-contribution exception must not allow unrelated pull-request guidance")
+	}
+}
+
 func TestDogfoodMatrixNamesRequiredEvidence(t *testing.T) {
 	root := repoRoot(t)
 	data, err := os.ReadFile(filepath.Join(root, "docs", "design-docs", "dogfood-matrix.md"))
@@ -179,7 +196,7 @@ func checkStrictTrunkFile(t *testing.T, root, path string) {
 	}
 	text := string(data)
 	for lineNo, line := range strings.Split(text, "\n") {
-		if isHistoricalCompatibilityNote(line) || isOptionalBoardDrivenWorkflowNote(rel, text) {
+		if isHistoricalCompatibilityNote(line) || isOptionalBoardDrivenWorkflowNote(rel, text) || isSourceExternalContributionNote(rel, line, text) {
 			continue
 		}
 		for _, phrase := range forbiddenWorkflowPhrases {
@@ -189,6 +206,20 @@ func checkStrictTrunkFile(t *testing.T, root, path string) {
 			}
 		}
 	}
+}
+
+func isSourceExternalContributionNote(rel, line, text string) bool {
+	if rel != "README.md" && rel != "CONTRIBUTING.md" {
+		return false
+	}
+	lowerText := strings.ToLower(text)
+	if !strings.Contains(lowerText, "external contributions use") ||
+		!strings.Contains(lowerText, "directly to `main`") && !strings.Contains(lowerText, "documented trunk workflow") {
+		return false
+	}
+	lowerLine := strings.ToLower(strings.TrimSpace(line))
+	return strings.HasPrefix(lowerLine, "external contributions use") ||
+		strings.HasPrefix(lowerLine, "pull requests must")
 }
 
 func isHistoricalCompatibilityNote(line string) bool {

@@ -1,0 +1,24 @@
+name: Request a private maintainer contact
+description: Request a private channel without posting incident or vulnerability details.
+title: "private contact requested"
+labels:
+  - question
+body:
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Contact topic
+      description: Do not include incident, vulnerability, personal, or exploit details in this public request.
+      options:
+        - Conduct report
+        - Security reporting form unavailable
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I have not included sensitive details and need the maintainer to arrange a private channel.
+          required: true
+

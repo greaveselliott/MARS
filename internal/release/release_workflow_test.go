@@ -58,6 +58,7 @@ type workflowContract struct {
 }
 
 type workflowJob struct {
+	Name           string            `yaml:"name"`
 	If             string            `yaml:"if"`
 	Needs          string            `yaml:"needs"`
 	RunsOn         string            `yaml:"runs-on"`

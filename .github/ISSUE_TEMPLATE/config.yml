@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support and usage questions
+    url: https://github.com/greaveselliott/MARS/discussions
+    about: Ask usage and setup questions in GitHub Discussions.
+  - name: Report a security vulnerability privately
+    url: https://github.com/greaveselliott/MARS/security/advisories/new
+    about: Do not disclose suspected vulnerabilities in a public issue.
+

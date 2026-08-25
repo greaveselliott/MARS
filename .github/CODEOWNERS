@@ -1,0 +1,15 @@
+# MarsDocSync:
+# docs:
+# - CONTRIBUTING.md
+# - GOVERNANCE.md
+# - docs/features/F-017-open-source-publication.md
+
+* @greaveselliott
+
+# Changes to repository authority and release automation always require owner review.
+/.github/ @greaveselliott
+/scripts/release-produce.sh @greaveselliott
+/scripts/check-dco.sh @greaveselliott
+/internal/selfupdate/ @greaveselliott
+/internal/release/ @greaveselliott
+
