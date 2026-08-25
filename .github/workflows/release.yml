@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   produce:
-    if: ${{ false }} # Dormant until the separately approved T-080 cutover.
+    if: ${{ github.repository == 'greaveselliott/MARS' && github.event_name == 'push' && github.ref_type == 'tag' }} # Activated by the approved T-080 transaction.
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -89,7 +89,7 @@ jobs:
           compression-level: 0
 
   attest:
-    if: ${{ false }} # Dormant until the separately approved T-080 cutover.
+    if: ${{ github.repository == 'greaveselliott/MARS' && github.event_name == 'push' && github.ref_type == 'tag' }} # Activated by the approved T-080 transaction.
     needs: produce
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -129,7 +129,7 @@ jobs:
           compression-level: 0
 
   verify:
-    if: ${{ false }} # Dormant until the separately approved T-080 cutover.
+    if: ${{ github.repository == 'greaveselliott/MARS' && github.event_name == 'push' && github.ref_type == 'tag' }} # Activated by the approved T-080 transaction.
     needs: attest
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -169,7 +169,7 @@ jobs:
             go test ./internal/selfupdate -run '^TestVerifyMARSReleaseAttestationFromEnvironment$' -count=1
 
   publish:
-    if: ${{ false }} # Dormant until exact hosted state and T-080 authority are revalidated.
+    if: ${{ github.repository == 'greaveselliott/MARS' && github.event_name == 'push' && github.ref_type == 'tag' }} # Activated by the approved T-080 transaction.
     needs: verify
     runs-on: ubuntu-24.04
     timeout-minutes: 15

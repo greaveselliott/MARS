@@ -9,18 +9,18 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md", "docs/validation/reports/2026-08-25-t079-private-contribution-controls.md", "docs/validation/reports/2026-08-26-t080-public-cutover-preflight.md"]
 verified_by: "TBD"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-26: read-only private preflight and exact cutover transaction frozen at 32d0679; hosted source-compatibility run 32911253683 passes; no visibility, tag, Release, Pages, App, or security-setting mutation performed"
-blocker: "separate exact owner approval is required for the frozen public-visibility, public-control, and two-release transaction"
+last_attempt: "2026-08-26: owner approved the exact frozen transaction; activating the guarded tag-only workflow while the repository remains private and no launch tag exists"
+blocker: "complete and verify the private workflow-activation and 0.69.0 version commits before the disposable public rehearsal and visibility cutover"
 blocked_by: []
 trace_id: "launch-public-cutover:2026-08-26"
-next_action: "Commit and push the private preflight checkpoint, then present the exact frozen transaction and irreversible consequences for separate owner approval."
+next_action: "Validate, commit, and push the guarded workflow activation; then generate and validate the 0.69.0 version commit without creating its tag."
 dedupe_key: "open-source:public-cutover-and-attested-launch-releases"
 metadata:
   apps: "out-of-scope"
   classification: "foundation-owned-and-hosted-cutover"
-  mutation_authority: "denied during preflight"
+  mutation_authority: "approved for the exact frozen T-080 transaction"
   name_risk: "owner-accepted"
-  publication_authority: "denied pending exact approval"
+  publication_authority: "approved for exact immutable v0.69.0 and v0.69.1 sequence after preceding gates"
   supports: "F-017-S003,F-017-S004,F-017-S005,F-018-S004"
   version_floor: "0.68.49"
 source: MARS Launch-Complete Open-Source Delivery Plan — owner-approved Item 10

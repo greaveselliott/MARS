@@ -134,7 +134,7 @@ func handleReleaseOrchestrate(ctx context.Context, root Root, raw json.RawMessag
 		sequence = `1. Read the active F-018 plan, AD-315, and current T-078 ticket before changing source release state.
 2. Validate the bounded semantic checkpoint and keep VERSION, CHANGELOG.md, and buildinfo at the retained 0.68.49 floor during this transition.
 3. Commit the checkpoint with its ticket reference and push main after validation.
-4. Run only the no-publish conventional producer and verification rehearsal authorized by AD-315; keep .github/workflows/release.yml dormant.
+4. Use the conventional producer and verification rehearsal authorized by AD-315. The approved T-080 launch activates .github/workflows/release.yml only for exact repository tags; no tag means no release run.
 5. Do not create or move a tag, upload, attest, announce, publish, or claim a supported release.
 6. Record unresolved producer, consumer, attestation, rehearsal, or cutover gates as blockers; do not infer publication authority from a successful rehearsal.`
 	}

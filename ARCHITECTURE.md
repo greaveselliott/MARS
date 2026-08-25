@@ -210,7 +210,7 @@ surface is:
 | `mars models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
 | `mars release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
 | `mars release publish-assets` | Retired by T-065; source production now uses the conventional Go/Syft/GitHub-attestation workflow under the active plan, while targets own their producer. |
-| Dormant source release workflow | Build and verify the MARS archive/SBOM/checksum contract, attest in a separate job, and publish only after explicit cutover authority enables the otherwise-dormant jobs. |
+| Tag-only source release workflow | Build and verify the MARS archive/SBOM/checksum contract, attest in a separate job, and publish only for an exact repository tag whose source version and commit guards pass. |
 
 There is no current top-level `status`, `interventions`, or `stop --now`
 command. Graceful stop is exposed through Ctrl+C, terminal key `q`, and the
@@ -507,7 +507,7 @@ T-079:
 1. Retain the `0.68.49` version floor and do not create a release-note commit.
 2. Validate, commit, and push each bounded semantic checkpoint to `main`.
 3. Run only the conventional no-publish producer and verification rehearsal;
-   keep `.github/workflows/release.yml` dormant.
+   keep `.github/workflows/release.yml` tag-only and least privilege; without an exact version tag it performs no release work.
 4. Defer tags, signing, uploads, and supported-release claims to the separately
    approved F-018/F-017 cutover.
 

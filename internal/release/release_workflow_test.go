@@ -83,7 +83,7 @@ type workflowStep struct {
 	Run  string            `yaml:"run"`
 }
 
-func TestReleaseWorkflowIsDormantLeastPrivilegeAndConventional(t *testing.T) {
+func TestReleaseWorkflowIsActiveLeastPrivilegeAndConventional(t *testing.T) {
 	t.Parallel()
 	root := releaseRepoRoot(t)
 	require.NoFileExists(t, filepath.Join(root, ".goreleaser.yaml"))
@@ -112,9 +112,10 @@ func TestReleaseWorkflowIsDormantLeastPrivilegeAndConventional(t *testing.T) {
 		"verify":  {needs: "attest", timeout: 30, permissions: map[string]string{"actions": "read", "contents": "read"}},
 		"publish": {needs: "verify", timeout: 15, permissions: map[string]string{"actions": "read", "contents": "write"}},
 	}
+	expectedIf := "${{ github.repository == 'greaveselliott/MARS' && github.event_name == 'push' && github.ref_type == 'tag' }}"
 	for name, want := range expected {
 		job := workflow.Jobs[name]
-		require.Equal(t, "${{ false }}", job.If, name)
+		require.Equal(t, expectedIf, job.If, name)
 		require.Equal(t, want.needs, job.Needs, name)
 		require.Equal(t, "ubuntu-24.04", job.RunsOn, name)
 		require.Equal(t, want.timeout, job.TimeoutMinutes, name)

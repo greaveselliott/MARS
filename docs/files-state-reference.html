@@ -364,8 +364,8 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
           <pre><code>mars release notes --repo . --bump auto</code></pre>
           <p>
             Run the no-publish production and verification steps authorized by
-            AD-315. <code>.github/workflows/release.yml</code> remains dormant
-            until the approved public launch sequence. That is the MARS source workflow,
+            AD-315. T-080 activates <code>.github/workflows/release.yml</code>
+            only for an exact repository tag after the approved public gates. That is the MARS source workflow,
             not generated target doctrine and not publication authority. The
             standalone verifier and audit are retired; signed consumer and
             remote-convergence proof remain F-018 gates.

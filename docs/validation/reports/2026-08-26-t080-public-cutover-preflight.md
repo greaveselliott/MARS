@@ -179,6 +179,14 @@ the phases in order and stop on any mismatch.
 6. **Handoff:** record the exact postcondition receipt and hand off to T-081 for
    the 48-hour canary. Do not announce before that canary passes.
 
+## Approval Receipt
+
+After this report and its irreversible consequences were presented, the owner
+replied `I approve` on 2026-08-26. That approval authorizes the exact frozen
+transaction above and no broader GitHub, App, account, deletion, or release
+mutation. Execution began with the private tag-only workflow activation; the
+repository remained private and no launch tag existed at that boundary.
+
 ## Stop and Recovery Boundaries
 
 - Before visibility, any mismatch stops with the repository still private.

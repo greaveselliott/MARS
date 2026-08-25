@@ -325,7 +325,7 @@ git commit -m "release: notes X.Y.Z"</code></pre>
             </li>
             <li>
               <h3>Build and verify no-publish release evidence</h3>
-              <p>Run the conventional Go/Syft production and verification rehearsal authorized by AD-315. Keep <code>.github/workflows/release.yml</code> dormant; the rehearsal does not tag, upload, attest, announce, or publish.</p>
+              <p>Run the conventional Go/Syft production and verification rehearsal authorized by AD-315 before tagging. The T-080 workflow is tag-only and least privilege; the rehearsal itself does not tag, upload, attest, announce, or publish.</p>
             </li>
           </ol>
         </section>

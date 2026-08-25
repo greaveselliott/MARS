@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; attested `v0.69.1` is the supported release with attested `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** Public visibility and publication remain separately approval-gated; public-only controls, real launch attestations/Releases, logged-out lifecycle, and the canary are unproven.
-- **Next Primary Action:** Commit and push T-080's completed read-only preflight, then obtain separate owner approval of the exact frozen transaction before changing visibility or creating a tag or Release. Do not change Pages, Apps, publication state, tags, or Releases without their owning approvals.
+- **Current Primary Blocker:** The owner approved T-080's exact frozen transaction; its private workflow-activation and `0.69.0` version commits, disposable public rehearsal, public-only controls, real launch attestations/Releases, logged-out lifecycle, and canary are unproven.
+- **Next Primary Action:** Validate, commit, and push the guarded tag-only workflow activation, then generate and validate the `0.69.0` version commit without creating its tag. Continue through the exact frozen transaction and stop on any identity, permission, workflow, or immutable-release mismatch.
 
 ## Starting Baseline
 
