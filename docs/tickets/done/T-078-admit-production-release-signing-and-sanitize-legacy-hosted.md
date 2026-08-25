@@ -7,13 +7,13 @@ work_type: enabler
 bdd_scenarios: ["F-017-S003", "F-018-S004"]
 end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md"]
-verified_by: "pending"
+verified_by: "exact GitHub REST preconditions, bounded mutation receipts, and complete postcondition revalidation"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-25: exact pushed commit a4bbf81 and hosted run 32848968969 passed Go 1.25.13, Go 1.27.0, dependency notices, and the intentional Go 1.25.12 rejection with zero called findings"
-blocker: "The revised 500-asset/474-run cleanup plus future-only immutable-Release transaction remains separately approval-gated after deployment-state drift."
+last_attempt: "2026-08-25: owner-approved exact hosted transaction deleted 500 assets, 77 deployments, and 474 sealed completed runs; preserved 56 Releases, 301 tags, and 33 newer runs; and enabled future-only immutable Releases"
+blocker: ""
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
-next_action: "Present the revised exact 500-asset/474-run cleanup plus future-only immutable-Release transaction for separate approval; revalidate immediately and stop on any further live-state drift."
+next_action: "Hand off to T-080 for separately approved public visibility, public-only controls, and the two attested launch Releases."
 dedupe_key: "open-source:release-production-and-legacy-sanitation"
 metadata:
   baseline_tag_count: "301"
@@ -24,8 +24,9 @@ metadata:
   legacy_asset_count: "500"
   last_sealed_run_count: "474"
   live_deployment_count: "0"
-  mutation_authority: "repository-source-tests-docs-only-until-separate-exact-hosted-cleanup-and-setting-approval"
-  primary_status: "primary_blocked"
+  retained_post_seal_run_count: "33"
+  mutation_authority: "owner-approved exact transaction completed and exhausted"
+  primary_status: "primary_pass"
   publication_authority: "denied"
   producer_admission_status: "dormant_source_and_no_publish_rehearsal_passed"
   supports: "F-017-S003,F-018-S004"
@@ -215,3 +216,32 @@ consumer/producer circularity, a failed no-publish rehearsal, stale hosted IDs,
 scanner error/skip, unapproved hosted mutation, or pressure to revive the
 deferred bespoke platform. Record a bounded blocker instead of expanding the
 implementation.
+
+## Completion Receipt — 2026-08-25
+
+The owner separately approved the fully revalidated transaction. Immediate
+preflight bound repository `1279592869`, private `main` at
+`ed6b46ad90cfd47cffb079f7ded587fbb0759bc7`, 56 Releases, 301 tags, 500
+assets, the original 77 deployments, 474 sealed completed workflow runs, 33
+newer preserved runs, zero Actions artifacts/caches, and disabled immutable
+Releases. The approved identity digests matched before the first mutation.
+
+The transaction deleted the exact 500 legacy Release assets totaling
+11,828,329,001 bytes, added `inactive` only to the three approved non-inactive
+deployment records, deleted the exact 77 deployments, and deleted only the
+474 sealed completed workflow runs. It preserved all 33 newer runs, all 56
+Release objects and notes, all 301 tags, private visibility, disabled Pages,
+and the exact `main` ref. Each class was independently re-fetched before the
+next class began.
+
+The complete cleanup postcondition passed before the setting change:
+56 Releases, zero assets, 301 tags, zero deployments, the exact 33 preserved
+runs, zero artifacts, and zero caches. Repository immutable Releases were then
+enabled and re-fetched as `enabled=true` and `enforced_by_owner=false`.
+GitHub reported all 56 existing Releases as legacy-mutable, consistent with
+future-only application. No Release object, tag, source ref, visibility,
+Pages, App, publication, or announcement mutation occurred.
+
+T-078 therefore passes. Public visibility, public-only controls, the real
+`v0.69.0`/`v0.69.1` attested Releases, logged-out lifecycle, canary, and
+announcement remain owned by T-080/T-081.

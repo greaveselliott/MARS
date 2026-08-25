@@ -1,14 +1,14 @@
-# T-078 Hosted-State Revalidation — Mutation Pending
+# T-078 Hosted-State Revalidation And Cleanup — Complete
 
 **Date:** 2026-08-24  
 **Ticket:** T-078  
 **Repository:** `greaveselliott/MARS`  
 **Source:** `628b4b5109e35df83d15cd8143a3433435a12593`  
 **Visibility:** private  
-**Mutation status:** none performed  
-**Primary outcome:** the current hosted surface and exact cleanup sets are
-reconciled; destructive cleanup and the future-only immutable-Release setting
-still require separate owner approval.
+**Mutation status:** owner-approved exact cleanup and future-only immutable
+Releases completed on 2026-08-25
+**Primary outcome:** the exact legacy hosted surface is sanitized, all named
+preservation postconditions pass, and future Releases are immutable.
 
 ## Primary Outcome Contract
 
@@ -22,14 +22,12 @@ the anonymous lifecycle, contribution controls, public security surfaces, and
 
 **Primary Status:** `primary_blocked`
 
-**Current Primary Blocker:** the revised hosted cleanup/future-only immutable-
-Release transaction remains separately approval-gated after deployment-state
-drift. Public visibility, launch attestations, Releases, and canary remain
-later gates.
+**Current Primary Blocker:** T-078 is complete. Separately approved public
+visibility, public-only controls, launch attestations/Releases, and the canary
+remain T-080/T-081 gates.
 
-**Next Primary Action:** present the revised exact 500-asset/474-run cleanup
-plus future-only immutable-Release transaction for separate approval, then
-revalidate immediately and stop on any further drift.
+**Next Primary Action:** activate T-080, revalidate its public-cutover inputs,
+and obtain its separate visibility/publication approval before mutation.
 
 **Supporting Evidence:** the exact inventory, run-delta scan, owner-only
 manifest digests, consequences, and proposed transaction below.
@@ -45,7 +43,7 @@ Account-wide GitHub App scope remains outside the MARS launch boundary by owner
 disposition. The repository stayed private, local `HEAD` and `origin/main`
 remained equal, and the worktree was clean before acquisition.
 
-## Current Hosted Inventory
+## 2026-08-24 Hosted Inventory
 
 | Surface | Current state | Exact identity evidence |
 |---|---:|---|
@@ -124,7 +122,7 @@ Of the 77 deployments, 74 are already inactive. Two have latest state
 disabled, the operation removes historical deployment records rather than a
 current Pages site.
 
-## Proposed Mutation Transaction — Not Yet Authorized
+## Proposed Mutation Transaction At The 2026-08-24 Seal
 
 If separately approved, the transaction is:
 
@@ -165,13 +163,14 @@ Official references:
 - [Preventing changes to your releases](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity/prevent-release-changes)
 - [Repository immutable-Releases REST endpoint](https://docs.github.com/en/rest/repos/repos?apiVersion=2026-03-10#enable-immutable-releases)
 
-## Outcome
+## Outcome At The 2026-08-24 Seal
 
-The read-only hosted-state refresh passes. Exact current cleanup inputs and
-consequences are reviewable and no secret candidate remains. T-078 is still
-blocked on separate mutation authority, successful bounded postconditions, and
-an accepted-source green hosted run. No launch tag, upload, Release,
-attestation, visibility change, publication, or announcement occurred.
+The read-only hosted-state refresh passed at this seal. Exact cleanup inputs
+and consequences were reviewable and no secret candidate remained. T-078 was
+then blocked on separate mutation authority, successful bounded
+postconditions, and an accepted-source green hosted run. No launch tag,
+upload, Release, attestation, visibility change, publication, or announcement
+occurred during this checkpoint.
 
 ## 2026-08-25 Approval Revalidation And Source-Floor Remediation
 
@@ -213,3 +212,57 @@ dependency notices completed in 1m13s, and the intentional exact Go 1.25.12
 module-floor rejection completed in 18s. Every job concluded successfully.
 The workflow installed `govulncheck v1.7.0` inside both supported lanes and
 therefore closes the hosted called-vulnerability blocker without an exception.
+
+## 2026-08-25 Approved Transaction And Final Receipt
+
+The owner approved the exact transaction only after a new read-only
+revalidation. That revalidation found 507 completed and zero active workflow
+runs: the previously reviewed oldest 474 remained the deletion set, while 33
+newer source, contribution-policy, and Dependabot runs were explicitly
+preserved. The original 77 Pages deployment records were visible again, and
+their sorted-ID SHA-256 exactly reproduced the earlier seal. This was
+reconciled as live-state drift before mutation rather than silently widening
+the transaction.
+
+Immediate fail-closed preflight proved:
+
+| Surface | Approved pre-state | Identity receipt |
+|---|---:|---|
+| Repository | ID `1279592869`; private; default `main`; Pages disabled | `main` `ed6b46ad90cfd47cffb079f7ded587fbb0759bc7` |
+| Releases | 56 published legacy Releases | sorted-ID SHA-256 `fc5fb6824d6c6688274f98cd00d8c9ddf226f219b8a7f10b7390d7ed620d122f` |
+| Tags | 301 | sorted-name SHA-256 `7fd680992183459f3b8991331abe64837b3ac87ec3b7939d75f0a7c88ff9301e` |
+| Release assets | 500; 11,828,329,001 bytes | sorted-ID SHA-256 `4cde2219cb027dd0814186781a4821ee5a45327cd3c8e548ece1bf1a6e58700b` |
+| Deployments | 77 | sorted-ID SHA-256 `8b74b6d5b356696e244efdac506ced8fba7c0c43554eb7791d01f5349406506e` |
+| Sealed workflow runs | 474 completed | sorted-ID SHA-256 `1b0119895c3b29031412f141ca828d4361c3051f38ef82153c7fbc12cfd38cfc` |
+| Preserved workflow runs | 33 completed | sorted-ID SHA-256 `e424fdfe4a43e3fd51547098c0f6bc1ac672765032673d05c493b5ff728f6675` |
+| Actions artifacts / caches | 0 / 0 | complete paginated REST inventories |
+| Immutable Releases | disabled; not owner-enforced | `enabled=false`, `enforced_by_owner=false` |
+
+The deployment status recheck found 74 already inactive, failures
+`5188192046` and `5188234300`, and success `5212835398`. The transaction added
+`inactive` only to those three exact non-inactive records, then deleted the
+exact 77 deployment IDs.
+
+The bounded mutation completed in four fail-closed phases:
+
+1. delete the exact 500 asset IDs, then prove 56 Releases, zero assets, and
+   all 301 tags;
+2. inactivate only the three listed deployments, delete the exact 77 IDs, and
+   prove zero deployments;
+3. delete only the exact 474 sealed completed runs, then prove every sealed ID
+   absent and every one of the 33 newer IDs present; and
+4. prove the complete cleanup postcondition before enabling immutable
+   Releases through GitHub's repository endpoint.
+
+The final hosted receipt is 56 Releases, zero uploaded Release assets, 301
+tags, zero deployments, the exact 33 preserved workflow runs, zero Actions
+artifacts, zero caches, private visibility, disabled Pages, and unchanged
+`main`. Immutable Releases re-fetches as `enabled=true` and
+`enforced_by_owner=false`; all 56 historical Releases still report legacy
+mutable, as GitHub documents for a future-only repository setting.
+
+Deletion of the assets, workflow runs/logs, and deployment history is
+irreversible. No Release object, tag, source ref, visibility, Pages, App,
+publication, or announcement mutation occurred. The approval was consumed by
+this exact transaction and does not authorize T-080's visibility or release
+operations.

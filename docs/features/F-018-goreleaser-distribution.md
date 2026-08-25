@@ -147,8 +147,11 @@ And logged-out archive download, install, update, rollback, attestation, and per
   GitHub `actions/attest`. The owner has funded the account, accepted the
   recorded name risk, attested publication authority, and removed account-wide
   App scope from the launch. The dormant workflow, compatible consumer,
-  no-publish rehearsal, hosted sanitation, immutable-Release transaction,
-  contribution controls, separately approved visibility change, real
+  no-publish rehearsal and contribution controls pass. The separately
+  approved hosted transaction deleted the exact 500 legacy assets, 77
+  deployments, and 474 sealed runs while preserving 56 Releases, 301 tags,
+  and 33 newer runs; future-only immutable Releases are enabled. Separately
+  approved visibility change, public-only controls, real
   `v0.69.0`/`v0.69.1` publication, and anonymous lifecycle remain pending.
 
 ## Out of Scope
