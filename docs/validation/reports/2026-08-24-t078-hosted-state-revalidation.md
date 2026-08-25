@@ -266,3 +266,9 @@ irreversible. No Release object, tag, source ref, visibility, Pages, App,
 publication, or announcement mutation occurred. The approval was consumed by
 this exact transaction and does not authorize T-080's visibility or release
 operations.
+
+The synchronized completion record was pushed at exact source
+`2d5c05e994c6794d8d14300a6c69bbe1f58c588d`. Hosted
+source-compatibility run `32907186559` passed: Go 1.27.0 in 4m42s, Go 1.25.13
+in 4m25s, dependency notices in 1m6s, and the intentional exact Go 1.25.12
+module-floor rejection in 18s.

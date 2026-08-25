@@ -9,7 +9,7 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md"]
 verified_by: "exact GitHub REST preconditions, bounded mutation receipts, and complete postcondition revalidation"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-25: owner-approved exact hosted transaction deleted 500 assets, 77 deployments, and 474 sealed completed runs; preserved 56 Releases, 301 tags, and 33 newer runs; and enabled future-only immutable Releases"
+last_attempt: "2026-08-25: owner-approved exact hosted transaction deleted 500 assets, 77 deployments, and 474 sealed completed runs; preserved 56 Releases, 301 tags, and 33 newer runs; enabled future-only immutable Releases; and closure source 2d5c05e passed hosted run 32907186559"
 blocker: ""
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
@@ -245,3 +245,7 @@ Pages, App, publication, or announcement mutation occurred.
 T-078 therefore passes. Public visibility, public-only controls, the real
 `v0.69.0`/`v0.69.1` attested Releases, logged-out lifecycle, canary, and
 announcement remain owned by T-080/T-081.
+
+Closure source `2d5c05e994c6794d8d14300a6c69bbe1f58c588d` passed hosted
+source-compatibility run `32907186559`: Go 1.27.0, Go 1.25.13, dependency
+notices, and the intentional Go 1.25.12 rejection all completed successfully.
