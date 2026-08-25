@@ -108,7 +108,7 @@ The active source plan is tracked in
 
 - macOS or Linux
 - Git
-- Go 1.25.12+ for source installs; packaged MARS operation does not require an externally installed Go toolchain
+- Go 1.25.13+ for source installs; packaged MARS operation does not require an externally installed Go toolchain
 - Network access for first setup downloads
 - Disk space for multi-GB GGUF model files under `~/.mars/models`
 - Recommended GPU: Apple Silicon/Metal, NVIDIA CUDA, or AMD ROCm
@@ -274,7 +274,7 @@ unsupported and must not be advertised as installable.
 
 The first-install bootstrap is implemented for the future signed releases, but
 no supported launch tag exists yet. After an approved exact tag is published,
-the bootstrap requires Go 1.25.12 or newer once, an existing owner-controlled
+the bootstrap requires Go 1.25.13 or newer once, an existing owner-controlled
 install directory, and an independently reviewed checkout at the exact
 tag—never `latest`, a branch, prerelease, or pseudo-version. Run the
 repository-owned script from that checkout; fetching a script and piping it

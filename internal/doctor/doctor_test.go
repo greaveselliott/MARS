@@ -147,8 +147,8 @@ func TestCheckGoVersionEnforcesExactMarsSourceFloor(t *testing.T) {
 	}{
 		{name: "missing", runErr: errors.New("not found"), wantStatus: statusFail, wantText: "go not found"},
 		{name: "malformed", output: "go version devel", wantStatus: statusFail, wantText: "could not parse"},
-		{name: "below floor", output: "go version go1.25.11 darwin/arm64", wantStatus: statusFail, wantText: "need >= 1.25.12"},
-		{name: "minimum", output: "go version go1.25.12 darwin/arm64", wantStatus: statusOK, wantText: "go 1.25.12"},
+		{name: "below floor", output: "go version go1.25.12 darwin/arm64", wantStatus: statusFail, wantText: "need >= 1.25.13"},
+		{name: "minimum", output: "go version go1.25.13 darwin/arm64", wantStatus: statusOK, wantText: "go 1.25.13"},
 		{name: "release", output: "go version go1.27.0 darwin/arm64", wantStatus: statusOK, wantText: "go 1.27.0"},
 	}
 	for _, tt := range tests {
@@ -197,8 +197,8 @@ func TestGoVersionAtLeastMinimum(t *testing.T) {
 		major, minor, patch int
 		want                bool
 	}{
-		{1, 25, 11, false},
-		{1, 25, 12, true},
+		{1, 25, 12, false},
+		{1, 25, 13, true},
 		{1, 26, 0, true},
 		{2, 0, 0, true},
 	} {

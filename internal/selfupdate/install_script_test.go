@@ -163,10 +163,10 @@ func TestInstallScriptRejectsNonExactStableVersionsBeforeBootstrap(t *testing.T)
 
 func TestInstallScriptRejectsBelowMinimumGoBeforeStaging(t *testing.T) {
 	fixture := newInstallScriptFixture(t)
-	fixture.extraEnv = append(fixture.extraEnv, "BOOTSTRAP_GO_VERSION=go1.25.11")
+	fixture.extraEnv = append(fixture.extraEnv, "BOOTSTRAP_GO_VERSION=go1.25.12")
 	output, err := fixture.run(installScriptTestVersion, fixture.installDir)
 	require.Error(t, err, string(output))
-	require.Contains(t, string(output), "Go 1.25.12 or newer")
+	require.Contains(t, string(output), "Go 1.25.13 or newer")
 	require.Equal(t, "go <env> <GOVERSION>\n", fixture.readLog())
 	fixture.requirePriorUnchanged()
 	fixture.requireStagingClean()

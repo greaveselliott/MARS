@@ -27,7 +27,7 @@ builtin readonly MARS_COMMAND="github.com/greaveselliott/mars/cmd/mars"
 builtin readonly MARS_MODULE="github.com/greaveselliott/mars"
 builtin readonly MIN_GO_MAJOR=1
 builtin readonly MIN_GO_MINOR=25
-builtin readonly MIN_GO_PATCH=12
+builtin readonly MIN_GO_PATCH=13
 builtin readonly PUBLIC_GO_PROXY="https://proxy.golang.org"
 builtin readonly PUBLIC_GO_SUMDB="sum.golang.org"
 
@@ -103,7 +103,7 @@ require_install_dir() {
 resolve_go_path() {
     builtin local found go_dir
     found="$(builtin type -P go 2>/dev/null)" \
-        || fail 'Go 1.25.12 or newer is required for first bootstrap; install Go from go.dev and retry.'
+        || fail 'Go 1.25.13 or newer is required for first bootstrap; install Go from go.dev and retry.'
     if [[ "$found" != /* ]]; then
         fail 'the Go command must resolve to an absolute executable path; repair PATH and retry.'
     fi
@@ -142,7 +142,7 @@ require_go_version() {
     go_version="$(run_go_version 2>/dev/null)" \
         || fail 'Go version detection failed; repair the Go installation and retry.'
     if [[ ! "$go_version" =~ ^go([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-        fail 'Go reported an unsupported version; install stable Go 1.25.12 or newer and retry.'
+        fail 'Go reported an unsupported version; install stable Go 1.25.13 or newer and retry.'
     fi
     major="${BASH_REMATCH[1]}"
     minor="${BASH_REMATCH[2]}"
@@ -150,7 +150,7 @@ require_go_version() {
     if (( major < MIN_GO_MAJOR ||
           (major == MIN_GO_MAJOR && minor < MIN_GO_MINOR) ||
           (major == MIN_GO_MAJOR && minor == MIN_GO_MINOR && patch < MIN_GO_PATCH) )); then
-        fail 'Go 1.25.12 or newer is required for first bootstrap; upgrade Go and retry.'
+        fail 'Go 1.25.13 or newer is required for first bootstrap; upgrade Go and retry.'
     fi
 }
 

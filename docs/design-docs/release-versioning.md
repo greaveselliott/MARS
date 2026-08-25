@@ -152,7 +152,7 @@ MARS source builds publication-disabled private snapshots with the exact
 GoReleaser, Syft, and Go pins declared by T-065 and `.goreleaser.yaml`. The
 default producer has no tag, upload, signing, announcement, or publication
 authority. T-066 owns archive consumers and signature verification, T-067 owns
-the source-only Go 1.25.12 compatibility floor, T-068 owns private rehearsal,
+the source-only Go 1.25.13 compatibility floor, T-068 owns private rehearsal,
 and F-017/F-018 cutover approval is required before a supported release exists.
 Generated target repositories do not inherit this Go-specific producer or
 source floor; each target chooses and documents its own release workflow and
@@ -289,7 +289,7 @@ arguments, stay absent from Go, and enter only the staged signed updater's
 environment.
 An ordinary explicit-Bash mistake receives fixed direct-execution remediation;
 a poisoned non-privileged Bash startup is already outside this boundary. The script requires stable Go
-1.25.12 or newer only for this first bootstrap. It resolves one absolute Go
+1.25.13 or newer only for this first bootstrap. It resolves one absolute Go
 executable, sanitizes the build environment, validates every
 resolved temporary-root ancestor as private current-user or safe root-owned
 state, creates exact owner-only staging, and forces the canonical module

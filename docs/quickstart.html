@@ -108,7 +108,7 @@ docs:
               <tbody>
                 <tr><td>macOS or Linux</td><td>MARS ships local binaries and shell setup for Unix-like developer machines.</td><td><code>uname -s</code></td></tr>
                 <tr><td>Git checkout</td><td>The repo is the system of record. Target projects must be git repositories.</td><td><code>git status --short --branch</code></td></tr>
-                <tr><td>Go 1.25.12 or newer for source installs</td><td>The source install builds the <code>mars</code> command from this checkout. Packaged MARS operation does not require an externally installed Go toolchain.</td><td><code>go version</code></td></tr>
+                <tr><td>Go 1.25.13 or newer for source installs</td><td>The source install builds the <code>mars</code> command from this checkout. Packaged MARS operation does not require an externally installed Go toolchain.</td><td><code>go version</code></td></tr>
                 <tr><td>Network for first setup</td><td>Setup may download llama.cpp and multi-GB model artifacts.</td><td><code>mars setup --dry-run</code> after install.</td></tr>
                 <tr><td>Disk for models</td><td>GGUF models live under <code>~/.mars/models/</code>.</td><td><code>df -h ~</code></td></tr>
                 <tr><td>GPU recommended</td><td>Autonomous operation is designed for local model throughput. CPU fallback is best for dry runs and light tests.</td><td><code>mars doctor</code></td></tr>

@@ -12,7 +12,7 @@ live in the [Shell Integration Reference](shell-integration-reference.html).
 
 - macOS or Linux
 - Git
-- Go 1.25.12+ for source installs; packaged MARS operation does not require an externally installed Go toolchain
+- Go 1.25.13+ for source installs; packaged MARS operation does not require an externally installed Go toolchain
 - Network access for setup downloads
 - Disk space for multi-GB GGUF model files under `~/.mars/models`
 - Recommended GPU: Apple Silicon/Metal, NVIDIA CUDA, or AMD ROCm

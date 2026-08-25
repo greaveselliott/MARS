@@ -74,7 +74,7 @@ And a pre-commit failure preserves the previous binary, while an unprovable
 post-commit compensation fails recovery-required with transaction-preservation
 and trusted-source repair guidance
 
-Given a fresh installation has stable Go 1.25.12 or newer, an existing
+Given a fresh installation has stable Go 1.25.13 or newer, an existing
 owner-controlled final install directory, and an independently reviewed exact
 release-tag checkout
 When the shell installer is executed directly and receives one exact stable

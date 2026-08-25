@@ -65,7 +65,7 @@ const (
 
 	minGoMajor      = 1
 	minGoMinor      = 25
-	minGoPatch      = 12
+	minGoPatch      = 13
 	minDiskSpaceMiB = 5120 // 5 GiB
 )
 
@@ -524,7 +524,7 @@ func checkGoVersionWithRunner(cfg Config, run func() ([]byte, error)) CheckResul
 			Status:   statusFail,
 			Message:  "go not found in PATH",
 			Duration: nonZeroDurationSince(start),
-			Fix:      "install Go >= 1.25.12 from https://go.dev/dl/",
+			Fix:      "install Go >= 1.25.13 from https://go.dev/dl/",
 		}
 	}
 
@@ -536,7 +536,7 @@ func checkGoVersionWithRunner(cfg Config, run func() ([]byte, error)) CheckResul
 			Status:   statusFail,
 			Message:  fmt.Sprintf("could not parse version from: %s", strings.TrimSpace(version)),
 			Duration: nonZeroDurationSince(start),
-			Fix:      "install Go >= 1.25.12 from https://go.dev/dl/",
+			Fix:      "install Go >= 1.25.13 from https://go.dev/dl/",
 		}
 	}
 
@@ -586,7 +586,7 @@ func goVersionAtLeastMinimum(major, minor, patch int) bool {
 }
 
 func parseGoVersion(output string) (major, minor, patch int, err error) {
-	// "go version go1.25.12 darwin/arm64"
+	// "go version go1.25.13 darwin/arm64"
 	fields := strings.Fields(output)
 	for _, f := range fields {
 		if strings.HasPrefix(f, "go") && strings.Contains(f, ".") {

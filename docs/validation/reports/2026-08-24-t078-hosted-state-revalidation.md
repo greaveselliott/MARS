@@ -22,14 +22,15 @@ the anonymous lifecycle, contribution controls, public security surfaces, and
 
 **Primary Status:** `primary_blocked`
 
-**Current Primary Blocker:** the exact hosted cleanup/future-only immutable-
-Release transaction needs separate owner approval, and hosted source
-compatibility is red on called vulnerabilities fixed in Go 1.25.13. Public
-visibility, launch attestations, Releases, and canary remain later gates.
+**Current Primary Blocker:** the revised hosted cleanup/future-only immutable-
+Release transaction remains separately approval-gated after deployment-state
+drift, and the approved Go 1.25.13 source-floor remediation still needs a green
+hosted run. Public visibility, launch attestations, Releases, and canary remain
+later gates.
 
-**Next Primary Action:** present the exact cleanup and setting transaction for
-separate approval without broadening the vulnerability disposition or changing
-GitHub state before an immediate live revalidation.
+**Next Primary Action:** push the bounded Go 1.25.13 floor change and require
+the Go 1.25.13, Go 1.27.0, dependency-notice, and intentional Go 1.25.12
+rejection lanes to pass without broadening the vulnerability disposition.
 
 **Supporting Evidence:** the exact inventory, run-delta scan, owner-only
 manifest digests, consequences, and proposed transaction below.
@@ -172,3 +173,36 @@ consequences are reviewable and no secret candidate remains. T-078 is still
 blocked on separate mutation authority, successful bounded postconditions, and
 an accepted-source green hosted run. No launch tag, upload, Release,
 attestation, visibility change, publication, or announcement occurred.
+
+## 2026-08-25 Approval Revalidation And Source-Floor Remediation
+
+The owner approved the originally sealed asset/run/deployment cleanup and
+future-only immutable-Release transaction. Immediate fail-closed revalidation
+then found that the 77 deployments were already absent. MARS stopped before
+the first destructive call. Read-only reconciliation proved 56 Releases, 301
+tags, the same 500 assets, 474 completed workflow runs, zero deployments, zero
+artifacts/caches/active runs, disabled immutable Releases, private visibility,
+and `has_pages=false`. The exact 474-run manifest SHA-256 is
+`ab542a1921cf82ae4cb97a5576f470eb2294a15158d6348cc129b9667d05597a`;
+the asset projection SHA-256 is
+`14a6126ffeaa4a5e10eb59a90b77b4594f79258d03bd4483283d50cc11adcb93`;
+the preserved 56-Release/301-tag manifest SHA-256 is
+`141252fa879542d991ef98258626274dbf6c25b14958845aa61b4bacc7f4961e`.
+No GitHub mutation occurred. A revised 500-asset/474-run cleanup plus
+future-only immutable-Release transaction therefore remains separately
+approval-gated.
+
+The owner separately approved the shortest safe hosted-CI remediation: raise
+the current MARS source and one-time bootstrap floor from Go 1.25.12 to Go
+1.25.13, move the intentional below-floor lane to exact Go 1.25.12, retain
+exact Go 1.27.0 release production, and add no vulnerability exception.
+
+Before push, official Go 1.25.13 was selected exactly and passed `go mod tidy
+-go=1.25.13`, the complete `go test ./...` suite, full `go vet ./...`, and a
+CGO-disabled `./cmd/mars` build. Exact Go 1.25.12 with `GOTOOLCHAIN=local`
+failed with `go.mod requires go >= 1.25.13`, as required. The affected
+doctor/selfupdate/release race suite passed. SumDB-built `govulncheck v1.7.0`
+under exact Go 1.25.13 and DB timestamp `2026-08-21T20:38:00Z` reported zero
+called vulnerabilities; three required-module findings remain uncalled. The
+dependency notices, DocSync audit with zero findings, formatting, and diff
+checks passed. Hosted proof remains pending until the accepted commit runs.

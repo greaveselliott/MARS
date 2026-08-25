@@ -213,9 +213,9 @@ func TestSourceCompatibilityWorkflowContract(t *testing.T) {
 	require.Equal(t, map[string]any{"go-version": "1.27.0", "cache": false}, notices.Steps[1].With)
 
 	supported := workflow.Jobs["supported-source"]
-	require.Equal(t, map[string][]string{"go-version": {"1.25.12", "1.27.0"}}, supported.Strategy.Matrix)
+	require.Equal(t, map[string][]string{"go-version": {"1.25.13", "1.27.0"}}, supported.Strategy.Matrix)
 	for _, command := range []string{
-		"go mod tidy -go=1.25.12", "CGO_ENABLED=0 go build ./cmd/mars",
+		"go mod tidy -go=1.25.13", "CGO_ENABLED=0 go build ./cmd/mars",
 		"go test ./...", "go vet ./...",
 		"go install golang.org/x/vuln/cmd/govulncheck@v1.7.0",
 	} {
@@ -223,8 +223,8 @@ func TestSourceCompatibilityWorkflowContract(t *testing.T) {
 	}
 
 	below := workflow.Jobs["below-minimum"]
-	require.Equal(t, map[string]any{"go-version": "1.25.11", "cache": false}, below.Steps[1].With)
-	require.Contains(t, below.Steps[2].Run, "go.mod requires go >= 1.25.12")
+	require.Equal(t, map[string]any{"go-version": "1.25.12", "cache": false}, below.Steps[1].With)
+	require.Contains(t, below.Steps[2].Run, "go.mod requires go >= 1.25.13")
 }
 
 func readStrictYAML[T any](t *testing.T, path string, target *T) []byte {

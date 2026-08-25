@@ -166,7 +166,7 @@ mars update check --repo ~/my-project --json</code></pre>
               <thead><tr><th>Path</th><th>Command</th><th>Use when</th></tr></thead>
               <tbody>
                 <tr><td>Source checkout</td><td><code>make update-tool</code></td><td>Current supported route from a clean clone; fast-forward and reinstall the checked source.</td></tr>
-                <tr><td>First exact signed install</td><td><code>scripts/install.sh vX.Y.Z /absolute/install/dir</code></td><td>Implemented but unusable until an approved exact signed tag exists. Requires stable Go 1.25.12+ once, an independently reviewed checkout at the same tag, and an existing owner-controlled directory.</td></tr>
+                <tr><td>First exact signed install</td><td><code>scripts/install.sh vX.Y.Z /absolute/install/dir</code></td><td>Implemented but unusable until an approved exact signed tag exists. Requires stable Go 1.25.13+ once, an independently reviewed checkout at the same tag, and an existing owner-controlled directory.</td></tr>
                 <tr><td>Packaged dry run</td><td><code>mars update tool --dry-run</code></td><td>Use only after an approved signed release exists; previewing never grants installation authority.</td></tr>
                 <tr><td>Latest signed release</td><td><code>mars update tool</code></td><td>Blocked until F-018 cutover publishes the exact signed archive contract.</td></tr>
                 <tr><td>Specific signed release</td><td><code>mars update tool --version vX.Y.Z</code></td><td>Requires that exact approved signed contract; historical raw assets are unsupported.</td></tr>

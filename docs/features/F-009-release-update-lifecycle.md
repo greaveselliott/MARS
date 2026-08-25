@@ -70,7 +70,7 @@ And `mars auth github setup` saves a verified GitHub CLI token as the owner-only
 And private release assets are downloaded through GitHub asset API URLs when release metadata provides them
 And missing or invalid auth points to `mars auth github setup`
 
-Given a fresh machine has stable Go 1.25.12 or newer, one existing
+Given a fresh machine has stable Go 1.25.13 or newer, one existing
 owner-controlled install directory, and an independently reviewed checkout at
 the same exact release tag
 When `./scripts/install.sh` is executed directly and receives one exact stable

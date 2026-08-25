@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md"]
 verified_by: "pending"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-24: current hosted state was reacquired; 473 completed runs reconcile, the seven-run delta is scan-clean, and exact cleanup/setting manifests are frozen without mutation"
-blocker: "The exact cleanup/future-only immutable-Release transaction needs separate owner approval and postconditions; hosted source compatibility is red on six called Go 1.25.12 vulnerabilities fixed in 1.25.13."
+last_attempt: "2026-08-25: the owner approved the bounded source-floor remediation from Go 1.25.12 to 1.25.13 without a vulnerability exception; implementation and hosted proof are current"
+blocker: "The revised cleanup/future-only immutable-Release transaction remains separately approval-gated after deployment-state drift; hosted source compatibility must pass the approved Go 1.25.13 floor and intentional Go 1.25.12 rejection."
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
-next_action: "Present the exact 500-asset, 77-deployment, 473-run cleanup and future-only immutable-Release transaction for separate owner approval; do not mutate on any live-state drift."
+next_action: "Raise only the current source/bootstrap floor to Go 1.25.13, retain Go 1.27.0 release production, prove Go 1.25.12 is rejected, push once, and require hosted source compatibility to pass without broadening the vulnerability disposition."
 dedupe_key: "open-source:release-production-and-legacy-sanitation"
 metadata:
   baseline_tag_count: "301"
@@ -22,7 +22,8 @@ metadata:
   expected_post_t078_deployment_count: "0"
   expected_post_t078_release_count: "56"
   legacy_asset_count: "500"
-  last_sealed_run_count: "473"
+  last_sealed_run_count: "474"
+  live_deployment_count: "0"
   mutation_authority: "repository-source-tests-docs-only-until-separate-exact-hosted-cleanup-and-setting-approval"
   primary_status: "primary_blocked"
   publication_authority: "denied"

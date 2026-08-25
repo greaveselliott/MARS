@@ -76,12 +76,12 @@ tool calls.
   vulnerability-database, and reachable-vulnerability failures propagate the
   scanner's non-zero result instead of being treated as optional evidence.
 
-### AD-314: Source Builds Require Go 1.25.12 While Packaged Operation Does Not Require An External Go Toolchain
+### AD-314: Source Builds Require Go 1.25.13 While Packaged Operation Does Not Require An External Go Toolchain
 
-The canonical MARS source module declares `go 1.25.12` and retains
+The canonical MARS source module declares `go 1.25.13` and retains
 `toolchain go1.27.0` for release builds. Read-only CI exercises
-the exact 1.25.12 and 1.27.0 toolchains with `GOTOOLCHAIN=local`, while an
-exact 1.25.11 lane must fail specifically at the module floor without
+the exact 1.25.13 and 1.27.0 toolchains with `GOTOOLCHAIN=local`, while an
+exact 1.25.12 lane must fail specifically at the module floor without
 auto-downloading a newer compiler.
 
 Only `mars doctor --repo <mars-source>` enforces this source prerequisite.
@@ -130,6 +130,11 @@ do not inherit the MARS source floor and choose their own toolchain.
   exact-toolchain scan found called GO-2026-5970 in `x/text v0.38.0`; upgrading
   to `x/text v0.39.0` restored zero called vulnerabilities. Earlier Go
   1.26.5/v1.6 evidence remains historical rather than current guidance.
+- **2026-08-25 — the supported source patch floor moved to Go 1.25.13:**
+  Hosted Go 1.25.12 source compatibility reported six called standard-library
+  vulnerabilities fixed in Go 1.25.13. The bounded remediation raises only
+  the MARS source/bootstrap floor and intentional below-minimum lane, retains
+  exact Go 1.27.0 release production, and adds no vulnerability exception.
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
   `cmd/mars` (test additions between runs) and packages landing on

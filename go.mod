@@ -1,6 +1,6 @@
 module github.com/greaveselliott/mars
 
-go 1.25.12
+go 1.25.13
 
 toolchain go1.27.0
 
