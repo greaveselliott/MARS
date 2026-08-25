@@ -69,12 +69,13 @@ type rulesetRule struct {
 }
 
 type pullRequestRuleParameters struct {
-	AllowedMergeMethods            []string `json:"allowed_merge_methods"`
-	DismissStaleReviewsOnPush      bool     `json:"dismiss_stale_reviews_on_push"`
-	RequireCodeOwnerReview         bool     `json:"require_code_owner_review"`
-	RequireLastPushApproval        bool     `json:"require_last_push_approval"`
-	RequiredApprovingReviewCount   int      `json:"required_approving_review_count"`
-	RequiredReviewThreadResolution bool     `json:"required_review_thread_resolution"`
+	AllowedMergeMethods                        []string `json:"allowed_merge_methods"`
+	DismissStaleReviewsOnPush                  bool     `json:"dismiss_stale_reviews_on_push"`
+	RequireCodeOwnerReview                     bool     `json:"require_code_owner_review"`
+	RequireExtraApprovalForUnattributedChanges bool     `json:"require_extra_approval_for_unattributed_changes"`
+	RequireLastPushApproval                    bool     `json:"require_last_push_approval"`
+	RequiredApprovingReviewCount               int      `json:"required_approving_review_count"`
+	RequiredReviewThreadResolution             bool     `json:"required_review_thread_resolution"`
 }
 
 type statusCheckRuleParameters struct {
@@ -186,6 +187,7 @@ func TestMainRulesetMatchesMaintainerTrunkAndContributorPolicy(t *testing.T) {
 	require.Equal(t, []string{"merge", "squash", "rebase"}, reviews.AllowedMergeMethods)
 	require.True(t, reviews.DismissStaleReviewsOnPush)
 	require.True(t, reviews.RequireCodeOwnerReview)
+	require.True(t, reviews.RequireExtraApprovalForUnattributedChanges)
 	require.True(t, reviews.RequireLastPushApproval)
 	require.Equal(t, 1, reviews.RequiredApprovingReviewCount)
 	require.True(t, reviews.RequiredReviewThreadResolution)

@@ -7,13 +7,13 @@ work_type: enabler
 bdd_scenarios: ["F-017-S004"]
 end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s004-fork-safe-contribution-and-governance"]
-verified_by: "pending"
+verified_by: "local gates and hosted run 32901437495; final evidence-source run pending"
 owner: "foundation-maintainer"
 last_attempt: "2026-08-25"
-blocker: "none"
+blocker: "final evidence-source hosted run must pass"
 blocked_by: []
 trace_id: "launch-contribution-controls:2026-08-25"
-next_action: "Commit and validate conventional contribution files and fork-safe CI, then configure exact private repository settings and ruleset without changing visibility or release state."
+next_action: "Commit the exact live ruleset default and durable hosted receipt, rerun local and hosted gates, then move T-079 to done."
 dedupe_key: "open-source:fork-safe-contribution-controls"
 metadata:
   classification: "foundation-owned-and-hosted-settings"
@@ -50,3 +50,10 @@ F-017-S004 requires a conventional contributor experience and private-safe GitHu
 ## Acceptance
 
 The private repository has conventional community and fork-safe contribution files, source CI grants read-only authority to fork PRs, Dependabot is configured, Issues and Discussions are enabled, and an exact active ruleset protects main while preserving the documented maintainer trunk workflow through an explicit admin bypass. No public-only, release, cleanup, App, or visibility mutation occurs.
+
+## Evidence
+
+- Source checkpoint `b807afa8de29756ccf0b6612135aad749e16ee07` is pushed and hosted run `32901437495` passes every source-compatibility lane.
+- GitHub Discussions, Dependabot alerts/security updates, fork-PR approval/read-only/no-secret policy, GitHub-owned full-SHA Actions policy, the `dependencies` label, and exact ruleset `21491158` are enabled and re-read from GitHub.
+- The complete pre/post receipt and no-mutation boundary are recorded in `docs/validation/reports/2026-08-25-t079-private-contribution-controls.md`.
+- Visibility remains private; Pages, Apps, tags, Releases, assets, immutable Releases, public-only security controls, and T-078 cleanup were not changed.
