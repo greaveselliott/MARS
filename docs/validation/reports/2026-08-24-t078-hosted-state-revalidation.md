@@ -24,13 +24,12 @@ the anonymous lifecycle, contribution controls, public security surfaces, and
 
 **Current Primary Blocker:** the revised hosted cleanup/future-only immutable-
 Release transaction remains separately approval-gated after deployment-state
-drift, and the approved Go 1.25.13 source-floor remediation still needs a green
-hosted run. Public visibility, launch attestations, Releases, and canary remain
+drift. Public visibility, launch attestations, Releases, and canary remain
 later gates.
 
-**Next Primary Action:** push the bounded Go 1.25.13 floor change and require
-the Go 1.25.13, Go 1.27.0, dependency-notice, and intentional Go 1.25.12
-rejection lanes to pass without broadening the vulnerability disposition.
+**Next Primary Action:** present the revised exact 500-asset/474-run cleanup
+plus future-only immutable-Release transaction for separate approval, then
+revalidate immediately and stop on any further drift.
 
 **Supporting Evidence:** the exact inventory, run-delta scan, owner-only
 manifest digests, consequences, and proposed transaction below.
@@ -205,4 +204,12 @@ doctor/selfupdate/release race suite passed. SumDB-built `govulncheck v1.7.0`
 under exact Go 1.25.13 and DB timestamp `2026-08-21T20:38:00Z` reported zero
 called vulnerabilities; three required-module findings remain uncalled. The
 dependency notices, DocSync audit with zero findings, formatting, and diff
-checks passed. Hosted proof remains pending until the accepted commit runs.
+checks passed.
+
+Exact pushed commit `a4bbf81ccd29d4e8502a64cf649750bf3cb65c70`
+then passed hosted source-compatibility run `32848968969`: exact Go 1.25.13
+source compatibility completed in 4m21s, exact Go 1.27.0 completed in 4m55s,
+dependency notices completed in 1m13s, and the intentional exact Go 1.25.12
+module-floor rejection completed in 18s. Every job concluded successfully.
+The workflow installed `govulncheck v1.7.0` inside both supported lanes and
+therefore closes the hosted called-vulnerability blocker without an exception.

@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md#f-017-s003-anonymous-immutable-verifiable-release-lifecycle", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-owner-launch-dispositions.md", "docs/validation/reports/2026-08-24-t078-release-production-admission-blocked.md", "docs/validation/reports/2026-08-24-t078-conventional-no-publish-rehearsal.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md"]
 verified_by: "pending"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-25: the owner approved the bounded source-floor remediation from Go 1.25.12 to 1.25.13 without a vulnerability exception; implementation and hosted proof are current"
-blocker: "The revised cleanup/future-only immutable-Release transaction remains separately approval-gated after deployment-state drift; hosted source compatibility must pass the approved Go 1.25.13 floor and intentional Go 1.25.12 rejection."
+last_attempt: "2026-08-25: exact pushed commit a4bbf81 and hosted run 32848968969 passed Go 1.25.13, Go 1.27.0, dependency notices, and the intentional Go 1.25.12 rejection with zero called findings"
+blocker: "The revised 500-asset/474-run cleanup plus future-only immutable-Release transaction remains separately approval-gated after deployment-state drift."
 blocked_by: []
 trace_id: "launch-release-production:2026-08-24"
-next_action: "Raise only the current source/bootstrap floor to Go 1.25.13, retain Go 1.27.0 release production, prove Go 1.25.12 is rejected, push once, and require hosted source compatibility to pass without broadening the vulnerability disposition."
+next_action: "Present the revised exact 500-asset/474-run cleanup plus future-only immutable-Release transaction for separate approval; revalidate immediately and stop on any further live-state drift."
 dedupe_key: "open-source:release-production-and-legacy-sanitation"
 metadata:
   baseline_tag_count: "301"
