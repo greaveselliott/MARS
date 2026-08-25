@@ -30,7 +30,27 @@ checked=0
 while IFS= read -r commit; do
   [[ -n "$commit" ]] || continue
   checked=$((checked + 1))
+  author_name=$(git show -s --format=%an "$commit")
   author_email=$(git show -s --format=%ae "$commit")
+  committer_name=$(git show -s --format=%cn "$commit")
+  committer_email=$(git show -s --format=%ce "$commit")
+  if [[ "${GITHUB_ACTOR:-}" == "dependabot[bot]" &&
+        "$author_name" == "dependabot[bot]" &&
+        "$author_email" == "49699333+dependabot[bot]@users.noreply.github.com" &&
+        "$committer_name" == "GitHub" &&
+        "$committer_email" == "noreply@github.com" ]] &&
+     git show -s --format=%B "$commit" | git interpret-trailers --parse | awk '
+       BEGIN { found = 0 }
+       {
+         line = tolower($0)
+         if (line == "signed-off-by: dependabot[bot] <support@github.com>") {
+           found = 1
+         }
+       }
+       END { exit found ? 0 : 1 }
+     '; then
+    continue
+  fi
   if ! git show -s --format=%B "$commit" | git interpret-trailers --parse | awk -v author_email="$author_email" '
     BEGIN { author_email = tolower(author_email); found = 0 }
     {
@@ -52,5 +72,4 @@ if [[ $checked -eq 0 ]]; then
   exit 2
 fi
 
-echo "DCO check: $checked non-merge commit(s) have author-matching sign-offs"
-
+echo "DCO check: $checked non-merge commit(s) satisfy the DCO policy"

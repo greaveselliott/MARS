@@ -57,6 +57,13 @@ Hosted source-compatibility run
 [`32901437495`](https://github.com/greaveselliott/MARS/actions/runs/32901437495)
 completed successfully for that exact commit.
 
+The initial private Dependabot pull requests proved that GitHub's authenticated
+bot commits use the fixed `dependabot[bot]` author and GitHub support DCO
+trailer rather than an author-email-matching trailer. The closure source adds
+one fail-closed bot exception requiring the exact Actions actor, author,
+committer, and trailer identities; spoofed actors, authors, or trailers fail.
+Human contributors remain subject to author-matching sign-off.
+
 ## Pre-Mutation Revalidation
 
 Immediately before mutation, local `HEAD` and `origin/main` were clean and
@@ -127,6 +134,7 @@ fixtures, documentation consistency, DocSync with zero findings, formatting,
 diff checks, and 86.2% coverage for `internal/release`. The exact hosted run is
 linked above.
 
-The explicit API-default field and this durable evidence are undergoing the
-final local and hosted source gates before T-079 moves to done. A genuine
-public fork test is deliberately not claimed by this private checkpoint.
+The explicit API-default field, authenticated Dependabot DCO exception, and
+this durable evidence are undergoing the final local and hosted source gates
+before T-079 moves to done. A genuine public fork test is deliberately not
+claimed by this private checkpoint.

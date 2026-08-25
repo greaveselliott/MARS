@@ -54,6 +54,9 @@ docs(design): record AD-004 synchronous agent loop
 Every non-merge pull-request commit must include an author-matching DCO
 trailer. Add it with `git commit --signoff`; this certifies that you have the
 right to submit the contribution under the repository's Apache 2.0 license.
+The required DCO check recognizes only GitHub's exact Dependabot actor,
+author, committer, and `dependabot[bot] <support@github.com>` trailer as the
+non-human exception. Human contributors cannot use that exception.
 
 ## Code Style
 

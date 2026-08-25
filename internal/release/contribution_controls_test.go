@@ -267,6 +267,60 @@ func TestDCOCheckAcceptsAuthorSignoffAndRejectsMissingOrMismatchedSignoff(t *tes
 	}
 }
 
+func TestDCOCheckAcceptsOnlyAuthenticatedDependabotIdentity(t *testing.T) {
+	t.Parallel()
+	script := filepath.Join(releaseRepoRoot(t), "scripts", "check-dco.sh")
+	const botMessage = "build(deps): update dependency\n\nSigned-off-by: dependabot[bot] <support@github.com>"
+
+	t.Run("accepted", func(t *testing.T) {
+		dir, base := newDCOTestRepo(t)
+		writeDCOFixture(t, dir, "dependency.txt", "updated")
+		runDCOGit(t, dir, "add", "dependency.txt")
+		runDCOGitWithEnv(t, dir, []string{
+			"GIT_AUTHOR_NAME=dependabot[bot]",
+			"GIT_AUTHOR_EMAIL=49699333+dependabot[bot]@users.noreply.github.com",
+			"GIT_COMMITTER_NAME=GitHub",
+			"GIT_COMMITTER_EMAIL=noreply@github.com",
+		}, "commit", "-m", botMessage)
+		head := strings.TrimSpace(runDCOGit(t, dir, "rev-parse", "HEAD"))
+		cmd := exec.Command(script, base, head)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GITHUB_ACTOR=dependabot[bot]")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, string(output))
+		require.Contains(t, string(output), "satisfy the DCO policy")
+	})
+
+	for _, fixture := range []struct {
+		name       string
+		authorName string
+		authorMail string
+		message    string
+	}{
+		{name: "spoofed author", authorName: "Test User", authorMail: "test@example.com", message: botMessage},
+		{name: "wrong trailer", authorName: "dependabot[bot]", authorMail: "49699333+dependabot[bot]@users.noreply.github.com", message: "build(deps): update dependency\n\nSigned-off-by: Other Bot <other@example.com>"},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			dir, base := newDCOTestRepo(t)
+			writeDCOFixture(t, dir, "dependency.txt", fixture.name)
+			runDCOGit(t, dir, "add", "dependency.txt")
+			runDCOGitWithEnv(t, dir, []string{
+				"GIT_AUTHOR_NAME=" + fixture.authorName,
+				"GIT_AUTHOR_EMAIL=" + fixture.authorMail,
+				"GIT_COMMITTER_NAME=GitHub",
+				"GIT_COMMITTER_EMAIL=noreply@github.com",
+			}, "commit", "-m", fixture.message)
+			head := strings.TrimSpace(runDCOGit(t, dir, "rev-parse", "HEAD"))
+			cmd := exec.Command(script, base, head)
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(), "GITHUB_ACTOR=dependabot[bot]")
+			output, err := cmd.CombinedOutput()
+			require.Error(t, err)
+			require.Contains(t, string(output), "lacks a Signed-off-by trailer matching author email")
+		})
+	}
+}
+
 func newDCOTestRepo(t *testing.T) (string, string) {
 	t.Helper()
 	dir := t.TempDir()
@@ -288,6 +342,16 @@ func runDCOGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "%s: %s", strings.Join(args, " "), string(output))
+	return string(output)
+}
+
+func runDCOGitWithEnv(t *testing.T, dir string, env []string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), env...)
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "%s: %s", strings.Join(args, " "), string(output))
 	return string(output)
