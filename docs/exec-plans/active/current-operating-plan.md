@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** None — T-078 and T-079 are complete; T-080 must be activated before public cutover
+**Current Ticket:** T-080 — read-only public-cutover preflight and exact two-release transaction freeze
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -24,7 +24,7 @@
 - **Primary Pass Gate:** The repository is public; attested `v0.69.1` is the supported release with attested `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** Public visibility and publication remain separately approval-gated; public-only controls, real launch attestations/Releases, logged-out lifecycle, and the canary are unproven.
-- **Next Primary Action:** Create and activate T-080, freeze its exact cutover transaction, revalidate the private pre-state, and obtain separate owner approval before changing visibility or creating a tag or Release. Do not change Pages, Apps, publication state, tags, or Releases without their owning approvals.
+- **Next Primary Action:** Commit and push T-080's completed read-only preflight, then obtain separate owner approval of the exact frozen transaction before changing visibility or creating a tag or Release. Do not change Pages, Apps, publication state, tags, or Releases without their owning approvals.
 
 ## Starting Baseline
 
