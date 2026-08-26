@@ -18,6 +18,8 @@
 **Learning Or MVP Outcome:** Keep build, attestation, publication, hosted sanitation, visibility, and announcement as distinct authority boundaries while avoiding bespoke infrastructure that is not required for launch.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
 
+**Supporting foundation repair:** Operator-requested `MH-062` is a bounded F-006 intervention-debt repair from the 2026-08-26 clean-target bootstrap replay. It preserves CEO planning boundaries while forcing a terminal CEO → COO recovery handoff after a forbidden planning write. This supporting repair does not alter T-080's release scope, current-ticket status, or publication authority.
+
 ## Primary Outcome Contract
 
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.

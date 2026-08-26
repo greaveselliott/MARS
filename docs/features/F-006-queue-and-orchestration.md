@@ -126,6 +126,12 @@ Given CEO, Head of Strategy, COO, CTO, or CTO-weekly are running
 When they try to commit or mutate product/source/package implementation paths outside their owned planning artifacts
 Then tool policy blocks the mutation or commit and directs implementation work to Engineer while preserving CTO ticket creation as the ticket-shaping boundary
 
+Given CEO has written or confirmed an allowed strategy artifact during fresh bootstrap
+When it attempts to write a COO-owned exec plan or feature contract
+Then policy keeps that write blocked and returns one terminal recovery sequence: commit only allowed CEO artifacts if the worktree is dirty, then record a completed `exec_plan` disposition with suggested role `coo`
+And until that disposition is recorded, CEO may use only `git_status`, `git_commit`, or `job_disposition_record` rather than searching for another planning write
+And the resulting dispatch routes the existing product brief and canonical feature-contract context to COO without expanding CEO authority
+
 ### F-006-S006: Serve Orchestrator
 
 Given a user runs `mars serve`

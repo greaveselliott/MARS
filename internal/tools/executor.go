@@ -339,6 +339,7 @@ func recordSessionToolPolicyFailure(session *Session, name string, raw json.RawM
 	}
 	session.ToolCounts["tool:"+name+":failure"]++
 	count := recordRepeatedPolicyFailure(session, "pre", name, err)
+	recordCEOPlanningWriteRecovery(session, name, err)
 	recordTicketCreationOutcome(session, name, raw, err)
 	if name == "shell_exec" {
 		args, decodeErr := decodeShellExecArgs(raw)

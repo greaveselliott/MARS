@@ -996,6 +996,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(ceoPrompt), "Do not write docs/exec-plans/active/current-operating-plan.md")
 	assert.Contains(t, string(ceoPrompt), "Do not call file_write for docs/features/")
 	assert.Contains(t, string(ceoPrompt), "include the canonical feature contract path in the COO handoff")
+	assert.Contains(t, string(ceoPrompt), "do not search for another planning write")
+	assert.Contains(t, string(ceoPrompt), "next_need \"exec_plan\", suggested_role \"coo\"")
 	assert.Contains(t, string(ceoPrompt), "route to COO")
 	assert.Contains(t, string(ceoPrompt), "route to CTO")
 

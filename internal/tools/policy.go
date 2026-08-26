@@ -92,6 +92,9 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 			return err
 		}
 	}
+	if err := checkCEOPlanningWriteTerminalRecovery(session, hasSession, name); err != nil {
+		return err
+	}
 	if err := checkDogfoodFindingCommitPolicy(ctx, root, session, hasSession, name); err != nil {
 		return err
 	}

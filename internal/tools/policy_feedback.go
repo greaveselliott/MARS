@@ -20,6 +20,8 @@ import (
 
 const policyBlockCountKeyPrefix = "policy:block:count:"
 
+const ceoPlanningWriteTerminalRecoveryKey = "ceo:planning_write:terminal_recovery_required"
+
 func recordRepeatedPolicyFailure(session *Session, stage, name string, err error) int {
 	if session == nil || err == nil {
 		return 0
@@ -50,7 +52,7 @@ func normalizePolicyFeedbackField(value string) string {
 }
 
 func withPolicyFailureRepairFeedback(root Root, session *Session, stage, name string, err error, count int) error {
-	if err == nil || count < 2 {
+	if err == nil || (count < 2 && !ceoPlanningWriteRecoveryRequired(session, name, err)) {
 		return err
 	}
 	feedback := policyFailureRepairFeedback(root, session, stage, name, err, count)
@@ -61,6 +63,9 @@ func withPolicyFailureRepairFeedback(root Root, session *Session, stage, name st
 }
 
 func policyFailureRepairFeedback(root Root, session *Session, stage, name string, err error, count int) string {
+	if ceoPlanningWriteRecoveryRequired(session, name, err) {
+		return "CEO bootstrap recovery required:\n- Do not try another exec-plan or feature-contract write; those artifacts belong to COO.\n- If allowed CEO-owned strategy artifacts are dirty, call git_status then git_commit only those artifacts.\n- Immediately call job_disposition_record with status completed, next_need exec_plan, suggested_role coo, and handoff.expected_output naming the active plan and canonical feature contract COO must update.\n- Do not call any other tool until that terminal disposition is recorded."
+	}
 	if session != nil && strings.EqualFold(strings.TrimSpace(session.Role), "coo") && name == "job_disposition_record" {
 		if guidance := cooFeatureSpecificityRepairFeedback(root, err); guidance != "" {
 			return guidance
@@ -72,6 +77,37 @@ func policyFailureRepairFeedback(root Root, session *Session, stage, name string
 		}
 	}
 	return fmt.Sprintf("Guardrail repair required:\n- Repeated policy block #%d for %s during %s-policy checks.\n- Do not call %s again with the same payload until the blocker is repaired.\n- Read the policy error above, perform the allowed repair action it names, then retry.", count, name, stage, name)
+}
+
+func recordCEOPlanningWriteRecovery(session *Session, name string, err error) {
+	if !ceoPlanningWriteRecoveryRequired(session, name, err) {
+		return
+	}
+	if session.ToolState == nil {
+		session.ToolState = make(map[string]string)
+	}
+	session.ToolState[ceoPlanningWriteTerminalRecoveryKey] = "true"
+}
+
+func ceoPlanningWriteRecoveryRequired(session *Session, name string, err error) bool {
+	if session == nil || !strings.EqualFold(strings.TrimSpace(session.Role), "ceo") || name != "file_write" || err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return (strings.Contains(message, "ceo may only write strategy artifacts") && strings.Contains(message, "belongs to coo/cto handoff")) ||
+		(strings.Contains(message, "ceo cannot write feature contracts") && strings.Contains(message, "hand off to coo"))
+}
+
+func checkCEOPlanningWriteTerminalRecovery(session Session, hasSession bool, name string) error {
+	if !hasSession || !strings.EqualFold(strings.TrimSpace(session.Role), "ceo") || session.ToolState[ceoPlanningWriteTerminalRecoveryKey] == "" {
+		return nil
+	}
+	switch name {
+	case "git_status", "git_commit", "job_disposition_record":
+		return nil
+	default:
+		return fmt.Errorf("policy: CEO attempted a COO-owned planning write in this job. Do not call %s; commit only any allowed CEO strategy artifacts, then call job_disposition_record with status completed, next_need exec_plan, and suggested_role coo", name)
+	}
 }
 
 func shellExecValidationLaneRepairFeedback(stage, name string, err error, count int) string {

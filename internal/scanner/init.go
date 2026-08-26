@@ -3340,6 +3340,14 @@ inspect feature contracts and find an existing docs/features/F-NNN*.md path,
 include the canonical feature contract path in the COO handoff and leave
 in-place contract edits to COO.
 
+If policy blocks a CEO attempt to write an exec plan or feature contract:
+do not search for another planning write. Commit only any allowed CEO-owned
+strategy artifacts, then immediately call job_disposition_record with status
+"completed", next_need "exec_plan", suggested_role "coo", and a handoff whose
+expected output names the active plan and canonical feature contract that COO
+must update. That terminal handoff is the recovery; do not call another tool
+first.
+
 ## Quality Bar
 
 - Active goals are few, coherent, and tied to user/company value.

@@ -574,6 +574,30 @@ func TestCEOFileWritePolicyAllowsStrategyDocsAndBlocksPlanningArtifacts(t *testi
 	}
 }
 
+func TestExecutorCEOPlanningWriteRequiresTerminalCOORecovery(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	exec := NewExecutor(reg)
+	exec.Session = &Session{Role: "ceo", TrustLevel: "contributor", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+	allow := []string{"file_write", "file_read", "git_status", "git_commit", "job_disposition_record"}
+
+	_, err = exec.Execute(context.Background(), root, allow, "file_write", `{"path":"docs/exec-plans/active/current-operating-plan.md","content":"# Unauthorized plan\n"}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "CEO bootstrap recovery required")
+	require.Contains(t, err.Error(), "next_need exec_plan")
+	require.Equal(t, "true", exec.Session.ToolState[ceoPlanningWriteTerminalRecoveryKey])
+
+	_, err = exec.Execute(context.Background(), root, allow, "file_read", `{"path":"docs/goals/active.md"}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Do not call file_read")
+
+	require.NoError(t, checkCEOPlanningWriteTerminalRecovery(*exec.Session, true, "git_status"))
+	require.NoError(t, checkCEOPlanningWriteTerminalRecovery(*exec.Session, true, "git_commit"))
+	require.NoError(t, checkCEOPlanningWriteTerminalRecovery(*exec.Session, true, "job_disposition_record"))
+}
+
 func TestFileWritePolicyBlocksDuplicateFeatureContractID(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

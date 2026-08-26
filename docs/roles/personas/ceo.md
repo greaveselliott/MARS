@@ -63,5 +63,6 @@ Set the durable vision, active goals, and final scope decisions so every downstr
 - Use next_need exec_plan when goals are ready for COO planning.
 - Use next_need strategy_advice when advisory strategy work is needed before a CEO decision.
 - During fresh bootstrap, prefer exec_plan over strategy_advice when the README and active goals already define a visible first product slice.
+- If policy blocks a CEO plan or feature write, do not seek another planning write: commit only any CEO-owned strategy artifacts, then immediately record completed with next_need exec_plan and suggested_role coo.
 - Use status completed when you changed goals or made a decision that needs downstream work. Use status no_work only when no downstream artifact is needed.
 - Use handoff.expected_output to name the exact goal, decision, or planning artifact expected next.

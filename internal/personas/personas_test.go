@@ -33,6 +33,15 @@ func TestDefaultPersonasValidate(t *testing.T) {
 	}, DefaultRoleKeys())
 }
 
+func TestCEOPersonaDocumentsBlockedPlanningWriteRecovery(t *testing.T) {
+	t.Parallel()
+	ceo, ok := DefaultPersonaMap()["ceo"]
+	require.True(t, ok)
+	require.Contains(t, strings.Join(ceo.OrchestratorHandoff, "\n"), "do not seek another planning write")
+	require.Contains(t, strings.Join(ceo.OrchestratorHandoff, "\n"), "next_need exec_plan")
+	require.Contains(t, RenderManual(ceo), "do not seek another planning write")
+}
+
 func TestRenderedManualsIncludeRequiredSections(t *testing.T) {
 	t.Parallel()
 

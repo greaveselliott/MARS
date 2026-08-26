@@ -445,6 +445,27 @@ func TestDecide_execPlanRoutesToCOO(t *testing.T) {
 	require.Equal(t, "deterministic", decision.DecisionKind)
 }
 
+func TestDecide_completedCEOExecPlanRecoveryRoutesToCOO(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("ceo", "coo", "orchestrator"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-ceo-recovery",
+			RepoID:        "repo-1",
+			Role:          "ceo",
+			Status:        "completed",
+			NextNeed:      "exec_plan",
+			SuggestedRole: "coo",
+			Reason:        "CEO planning-path guardrail requires COO-owned planning recovery.",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "coo", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Empty(t, decision.StopReason)
+}
+
 func TestDecide_defaultCompletionRouteMatchesOwnershipSpine(t *testing.T) {
 	t.Parallel()
 
