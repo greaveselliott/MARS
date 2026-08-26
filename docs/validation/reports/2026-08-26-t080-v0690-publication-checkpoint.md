@@ -21,13 +21,14 @@ the next tag.
 
 **Current Primary Blocker:** the anonymous first-install lifecycle proved that
 GNU tar record padding in the immutable `v0.69.0` and `v0.69.1` archives is
-rejected by the signed updater's canonical archive contract. Publish no support
-claim; separately approved corrected `v0.69.2` and `v0.69.3` Releases are
-required to restore both a rollback bridge and a supported latest release.
+rejected by the signed updater's canonical archive contract. Corrected
+`v0.69.2` is public and passes first install; `v0.69.3`, followed by the
+anonymous update and rollback replay, is still required before a supported
+launch-pair claim.
 
-**Next Primary Action:** land and validate the minimal canonical-tar and
-publisher correction, then present the exact immutable `v0.69.2`/`v0.69.3`
-consequence for owner approval before creating another tag.
+**Next Primary Action:** generate and validate `v0.69.3`, publish it using the
+standard corrected publisher, independently verify it, then replay anonymous
+update to `v0.69.3` and rollback to `v0.69.2`.
 
 **Supporting Evidence:** release run `32915168629`, locally downloaded attested
 artifact `mars-release-attested-8db7b82ea4013b7a9cf7f760129ee2815ca89103`,
@@ -86,6 +87,35 @@ directory, restores it, and then runs the attestation verifier. The regression
 test binds that order. This is the minimum launch-critical correction; it does
 not revive the deferred bespoke release-security platform.
 
+## v0.69.2 Corrected Rollback Result
+
+The owner approved the corrected immutable `v0.69.2`/`v0.69.3` sequence.
+Annotated tag `v0.69.2` resolves to
+`28d31a5c9a6efaf05ebf507933d030499ec351d6`. Release workflow run
+[`32918743269`](https://github.com/greaveselliott/MARS/actions/runs/32918743269)
+passed production, GitHub attestation, and independent verification. Its old
+publisher created one private draft, GitHub Release ID `376825184`, with the
+exact ten verified assets, then failed because GitHub's tag lookup endpoint
+does not resolve that draft. No artifact was changed. The draft's asset
+digests were independently matched to the workflow output, the repository's
+unsigned distribution verifier passed with the Sigstore bundle held outside
+the nine-file directory, and all four archive consumers plus the attestation
+consumer passed before that exact draft ID was published.
+
+The bounded publisher correction at `f48eb8b` creates/uploads the draft in one
+operation, locates the sole matching draft by list result, verifies its exact
+asset set and digests, and publishes it by immutable release ID. Hosted source
+compatibility, CodeQL, and Pages checks for that correction all passed. Release
+`v0.69.2` is public, non-draft, non-prerelease, immutable, and latest only
+temporarily pending `v0.69.3`.
+
+A fresh credential-free, exact-tag clone under a cleared environment installed
+`v0.69.2` into a private non-symlinked owner directory. The installed binary
+reported `mars 0.69.2 darwin/arm64`, commit
+`28d31a5c9a6efaf05ebf507933d030499ec351d6`, built
+`2026-08-26T01:16:54Z`. This establishes the first-install part of the corrected
+lifecycle; it does not yet establish update or rollback.
+
 ## Remaining T-080 Work
 
 `v0.69.1` was subsequently produced, attested, and independently verified by
@@ -100,17 +130,12 @@ supported install or rollback target.
 
 Remaining work is now:
 
-1. Produce canonical archives with GNU tar `--blocking-factor=1` and run the
-   real signed archive consumer against all four targets before transfer.
-2. Replace the checkout-dependent publisher note option with a fixed local
-   note so the least-privilege publisher needs no source checkout.
-3. Obtain owner approval for corrected immutable `v0.69.2` as the rollback
-   bridge and `v0.69.3` as latest. One corrected release alone cannot prove an
-   authenticated older-version rollback because `v0.69.0` and `v0.69.1` are
-   structurally inadmissible.
-4. Publish and independently verify both, then repeat anonymous install, update
-   to `v0.69.3`, and rollback to `v0.69.2`.
-5. Record the final hosted-state receipt and hand off to T-081's public canary.
+1. Generate `v0.69.3` from the validated correction, publish it through the
+   least-privilege draft-by-ID workflow, and independently verify all ten
+   assets and its attestation.
+2. From the retained anonymous `v0.69.2` install, update to `v0.69.3` and
+   rollback to `v0.69.2`; preserve the immutable older releases untouched.
+3. Record the final hosted-state receipt and hand off to T-081's public canary.
 
 The Node 20 compatibility warning for the pinned upstream upload-artifact
 action is post-launch pin maintenance because GitHub successfully ran the

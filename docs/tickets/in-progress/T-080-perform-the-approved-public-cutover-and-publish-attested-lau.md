@@ -9,18 +9,18 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md", "docs/validation/reports/2026-08-25-t079-private-contribution-controls.md", "docs/validation/reports/2026-08-26-t080-public-cutover-preflight.md", "docs/validation/reports/2026-08-26-t080-v0690-publication-checkpoint.md"]
 verified_by: "TBD"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-26: immutable exact-ten v0.69.0 and v0.69.1 are public and authenticated, but the first anonymous bootstrap rejected both archives' noncanonical GNU tar record padding before installation"
-blocker: "land the canonical tar and checkout-free publisher correction, then obtain owner approval for immutable v0.69.2 rollback and v0.69.3 latest Releases before any supported-release claim"
+last_attempt: "2026-08-26: corrected immutable exact-ten v0.69.2 is public after normal production, attestation, independent asset verification, and a credential-free first install; v0.69.3/update/rollback remain"
+blocker: "publish corrected immutable v0.69.3 through the validated draft-by-ID publisher, independently verify it, then complete the anonymous update-to-v0.69.3 and rollback-to-v0.69.2 lifecycle before any supported-launch-pair claim"
 blocked_by: []
 trace_id: "launch-public-cutover:2026-08-26"
-next_action: "Validate and push the bounded correction, then present the exact v0.69.2/v0.69.3 publication consequence for separate owner approval."
+next_action: "Generate, validate, tag, and publish v0.69.3 through the standard least-privilege workflow, then independently verify it and complete the anonymous update/rollback replay."
 dedupe_key: "open-source:public-cutover-and-attested-launch-releases"
 metadata:
   apps: "out-of-scope"
   classification: "foundation-owned-and-hosted-cutover"
   mutation_authority: "approved for the exact frozen T-080 transaction"
   name_risk: "owner-accepted"
-  publication_authority: "approved for exact immutable v0.69.0 and v0.69.1 sequence after preceding gates"
+  publication_authority: "owner approved exact immutable v0.69.2 rollback and v0.69.3 latest correction sequence after preceding gates"
   supports: "F-017-S003,F-017-S004,F-017-S005,F-018-S004"
   version_floor: "0.68.49"
 source: MARS Launch-Complete Open-Source Delivery Plan — owner-approved Item 10

@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-080 — complete the second immutable launch release and anonymous lifecycle
+**Current Ticket:** T-080 — publish corrected v0.69.3 and complete the anonymous update/rollback lifecycle
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071 through T-077 complete; T-073 owner holds resolved by recorded disposition; T-078; T-079; T-080 public cutover and attested launch releases; T-081 canary and announcement.
-**Current Failing Scenario:** F-017-S003/F-017-S005 — the repository is public with applicable controls active and immutable exact-ten `v0.69.0`/`v0.69.1` are authentic, but both archives carry GNU tar record padding rejected by the signed updater. No supported-release claim is allowed until an approved corrected patch release passes the anonymous lifecycle.
+**Current Failing Scenario:** F-017-S003/F-017-S005 — the repository is public with applicable controls active; immutable exact-ten `v0.69.0`/`v0.69.1` remain historical but unsupported because their archives carry GNU tar record padding rejected by the signed updater. Corrected `v0.69.2` has completed the anonymous first-install step; `v0.69.3` and the update/rollback replay remain.
 **Walking Skeleton Slice:** T-078 implements only the standard Go/archive/Syft/GitHub-attestation path, proves the exact-ten contract without publication, refreshes the hosted-state seal, and prepares or performs only separately approved exact sanitation. T-079 closes private contribution controls. T-080 changes visibility under separate approval before creating the two public attested launch releases; T-081 owns the canary and announcement.
 **Learning Or MVP Outcome:** Keep build, attestation, publication, hosted sanitation, visibility, and announcement as distinct authority boundaries while avoiding bespoke infrastructure that is not required for launch.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -21,10 +21,10 @@
 ## Primary Outcome Contract
 
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
-- **Primary Pass Gate:** The repository is public; attested `v0.69.1` is the supported release with attested `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
+- **Primary Pass Gate:** The repository is public; attested `v0.69.3` is the supported release with attested `v0.69.2` retained as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** As of 2026-08-26, immutable exact-ten `v0.69.0` and `v0.69.1` are public and cryptographically verified, but their noncanonical archive record padding makes both unusable by the signed updater; corrected `v0.69.2` rollback and `v0.69.3` latest Releases remain unauthorized.
-- **Next Primary Action:** Land and validate the bounded canonical-tar and checkout-free publisher correction, then obtain separate approval before creating or publishing `v0.69.2` or `v0.69.3`.
+- **Current Primary Blocker:** As of 2026-08-26, corrected immutable attested `v0.69.2` is public and completed the credential-free first-install replay. Corrected `v0.69.3` must now be published with the validated draft-by-ID publisher, then the anonymous update to `v0.69.3` and rollback to `v0.69.2` must pass before either is claimed as a supported launch pair.
+- **Next Primary Action:** Generate, validate, tag, and publish `v0.69.3` through the standard workflow; independently verify it, then replay the anonymous update/rollback lifecycle.
 
 ## Starting Baseline
 
@@ -59,12 +59,13 @@ correction required by resumed T-058, retain `VERSION=0.68.49` and
 `DefaultVersion=0.69.0-dev`. Validated checkpoints are committed and pushed
 without release-note generation, tag creation, signing, upload, publication,
 or announcement. After the separately approved public-visibility change,
-T-080 ends the pre-release freeze by generating `0.69.0`, publishing its
-attested rollback bridge, then generating and publishing attested `0.69.1` as
-the supported release. T-081 evidence-only canary closeout
-commits retain `0.69.1` without creating `0.69.2`; any product, runtime,
-security, or public-contract correction discovered during canary requires
-immutable `v0.69.2` and a repeated lifecycle and canary.
+T-080 originally generated `0.69.0` then `0.69.1`; both are retained immutable
+historical Releases but unsupported because their GNU tar record padding is
+incompatible with the signed consumer. The owner-approved correction sequence
+uses canonical `v0.69.2` as rollback bridge and `v0.69.3` as latest. T-081
+evidence-only canary closeout retains `0.69.3`; any later product, runtime,
+security, or public-contract correction requires a further immutable release
+and a repeated lifecycle and canary.
 
 ## Sequential Ticket Schedule
 
