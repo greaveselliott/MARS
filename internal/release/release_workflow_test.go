@@ -142,8 +142,10 @@ func TestReleaseWorkflowIsActiveLeastPrivilegeAndConventional(t *testing.T) {
 		"TestVerifyReleaseDistFromEnvironment",
 		"TestVerifyMARSReleaseArchiveFromEnvironment",
 		"TestVerifyMARSReleaseAttestationFromEnvironment",
-		"gh release create \"$tag\" --draft --verify-tag --title \"$tag\" --notes \"$tag\"",
-		"gh release edit \"$tag\" --draft=false --latest",
+		"gh release create \"$tag\" dist/* --draft --verify-tag --title \"$tag\" --notes \"$tag\"",
+		"repos/$GH_REPO/releases?per_page=100",
+		"expected one matching draft release",
+		"gh api --method PATCH \"repos/$GH_REPO/releases/$release_id\" -F draft=false -F make_latest=true",
 	} {
 		require.Contains(t, text, required)
 	}
@@ -153,8 +155,10 @@ func TestReleaseWorkflowIsActiveLeastPrivilegeAndConventional(t *testing.T) {
 	} {
 		require.NotContains(t, strings.ToLower(text), strings.ToLower(forbidden))
 	}
-	require.Less(t, strings.Index(text, "gh release create"), strings.Index(text, "gh release upload"))
-	require.Less(t, strings.Index(text, "gh release upload"), strings.Index(text, "gh release edit"))
+	require.NotContains(t, text, "gh release upload")
+	require.NotContains(t, text, "gh release edit")
+	require.Less(t, strings.Index(text, "gh release create"), strings.Index(text, "repos/$GH_REPO/releases?per_page=100"))
+	require.Less(t, strings.Index(text, "repos/$GH_REPO/releases?per_page=100"), strings.Index(text, "gh api --method PATCH"))
 	bundleAside := strings.Index(text, `mv -- "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json" "$bundle"`)
 	unsignedVerify := strings.LastIndex(text, "TestVerifyReleaseDistFromEnvironment")
 	bundleRestore := strings.Index(text, `mv -- "$bundle" "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json"`)
