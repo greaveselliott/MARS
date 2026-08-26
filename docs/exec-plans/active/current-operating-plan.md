@@ -61,8 +61,9 @@ without release-note generation, tag creation, signing, upload, publication,
 or announcement. After the separately approved public-visibility change,
 T-080 originally generated `0.69.0` then `0.69.1`; both are retained immutable
 historical Releases but unsupported because their GNU tar record padding is
-incompatible with the signed consumer. The owner-approved correction sequence
-uses canonical `v0.69.2` as rollback bridge and `v0.69.3` as latest. T-081
+incompatible with the signed consumer. The 2026-08-26 owner-approved correction
+sequence sets canonical `v0.69.2` as rollback bridge and `v0.69.3` as the
+forward release in that pair. T-081
 evidence-only canary closeout retains `0.69.3`; any later product, runtime,
 security, or public-contract correction requires a further immutable release
 and a repeated lifecycle and canary.

@@ -2,6 +2,27 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.69.3] - 2026-08-26
+<!-- mars-release: version=0.69.3 commit=9be2101f6b8d -->
+
+### Impact
+- **release:** Operators see improved reliability because publish verified drafts by ID.
+- **release:** Operators and future agents get clearer guidance because record v0.69.2 correction.
+
+### Why
+- **release:** This matters because publish verified drafts by ID closes a failure mode or degraded path.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **release:** Changed publish verified drafts by ID (f48eb8b).
+- **release:** Changed record v0.69.2 correction (9be2101).
+
+### Fixes
+- **release:** Publish verified drafts by ID (f48eb8b)
+
+### Documentation
+- **release:** Record v0.69.2 correction (9be2101)
+
 ## [0.69.2] - 2026-08-26
 <!-- mars-release: version=0.69.2 commit=c0e74051d53c -->
 
