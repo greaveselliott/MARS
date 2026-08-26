@@ -73,7 +73,8 @@ history.
 
 ### AD-056: Source Changes Are Automatically Versioned On Commit
 
-Every non-release semantic commit to this source repository must be followed by an automatic release-note generation step before the task is considered done:
+Every non-release semantic commit to this source repository must complete as an
+immutable, verified release before the task is considered done:
 
 1. commit the coherent source/doc/test change
 2. run `mars_cli` with args `["release","notes","--repo",".","--bump","auto"]`
@@ -83,6 +84,12 @@ Every non-release semantic commit to this source repository must be followed by 
    include that changelog correction in the same release-note commit
 5. commit them as `release: notes X.Y.Z`
 6. push `main`
+7. create immutable tag `vX.Y.Z` at that exact release-note commit
+8. run the repository-owned producer, publish the configured release, and
+   independently verify the tag, assets, attestations, and supported consumer
+   path
+9. record `release_blocked` rather than completion if any release gate cannot
+   pass
 
 For operator terminal work, the equivalent command is
 `mars release notes --repo . --bump auto`; in agent jobs the
@@ -92,7 +99,10 @@ The `release: notes X.Y.Z` commit itself is exempt. The release generator ignore
 
 ### AD-057: Target Harnesses Inherit Automatic Versioning
 
-Initialized target repositories use the same operating rule. `mars init` writes target `AGENTS.md`, `docs/design-docs/release-versioning.md`, and the release-manager prompt so every non-release semantic commit in the target repo is followed by:
+Initialized target repositories use the same release-completion rule. `mars init`
+writes target `AGENTS.md`, `docs/design-docs/release-versioning.md`, and the
+release-manager prompt so every non-release semantic commit in the target repo
+is followed by:
 
 1. `mars_cli` with args `["release","notes","--repo",".","--bump","auto"]`
 2. verification of generated `VERSION` and `CHANGELOG.md`
@@ -100,6 +110,9 @@ Initialized target repositories use the same operating rule. `mars init` writes 
    historical backfill included before commit
 4. a `release: notes X.Y.Z` commit
 5. push to `main`
+6. create the immutable release through that target's configured producer and
+   independently verify it, or record `release_blocked` with the exact missing
+   authority or verification evidence
 
 Target repos do not have `internal/buildinfo/version.go` unless their own project defines one. The mirrored rule is the workflow contract, not a requirement for target repos to copy MARS internals.
 
@@ -115,9 +128,10 @@ delivery chain.
 > described below is no longer reachable. The original contract is retained as
 > historical evidence.
 
-A release is not fully complete until local release assets are built and
-verified. GitHub Releases remain an optional mirror when the repository has
-authenticated GitHub release capability.
+A source release is not fully complete until its immutable tag, configured
+publication, and independent artifact/consumer verification pass. A target
+uses its own configured producer, but a missing producer, remote, credentials,
+or verification gate is a `release_blocked` outcome rather than completion.
 
 After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 
@@ -546,8 +560,10 @@ than adding another release-security subsystem.
 - Historical changelog entries can be upgraded deterministically instead of hand-edited in bulk.
 - Target projects get release discipline without extra configuration.
 - Release Manager work becomes deterministic before it becomes judgment work.
-- Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.
-- Target repos inherit the same release discipline without extra setup.
+- Source-repo work cannot silently land without an accompanying semantic
+  version, patch-note entry, immutable publication, and verification evidence.
+- Target repos inherit the same release-completion discipline without extra
+  setup, while retaining ownership of their own producer.
 - GitHub users see versioned release notes in the GitHub Releases UI, while local-only users still have repo-owned `VERSION` and `CHANGELOG.md`.
 - Future work can add tag creation, release publishing, release-asset self-update, and doctor checks for stale patch notes.
 

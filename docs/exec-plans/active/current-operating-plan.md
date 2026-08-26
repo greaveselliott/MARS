@@ -20,6 +20,11 @@
 
 **Supporting foundation repair:** Operator-requested `MH-062` is a bounded F-006 intervention-debt repair from the 2026-08-26 clean-target bootstrap replay. It preserves CEO planning boundaries while forcing a terminal CEO → COO recovery handoff after a forbidden planning write. This supporting repair does not alter T-080's release scope, current-ticket status, or publication authority.
 
+**Supporting foundation rule:** Operator-requested `MH-063` makes immutable,
+verified release completion mandatory after each non-release semantic commit;
+release-note commits remain the only recursion exemption. It clarifies the
+release discipline used by T-080 without changing its launch scope or authority.
+
 ## Primary Outcome Contract
 
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.

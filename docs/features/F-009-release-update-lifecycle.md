@@ -33,6 +33,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 16. F-009-S016 - Source checkout onboarding and update are the primary path for repo cloners.
 17. F-009-S017 - The standalone `release audit` command is retired; F-018-S004 owns fail-closed remote convergence.
 18. F-009-S018 - The bespoke GitHub mirror publisher is retired; its fail-closed invariant moves to F-018-S004.
+19. F-009-S019 - Every non-release semantic commit completes as an immutable, verified release or records a release blocker.
 
 ## Scenarios
 
@@ -47,6 +48,19 @@ Then `VERSION` is bumped and `CHANGELOG.md` receives a generated entry
 Given the most recent commit is `release: notes X.Y.Z`
 When the next release-note generation runs
 Then that release commit is ignored so it does not create a recursive version entry
+
+### F-009-S019: Semantic Commit Release Completion
+
+Given a validated non-release semantic commit has reached `main`
+When its generated release-note commit is pushed
+Then an immutable `vX.Y.Z` tag is created at that exact release-note commit
+And the repository-owned producer publishes and independently verifies the
+configured release assets, attestations, and supported consumer path before the
+change is called complete
+And a missing producer, remote, credentials, publication result, or verification
+gate records `release_blocked` rather than treating the pushed commit as released
+And initialized target harnesses inherit the same completion rule through their
+own configured producer
 
 ### F-009-S003: BDD Scenario Release Classification
 
