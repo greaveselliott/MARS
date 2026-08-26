@@ -2,6 +2,621 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.69.0] - 2026-08-26
+<!-- mars-release: version=0.69.0 commit=b11e69e80f5c -->
+
+### Impact
+- **setup:** Operators gain new capability: require download acknowledgement (F-017 T-077).
+- **auth:** Operators gain new capability: make setup and release access anonymous-first (F-017 T-077).
+- **update:** Operators gain new capability: wire signed release replacement (T-066 B3).
+- **release:** Operators gain new capability: add conventional dormant producer (T-078).
+- **oss:** Operators gain new capability: reconstruct private baseline and retain release convergence (F-017 T-063).
+- **update:** Operators gain new capability: add exact signed bootstrap (F-017 T-077).
+- **runtime:** Operators gain new capability: add explicit execution profiles (F-017 T-076).
+- **update:** Operators gain new capability: replace verified binaries durably (T-066 B2).
+- **update:** Operators gain new capability: verify authenticated release archives (T-066 A2).
+- **models:** Operators gain new capability: bind default artifact provenance (F-017 T-073).
+- **update:** Operators gain new capability: acquire authenticated release candidates (T-066 B1).
+- **update:** Operators gain new capability: verify signed release checksums (T-066 A1).
+- **ci:** Operators see improved reliability because make supported source gates portable (F-018 T-069).
+- **release:** Operators see improved reliability because contain release evidence reads (F-017 T-075).
+- **runtime:** Operators see improved reliability because contain repository prompt and policy inputs (F-017 T-075).
+- **cli:** Operators see improved reliability because report actual shared database path (F-017 T-076).
+- **github:** Operators see improved reliability because admit authenticated Dependabot DCO (T-079).
+- **release:** Operators see improved reliability because sort checksums by artifact name (T-078).
+- **runtime:** Operators see improved reliability because scope background cleanup to owning jobs (F-017 T-076).
+- **dashboard:** Operators see improved reliability because clear privileged DOM on logout (F-017 T-058).
+- **telemetry:** Operators see improved reliability because restrict collector to loopback (F-017 T-074).
+- **deps:** Operators see improved reliability because upgrade grpc to close GO-2026-6061 (F-017 T-071).
+- **runtime:** Operators see improved reliability because sanitize child process environments (F-017 T-076).
+- **release:** Operators see improved reliability because preserve local snapshot identity (F-018 T-068).
+- **scanner:** Operators see improved reliability because contain init and upgrade repository writes (F-017 T-075).
+- **tools:** Operators see improved reliability because contain repository policy reads (F-017 T-075).
+- **docsync:** Operators and agents get stronger no-stale-docs enforcement because documentation sync is described and validated as part of the delivery workflow.
+- **config:** Operators see improved reliability because keep persisted credentials owner-only (F-017 T-076).
+- **build:** Operators see improved reliability because raise source floor to go 1.25.13 (T-078).
+- **release:** Operators see improved reliability because align private rehearsal fixtures (F-018 T-068).
+- **guardrails:** Operators see improved reliability because scan exact Git index blobs (F-017 T-075).
+- **release:** Operators see improved reliability because isolate rehearsal target homes (F-018 T-068).
+- **models:** Operators see improved reliability because reject incomplete provenance before download (F-017 T-073).
+- **jira:** Operators see improved reliability because contain mirrored ticket lookup reads (F-017 T-075).
+- **scanner:** Operators see improved reliability because contain eject repository removals (F-017 T-075).
+- **release:** Operators see improved reliability because normalize build timestamp to UTC (T-078).
+- **models:** Operators see improved reliability because contain override and credential repository files (F-017 T-075).
+- **jira:** Operators see improved reliability because contain mirrored ticket writes (F-017 T-075).
+- **tools:** Operators see improved reliability because contain repository-backed writers (F-017 T-075).
+- **setup:** Operators see improved reliability because bind llama.cpp release provenance (F-017 T-073).
+- **install:** Operators see improved reliability because fail closed without trusted bootstrap (T-066 C).
+- **github:** Operators see improved reliability because harden manifest callback flow (F-017 T-074).
+- **tools:** Operators see improved reliability because contain repository file operations (F-017 T-075).
+- **release:** Operators see improved reliability because contain version and changelog writes (F-017 T-075).
+- **scanner:** Operators see improved reliability because contain repository scan inputs (F-017 T-075).
+- **oss:** Operators and future agents get clearer guidance because record target lifecycle containment (F-017 T-075).
+- **oss:** Operators and future agents get clearer guidance because record unresolved advertised Git scan (F-017 T-070).
+- **release:** Operators and future agents get clearer guidance because record signed-consumer migration evidence (T-066 D).
+- **oss:** Operators and future agents get clearer guidance because retain MARS behind trademark gate (F-017 T-073).
+- **release:** Operators and future agents get clearer guidance because split signed consumer verification checkpoints (T-066).
+- **provenance:** Operators and future agents get clearer guidance because replace unprovenanced publication media (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because start hosted publication-surface audit (F-017 T-072).
+- **oss:** Operators and future agents get clearer guidance because start rights and provenance closure (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because close network boundary hardening (F-017 T-074).
+- **oss:** Operators and future agents get clearer guidance because activate launch-complete delivery plan (F-017 T-071).
+- **oss:** Operators and future agents get clearer guidance because reconcile T-073 machine progress and remaining gates (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because record Git-index scanning checkpoint (F-017 T-075).
+- **release:** Operators and future agents get clearer guidance because seal hosted cleanup proposal (T-078).
+- **release:** Operators and future agents get clearer guidance because rebaseline T-078 on standard launch path.
+- **launch:** Operators and future agents get clearer guidance because record T-078 hosted cleanup.
+- **release:** Operators and future agents get clearer guidance because record go 1.25.13 hosted proof (T-078).
+- **launch:** Operators and future agents get clearer guidance because record T-080 private preflight [skip ci].
+- **release:** Operators and future agents get clearer guidance because close Linux compatibility unblock (F-018 T-069).
+- **oss:** Operators and future agents get clearer guidance because correct publication boundary claims (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because close bootstrap gate (F-017 T-077 T-078).
+- **launch:** Operators and future agents get clearer guidance because freeze T-080 public cutover transaction.
+- **github:** Operators and future agents get clearer guidance because record private contribution controls (T-079).
+- **oss:** Operators and future agents get clearer guidance because calibrate model provenance gate (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because record repository-writer containment (F-017 T-075).
+- **oss:** Operators and future agents get clearer guidance because begin advertised Git publication audit (F-017 T-070).
+- **oss:** Operators and future agents get clearer guidance because record repository writer completion (F-017 T-075).
+- **release:** Operators and future agents get clearer guidance because record clean-root snapshot proof (T-065).
+- **oss:** Operators and future agents get clearer guidance because record signed bootstrap checkpoint (F-017 T-077).
+- **release:** Operators and future agents get clearer guidance because close private GoReleaser rehearsal (F-018 T-068).
+- **oss:** Operators and future agents get clearer guidance because park owner-only T-073 gates (F-017 T-073).
+- **release:** Operators and future agents get clearer guidance because split updater integration checkpoints (T-066 B).
+- **oss:** Operators and future agents get clearer guidance because record checkpoint A rights and name findings (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because record default-model provenance evidence (F-017 T-073).
+- **release:** Operators and future agents get clearer guidance because synchronize signed consumer contracts (T-066 D2b).
+- **release:** Operators and future agents get clearer guidance because record updater integration checkpoint (T-066 B3).
+- **oss:** Operators and future agents get clearer guidance because close dashboard browser proof (F-017 T-058).
+- **release:** Operators and future agents get clearer guidance because record producer admission blocker (F-018 T-078).
+- **oss:** Operators and future agents get clearer guidance because record repository filesystem checkpoint (F-017 T-075).
+- Operators and future agents get clearer guidance because record conventional no-publish rehearsal (T-078).
+- **release:** Operators and future agents get clearer guidance because define secure Sigstore unblock route (T-066).
+- **release:** Operators and future agents get clearer guidance because split Linux compatibility unblock (F-018 T-069).
+- **release:** Operators and future agents get clearer guidance because align operator guides with signed updates (T-066 D2c).
+- **security:** Operators and future agents get clearer guidance because stop audit for credential rotation (F-017 T-070).
+- **oss:** Operators and future agents get clearer guidance because record private rewrite and cleanup evidence (F-017 T-063).
+- **release:** Operators and future agents get clearer guidance because record private rehearsal checkpoint B (F-018 T-068).
+- **oss:** Operators and future agents get clearer guidance because close hosted-surface audit (F-017 T-072).
+- **oss:** Operators and future agents get clearer guidance because record job-owned cleanup checkpoint (F-017 T-076).
+- **release:** Operators and future agents get clearer guidance because record v0.93 retirement evidence (T-064).
+- **oss:** Operators and future agents get clearer guidance because record hosted-surface audit checkpoint (F-017 T-072).
+- **release:** Operators and future agents get clearer guidance because close signed consumer migration (F-018 T-066).
+- **release:** Operators and future agents get clearer guidance because plan private pipeline rehearsal (F-018 T-068).
+- **oss:** Operators and future agents get clearer guidance because create anonymous bootstrap ticket (F-017 T-077).
+- **release:** Operators and future agents get clearer guidance because record private rehearsal checkpoint A (F-018 T-068).
+- **oss:** Operators and future agents get clearer guidance because record telemetry boundary evidence (F-017 T-074).
+- **provenance:** Operators and future agents get clearer guidance because correct example prompt lineage (F-017 T-073).
+- **release:** Operators and future agents get clearer guidance because record Sigstore admission blocker (T-066).
+- **oss:** Operators and future agents get clearer guidance because plan execution boundary hardening (F-017 T-076).
+- **launch:** Operators and future agents get clearer guidance because bind T-078 closure run [skip ci].
+- **release:** Operators and future agents get clearer guidance because close GoReleaser producer migration (T-065).
+- **release:** Operators and future agents get clearer guidance because retire legacy consumer guidance (T-066 D2a).
+- **release:** Operators and future agents get clearer guidance because record archive verifier checkpoint (T-066 A2).
+- **oss:** Operators and future agents get clearer guidance because close repository path boundary (F-017 T-075).
+- **security:** Operators and future agents get clearer guidance because record restored vulnerability baseline (F-017 T-071).
+- **provenance:** Operators and future agents get clearer guidance because bind embedded browser assets (F-017 T-073).
+- **oss:** Operators and future agents get clearer guidance because hand off repository boundary hardening (F-017 T-075).
+- **security:** Operators and future agents get clearer guidance because classify T-070 API-key fixtures (F-017 T-070).
+- **security:** Operators and future agents get clearer guidance because close advertised Git scan findings (F-017 T-070).
+- **oss:** Operators and future agents get clearer guidance because record anonymous access checkpoint (F-017 T-077).
+- **oss:** Operators and future agents get clearer guidance because hand off network boundary hardening (F-017 T-074).
+- **oss:** Operators and future agents get clearer guidance because close T-076 and resume browser proof (F-017).
+- **release:** Operators and future agents get clearer guidance because record signed-checksum checkpoint (T-066 A1).
+- **oss:** Operators and future agents get clearer guidance because record download acknowledgement checkpoint (F-017 T-077).
+- **oss:** Operators and future agents get clearer guidance because record execution-profile checkpoint evidence (F-017 T-076).
+- **release:** Operators and future agents get clearer guidance because record installer boundary checkpoint (T-066 C).
+- **security:** Operators and future agents get clearer guidance because record T-070 rescan rotation blocker (F-017 T-070).
+- **github:** Operators and future agents get clearer guidance because close private contribution controls (T-079).
+- **release:** Operators and future agents get clearer guidance because hand off GoReleaser producer (T-065).
+- Operators and future agents get clearer guidance because record conventional release checkpoint (T-078).
+- **release:** Operators and future agents get clearer guidance because record updater acquisition checkpoint (T-066 B1).
+- **release:** Operators and future agents get clearer guidance because record durable updater checkpoint (T-066 B2).
+- **oss:** Operators and future agents get clearer guidance because record child-environment checkpoint evidence (F-017 T-076).
+- **tickets:** Maintainers get a healthier project surface because plan signed archive consumer migration (T-066).
+- **release:** Maintainers get a healthier project surface because add private two-root rehearsal (F-018 T-068).
+- **licenses:** Maintainers get a healthier project surface because pin dependency notice policy (F-017 T-073).
+- **tickets:** Maintainers get a healthier project surface because plan Go 1.25.12 compatibility (T-067).
+- **release:** Maintainers get a healthier project surface because claim private rehearsal ticket (F-018 T-068).
+- **release:** Maintainers get a healthier project surface because retire legacy asset consumers (T-066 D1).
+- **release:** Maintainers get a healthier project surface because activate guarded launch workflow (T-080).
+- **github:** Maintainers get a healthier project surface because add fork-safe contribution controls (T-079).
+- **release:** Maintainers get a healthier project surface because retire bespoke asset publisher (T-065).
+- **tickets:** Maintainers get a healthier project surface because claim signed archive consumer migration (T-066).
+- **release:** Maintainers get a healthier project surface because retire private v0.93.0 lineage (T-064).
+- **licenses:** Maintainers get a healthier project surface because generate deterministic dependency notices (F-017 T-073).
+- **release:** Maintainers get a healthier project surface because add pinned GoReleaser snapshot producer (T-065).
+- **go:** Maintainers get a healthier project surface because require Go 1.25.12 for source builds (T-067).
+- **agent:** The release carries stronger evidence because seed git fixtures for secret admission (T-075 T-077).
+- **release:** The release carries stronger evidence because verify GoReleaser snapshot contract (T-065).
+- **update:** The release carries stronger evidence because prove preverified rollback lifecycle (F-018 T-066).
+- **tools:** The release carries stronger evidence because align policy fixtures with Git admission (F-017 T-075).
+
+### Why
+- **setup:** This matters because require download acknowledgement (F-017 T-077) was missing from the shipped capability set.
+- **auth:** This matters because make setup and release access anonymous-first (F-017 T-077) was missing from the shipped capability set.
+- **update:** This matters because wire signed release replacement (T-066 B3) was missing from the shipped capability set.
+- **release:** This matters because add conventional dormant producer (T-078) was missing from the shipped capability set.
+- **oss:** This matters because reconstruct private baseline and retain release convergence (F-017 T-063) was missing from the shipped capability set.
+- **update:** This matters because add exact signed bootstrap (F-017 T-077) was missing from the shipped capability set.
+- **runtime:** This matters because add explicit execution profiles (F-017 T-076) was missing from the shipped capability set.
+- **update:** This matters because replace verified binaries durably (T-066 B2) was missing from the shipped capability set.
+- **update:** This matters because verify authenticated release archives (T-066 A2) was missing from the shipped capability set.
+- **models:** This matters because bind default artifact provenance (F-017 T-073) was missing from the shipped capability set.
+- **update:** This matters because acquire authenticated release candidates (T-066 B1) was missing from the shipped capability set.
+- **update:** This matters because verify signed release checksums (T-066 A1) was missing from the shipped capability set.
+- **ci:** This matters because make supported source gates portable (F-018 T-069) closes a failure mode or degraded path.
+- **release:** This matters because contain release evidence reads (F-017 T-075) closes a failure mode or degraded path.
+- **runtime:** This matters because contain repository prompt and policy inputs (F-017 T-075) closes a failure mode or degraded path.
+- **cli:** This matters because report actual shared database path (F-017 T-076) closes a failure mode or degraded path.
+- **github:** This matters because admit authenticated Dependabot DCO (T-079) closes a failure mode or degraded path.
+- **release:** This matters because sort checksums by artifact name (T-078) closes a failure mode or degraded path.
+- **runtime:** This matters because scope background cleanup to owning jobs (F-017 T-076) closes a failure mode or degraded path.
+- **dashboard:** This matters because clear privileged DOM on logout (F-017 T-058) closes a failure mode or degraded path.
+- **telemetry:** This matters because restrict collector to loopback (F-017 T-074) closes a failure mode or degraded path.
+- **deps:** This matters because upgrade grpc to close GO-2026-6061 (F-017 T-071) closes a failure mode or degraded path.
+- **runtime:** This matters because sanitize child process environments (F-017 T-076) closes a failure mode or degraded path.
+- **release:** This matters because preserve local snapshot identity (F-018 T-068) closes a failure mode or degraded path.
+- **scanner:** This matters because contain init and upgrade repository writes (F-017 T-075) closes a failure mode or degraded path.
+- **tools:** This matters because contain repository policy reads (F-017 T-075) closes a failure mode or degraded path.
+- **docsync:** This matters because behavior changes become risky when code, BDD contracts, design docs, generated target guidance, and release notes drift apart.
+- **config:** This matters because keep persisted credentials owner-only (F-017 T-076) closes a failure mode or degraded path.
+- **build:** This matters because raise source floor to go 1.25.13 (T-078) closes a failure mode or degraded path.
+- **release:** This matters because align private rehearsal fixtures (F-018 T-068) closes a failure mode or degraded path.
+- **guardrails:** This matters because scan exact Git index blobs (F-017 T-075) closes a failure mode or degraded path.
+- **release:** This matters because isolate rehearsal target homes (F-018 T-068) closes a failure mode or degraded path.
+- **models:** This matters because reject incomplete provenance before download (F-017 T-073) closes a failure mode or degraded path.
+- **jira:** This matters because contain mirrored ticket lookup reads (F-017 T-075) closes a failure mode or degraded path.
+- **scanner:** This matters because contain eject repository removals (F-017 T-075) closes a failure mode or degraded path.
+- **release:** This matters because normalize build timestamp to UTC (T-078) closes a failure mode or degraded path.
+- **models:** This matters because contain override and credential repository files (F-017 T-075) closes a failure mode or degraded path.
+- **jira:** This matters because contain mirrored ticket writes (F-017 T-075) closes a failure mode or degraded path.
+- **tools:** This matters because contain repository-backed writers (F-017 T-075) closes a failure mode or degraded path.
+- **setup:** This matters because bind llama.cpp release provenance (F-017 T-073) closes a failure mode or degraded path.
+- **install:** This matters because fail closed without trusted bootstrap (T-066 C) closes a failure mode or degraded path.
+- **github:** This matters because harden manifest callback flow (F-017 T-074) closes a failure mode or degraded path.
+- **tools:** This matters because contain repository file operations (F-017 T-075) closes a failure mode or degraded path.
+- **release:** This matters because contain version and changelog writes (F-017 T-075) closes a failure mode or degraded path.
+- **scanner:** This matters because contain repository scan inputs (F-017 T-075) closes a failure mode or degraded path.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **provenance:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **launch:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **launch:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **launch:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **github:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **security:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **provenance:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **launch:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **security:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **provenance:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **security:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **security:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **security:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **github:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **oss:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **tickets:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **licenses:** This matters because project health work keeps future delivery predictable.
+- **tickets:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **github:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **tickets:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **licenses:** This matters because project health work keeps future delivery predictable.
+- **release:** This matters because project health work keeps future delivery predictable.
+- **go:** This matters because project health work keeps future delivery predictable.
+- **agent:** This matters because the project needs durable evidence that the behavior keeps working.
+- **release:** This matters because the project needs durable evidence that the behavior keeps working.
+- **update:** This matters because the project needs durable evidence that the behavior keeps working.
+- **tools:** This matters because the project needs durable evidence that the behavior keeps working.
+
+### What Changed
+- **setup:** Changed require download acknowledgement (F-017 T-077) (04d6ba6).
+- **auth:** Changed make setup and release access anonymous-first (F-017 T-077) (10b62f7).
+- **update:** Changed wire signed release replacement (T-066 B3) (683daf8).
+- **release:** Changed add conventional dormant producer (T-078) (6c044c1).
+- **oss:** Changed reconstruct private baseline and retain release convergence (F-017 T-063) (6e149fc).
+- **update:** Changed add exact signed bootstrap (F-017 T-077) (85c689c).
+- **runtime:** Changed add explicit execution profiles (F-017 T-076) (9191182).
+- **update:** Changed replace verified binaries durably (T-066 B2) (92d7ddd).
+- **update:** Changed verify authenticated release archives (T-066 A2) (b824b91).
+- **models:** Changed bind default artifact provenance (F-017 T-073) (cf95b39).
+- **update:** Changed acquire authenticated release candidates (T-066 B1) (f3ed495).
+- **update:** Changed verify signed release checksums (T-066 A1) (fcf7397).
+- **ci:** Changed make supported source gates portable (F-018 T-069) (03008f7).
+- **release:** Changed contain release evidence reads (F-017 T-075) (16b5527).
+- **runtime:** Changed contain repository prompt and policy inputs (F-017 T-075) (228d859).
+- **cli:** Changed report actual shared database path (F-017 T-076) (31b00b1).
+- **github:** Changed admit authenticated Dependabot DCO (T-079) (3502110).
+- **release:** Changed sort checksums by artifact name (T-078) (3e16452).
+- **runtime:** Changed scope background cleanup to owning jobs (F-017 T-076) (473b829).
+- **dashboard:** Changed clear privileged DOM on logout (F-017 T-058) (57d7851).
+- **telemetry:** Changed restrict collector to loopback (F-017 T-074) (596524e).
+- **deps:** Changed upgrade grpc to close GO-2026-6061 (F-017 T-071) (59ab946).
+- **runtime:** Changed sanitize child process environments (F-017 T-076) (5c23f53).
+- **release:** Changed preserve local snapshot identity (F-018 T-068) (6437f81).
+- **scanner:** Changed contain init and upgrade repository writes (F-017 T-075) (66d7e41).
+- **tools:** Changed contain repository policy reads (F-017 T-075) (7578549).
+- **docsync:** The release documentation path now ties changed source files to associated docs, docsync evidence, and generated target doctrine instead of treating docs as an after-the-fact checklist (9ba8156).
+- **config:** Changed keep persisted credentials owner-only (F-017 T-076) (9eb3f96).
+- **build:** Changed raise source floor to go 1.25.13 (T-078) (a4bbf81).
+- **release:** Changed align private rehearsal fixtures (F-018 T-068) (aa4a16b).
+- **guardrails:** Changed scan exact Git index blobs (F-017 T-075) (b3b5b98).
+- **release:** Changed isolate rehearsal target homes (F-018 T-068) (b8be85f).
+- **models:** Changed reject incomplete provenance before download (F-017 T-073) (b8d9349).
+- **jira:** Changed contain mirrored ticket lookup reads (F-017 T-075) (c18030e).
+- **scanner:** Changed contain eject repository removals (F-017 T-075) (c8c28cb).
+- **release:** Changed normalize build timestamp to UTC (T-078) (d411cbe).
+- **models:** Changed contain override and credential repository files (F-017 T-075) (d67b042).
+- **jira:** Changed contain mirrored ticket writes (F-017 T-075) (e08deb4).
+- **tools:** Changed contain repository-backed writers (F-017 T-075) (e30f207).
+- **setup:** Changed bind llama.cpp release provenance (F-017 T-073) (f3df0a5).
+- **install:** Changed fail closed without trusted bootstrap (T-066 C) (f45d5d2).
+- **github:** Changed harden manifest callback flow (F-017 T-074) (f77fac6).
+- **tools:** Changed contain repository file operations (F-017 T-075) (f9993b5).
+- **release:** Changed contain version and changelog writes (F-017 T-075) (f99964e).
+- **scanner:** Changed contain repository scan inputs (F-017 T-075) (ff69aaa).
+- **oss:** Changed record target lifecycle containment (F-017 T-075) (095b648).
+- **oss:** Changed record unresolved advertised Git scan (F-017 T-070) (0a39145).
+- **release:** Changed record signed-consumer migration evidence (T-066 D) (0c7ce2b).
+- **oss:** Changed retain MARS behind trademark gate (F-017 T-073) (0f7a8b3).
+- **release:** Changed split signed consumer verification checkpoints (T-066) (0fdb276).
+- **provenance:** Changed replace unprovenanced publication media (F-017 T-073) (12faa47).
+- **oss:** Changed start hosted publication-surface audit (F-017 T-072) (1891086).
+- **oss:** Changed start rights and provenance closure (F-017 T-073) (1b870f8).
+- **oss:** Changed close network boundary hardening (F-017 T-074) (227be78).
+- **oss:** Changed activate launch-complete delivery plan (F-017 T-071) (24c24e3).
+- **oss:** Changed reconcile T-073 machine progress and remaining gates (F-017 T-073) (268b9f4).
+- **oss:** Changed record Git-index scanning checkpoint (F-017 T-075) (2750db9).
+- **release:** Changed seal hosted cleanup proposal (T-078) (2b3a8e2).
+- **release:** Changed rebaseline T-078 on standard launch path (2d2887c).
+- **launch:** Changed record T-078 hosted cleanup (2d5c05e).
+- **release:** Changed record go 1.25.13 hosted proof (T-078) (2dd73fc).
+- **launch:** Changed record T-080 private preflight [skip ci] (2ecd15a).
+- **release:** Changed close Linux compatibility unblock (F-018 T-069) (2ef9d27).
+- **oss:** Changed correct publication boundary claims (F-017 T-073) (2ffde82).
+- **oss:** Changed close bootstrap gate (F-017 T-077 T-078) (3090fb8).
+- **launch:** Changed freeze T-080 public cutover transaction (32d0679).
+- **github:** Changed record private contribution controls (T-079) (343bef7).
+- **oss:** Changed calibrate model provenance gate (F-017 T-073) (35e924a).
+- **oss:** Changed record repository-writer containment (F-017 T-075) (373b955).
+- **oss:** Changed begin advertised Git publication audit (F-017 T-070) (375a3a3).
+- **oss:** Changed record repository writer completion (F-017 T-075) (3ad8afd).
+- **release:** Changed record clean-root snapshot proof (T-065) (3b4f7c8).
+- **oss:** Changed record signed bootstrap checkpoint (F-017 T-077) (3e5125c).
+- **release:** Changed close private GoReleaser rehearsal (F-018 T-068) (427064c).
+- **oss:** Changed park owner-only T-073 gates (F-017 T-073) (4cdcc87).
+- **release:** Changed split updater integration checkpoints (T-066 B) (4cdd9f9).
+- **oss:** Changed record checkpoint A rights and name findings (F-017 T-073) (4e83bef).
+- **oss:** Changed record default-model provenance evidence (F-017 T-073) (5068334).
+- **release:** Changed synchronize signed consumer contracts (T-066 D2b) (527646b).
+- **release:** Changed record updater integration checkpoint (T-066 B3) (5a4a6a9).
+- **oss:** Changed close dashboard browser proof (F-017 T-058) (5ff0ef1).
+- **release:** Changed record producer admission blocker (F-018 T-078) (609a7cf).
+- **oss:** Changed record repository filesystem checkpoint (F-017 T-075) (615cb25).
+- Changed record conventional no-publish rehearsal (T-078) (628b4b5).
+- **release:** Changed define secure Sigstore unblock route (T-066) (635e461).
+- **release:** Changed split Linux compatibility unblock (F-018 T-069) (63f2b39).
+- **release:** Changed align operator guides with signed updates (T-066 D2c) (64c7d3b).
+- **security:** Changed stop audit for credential rotation (F-017 T-070) (6adbf28).
+- **oss:** Changed record private rewrite and cleanup evidence (F-017 T-063) (6d326ff).
+- **release:** Changed record private rehearsal checkpoint B (F-018 T-068) (742b133).
+- **oss:** Changed close hosted-surface audit (F-017 T-072) (771c6ab).
+- **oss:** Changed record job-owned cleanup checkpoint (F-017 T-076) (7d3ec42).
+- **release:** Changed record v0.93 retirement evidence (T-064) (82263fc).
+- **oss:** Changed record hosted-surface audit checkpoint (F-017 T-072) (85afe5d).
+- **release:** Changed close signed consumer migration (F-018 T-066) (8e7dfa2).
+- **release:** Changed plan private pipeline rehearsal (F-018 T-068) (90c4217).
+- **oss:** Changed create anonymous bootstrap ticket (F-017 T-077) (9ff47f1).
+- **release:** Changed record private rehearsal checkpoint A (F-018 T-068) (a6f36dc).
+- **oss:** Changed record telemetry boundary evidence (F-017 T-074) (a70a6ff).
+- **provenance:** Changed correct example prompt lineage (F-017 T-073) (a8d448f).
+- **release:** Changed record Sigstore admission blocker (T-066) (ad4df44).
+- **oss:** Changed plan execution boundary hardening (F-017 T-076) (ae48df3).
+- **launch:** Changed bind T-078 closure run [skip ci] (b49a46d).
+- **release:** Changed close GoReleaser producer migration (T-065) (b630646).
+- **release:** Changed retire legacy consumer guidance (T-066 D2a) (bb4b620).
+- **release:** Changed record archive verifier checkpoint (T-066 A2) (bfb99a0).
+- **oss:** Changed close repository path boundary (F-017 T-075) (c04a172).
+- **security:** Changed record restored vulnerability baseline (F-017 T-071) (c257947).
+- **provenance:** Changed bind embedded browser assets (F-017 T-073) (c7168c5).
+- **oss:** Changed hand off repository boundary hardening (F-017 T-075) (c765048).
+- **security:** Changed classify T-070 API-key fixtures (F-017 T-070) (d04f642).
+- **security:** Changed close advertised Git scan findings (F-017 T-070) (d2db7c5).
+- **oss:** Changed record anonymous access checkpoint (F-017 T-077) (d758452).
+- **oss:** Changed hand off network boundary hardening (F-017 T-074) (db129b2).
+- **oss:** Changed close T-076 and resume browser proof (F-017) (db182a3).
+- **release:** Changed record signed-checksum checkpoint (T-066 A1) (dc715ba).
+- **oss:** Changed record download acknowledgement checkpoint (F-017 T-077) (dce4fba).
+- **oss:** Changed record execution-profile checkpoint evidence (F-017 T-076) (e000dc0).
+- **release:** Changed record installer boundary checkpoint (T-066 C) (e793c91).
+- **security:** Changed record T-070 rescan rotation blocker (F-017 T-070) (e880140).
+- **github:** Changed close private contribution controls (T-079) (ed6b46a).
+- **release:** Changed hand off GoReleaser producer (T-065) (ee1a617).
+- Changed record conventional release checkpoint (T-078) (f55d129).
+- **release:** Changed record updater acquisition checkpoint (T-066 B1) (f70b96e).
+- **release:** Changed record durable updater checkpoint (T-066 B2) (fafa850).
+- **oss:** Changed record child-environment checkpoint evidence (F-017 T-076) (fe25cf3).
+- **tickets:** Changed plan signed archive consumer migration (T-066) (1257534).
+- **release:** Changed add private two-root rehearsal (F-018 T-068) (7904b43).
+- **licenses:** Changed pin dependency notice policy (F-017 T-073) (79d524b).
+- **tickets:** Changed plan Go 1.25.12 compatibility (T-067) (7eb661a).
+- **release:** Changed claim private rehearsal ticket (F-018 T-068) (96e783a).
+- **release:** Changed retire legacy asset consumers (T-066 D1) (9d2d8c9).
+- **release:** Changed activate guarded launch workflow (T-080) (b11e69e).
+- **github:** Changed add fork-safe contribution controls (T-079) (b807afa).
+- **release:** Changed retire bespoke asset publisher (T-065) (bb1b79b).
+- **tickets:** Changed claim signed archive consumer migration (T-066) (c6880a2).
+- **release:** Changed retire private v0.93.0 lineage (T-064) (cf62513).
+- **licenses:** Changed generate deterministic dependency notices (F-017 T-073) (dc0dbe0).
+- **release:** Changed add pinned GoReleaser snapshot producer (T-065) (dc5685b).
+- **go:** Changed require Go 1.25.12 for source builds (T-067) (dec357d).
+- **agent:** Changed seed git fixtures for secret admission (T-075 T-077) (56b8de3).
+- **release:** Changed verify GoReleaser snapshot contract (T-065) (6a68ecc).
+- **update:** Changed prove preverified rollback lifecycle (F-018 T-066) (7fe152c).
+- **tools:** Changed align policy fixtures with Git admission (F-017 T-075) (88f7737).
+
+### Features
+- **setup:** Require download acknowledgement (F-017 T-077) (04d6ba6)
+- **auth:** Make setup and release access anonymous-first (F-017 T-077) (10b62f7)
+- **update:** Wire signed release replacement (T-066 B3) (683daf8)
+- **release:** Add conventional dormant producer (T-078) (6c044c1)
+- **oss:** Reconstruct private baseline and retain release convergence (F-017 T-063) (6e149fc)
+- **update:** Add exact signed bootstrap (F-017 T-077) (85c689c)
+- **runtime:** Add explicit execution profiles (F-017 T-076) (9191182)
+- **update:** Replace verified binaries durably (T-066 B2) (92d7ddd)
+- **update:** Verify authenticated release archives (T-066 A2) (b824b91)
+- **models:** Bind default artifact provenance (F-017 T-073) (cf95b39)
+- **update:** Acquire authenticated release candidates (T-066 B1) (f3ed495)
+- **update:** Verify signed release checksums (T-066 A1) (fcf7397)
+
+### Fixes
+- **ci:** Make supported source gates portable (F-018 T-069) (03008f7)
+- **release:** Contain release evidence reads (F-017 T-075) (16b5527)
+- **runtime:** Contain repository prompt and policy inputs (F-017 T-075) (228d859)
+- **cli:** Report actual shared database path (F-017 T-076) (31b00b1)
+- **github:** Admit authenticated Dependabot DCO (T-079) (3502110)
+- **release:** Sort checksums by artifact name (T-078) (3e16452)
+- **runtime:** Scope background cleanup to owning jobs (F-017 T-076) (473b829)
+- **dashboard:** Clear privileged DOM on logout (F-017 T-058) (57d7851)
+- **telemetry:** Restrict collector to loopback (F-017 T-074) (596524e)
+- **deps:** Upgrade grpc to close GO-2026-6061 (F-017 T-071) (59ab946)
+- **runtime:** Sanitize child process environments (F-017 T-076) (5c23f53)
+- **release:** Preserve local snapshot identity (F-018 T-068) (6437f81)
+- **scanner:** Contain init and upgrade repository writes (F-017 T-075) (66d7e41)
+- **tools:** Contain repository policy reads (F-017 T-075) (7578549)
+- **docsync:** Reject repository symlink inputs (F-017 T-075) (9ba8156)
+- **config:** Keep persisted credentials owner-only (F-017 T-076) (9eb3f96)
+- **build:** Raise source floor to go 1.25.13 (T-078) (a4bbf81)
+- **release:** Align private rehearsal fixtures (F-018 T-068) (aa4a16b)
+- **guardrails:** Scan exact Git index blobs (F-017 T-075) (b3b5b98)
+- **release:** Isolate rehearsal target homes (F-018 T-068) (b8be85f)
+- **models:** Reject incomplete provenance before download (F-017 T-073) (b8d9349)
+- **jira:** Contain mirrored ticket lookup reads (F-017 T-075) (c18030e)
+- **scanner:** Contain eject repository removals (F-017 T-075) (c8c28cb)
+- **release:** Normalize build timestamp to UTC (T-078) (d411cbe)
+- **models:** Contain override and credential repository files (F-017 T-075) (d67b042)
+- **jira:** Contain mirrored ticket writes (F-017 T-075) (e08deb4)
+- **tools:** Contain repository-backed writers (F-017 T-075) (e30f207)
+- **setup:** Bind llama.cpp release provenance (F-017 T-073) (f3df0a5)
+- **install:** Fail closed without trusted bootstrap (T-066 C) (f45d5d2)
+- **github:** Harden manifest callback flow (F-017 T-074) (f77fac6)
+- **tools:** Contain repository file operations (F-017 T-075) (f9993b5)
+- **release:** Contain version and changelog writes (F-017 T-075) (f99964e)
+- **scanner:** Contain repository scan inputs (F-017 T-075) (ff69aaa)
+
+### Documentation
+- **oss:** Record target lifecycle containment (F-017 T-075) (095b648)
+- **oss:** Record unresolved advertised Git scan (F-017 T-070) (0a39145)
+- **release:** Record signed-consumer migration evidence (T-066 D) (0c7ce2b)
+- **oss:** Retain MARS behind trademark gate (F-017 T-073) (0f7a8b3)
+- **release:** Split signed consumer verification checkpoints (T-066) (0fdb276)
+- **provenance:** Replace unprovenanced publication media (F-017 T-073) (12faa47)
+- **oss:** Start hosted publication-surface audit (F-017 T-072) (1891086)
+- **oss:** Start rights and provenance closure (F-017 T-073) (1b870f8)
+- **oss:** Close network boundary hardening (F-017 T-074) (227be78)
+- **oss:** Activate launch-complete delivery plan (F-017 T-071) (24c24e3)
+- **oss:** Reconcile T-073 machine progress and remaining gates (F-017 T-073) (268b9f4)
+- **oss:** Record Git-index scanning checkpoint (F-017 T-075) (2750db9)
+- **release:** Seal hosted cleanup proposal (T-078) (2b3a8e2)
+- **release:** Rebaseline T-078 on standard launch path (2d2887c)
+- **launch:** Record T-078 hosted cleanup (2d5c05e)
+- **release:** Record go 1.25.13 hosted proof (T-078) (2dd73fc)
+- **launch:** Record T-080 private preflight [skip ci] (2ecd15a)
+- **release:** Close Linux compatibility unblock (F-018 T-069) (2ef9d27)
+- **oss:** Correct publication boundary claims (F-017 T-073) (2ffde82)
+- **oss:** Close bootstrap gate (F-017 T-077 T-078) (3090fb8)
+- **launch:** Freeze T-080 public cutover transaction (32d0679)
+- **github:** Record private contribution controls (T-079) (343bef7)
+- **oss:** Calibrate model provenance gate (F-017 T-073) (35e924a)
+- **oss:** Record repository-writer containment (F-017 T-075) (373b955)
+- **oss:** Begin advertised Git publication audit (F-017 T-070) (375a3a3)
+- **oss:** Record repository writer completion (F-017 T-075) (3ad8afd)
+- **release:** Record clean-root snapshot proof (T-065) (3b4f7c8)
+- **oss:** Record signed bootstrap checkpoint (F-017 T-077) (3e5125c)
+- **release:** Close private GoReleaser rehearsal (F-018 T-068) (427064c)
+- **oss:** Park owner-only T-073 gates (F-017 T-073) (4cdcc87)
+- **release:** Split updater integration checkpoints (T-066 B) (4cdd9f9)
+- **oss:** Record checkpoint A rights and name findings (F-017 T-073) (4e83bef)
+- **oss:** Record default-model provenance evidence (F-017 T-073) (5068334)
+- **release:** Synchronize signed consumer contracts (T-066 D2b) (527646b)
+- **release:** Record updater integration checkpoint (T-066 B3) (5a4a6a9)
+- **oss:** Close dashboard browser proof (F-017 T-058) (5ff0ef1)
+- **release:** Record producer admission blocker (F-018 T-078) (609a7cf)
+- **oss:** Record repository filesystem checkpoint (F-017 T-075) (615cb25)
+- Record conventional no-publish rehearsal (T-078) (628b4b5)
+- **release:** Define secure Sigstore unblock route (T-066) (635e461)
+- **release:** Split Linux compatibility unblock (F-018 T-069) (63f2b39)
+- **release:** Align operator guides with signed updates (T-066 D2c) (64c7d3b)
+- **security:** Stop audit for credential rotation (F-017 T-070) (6adbf28)
+- **oss:** Record private rewrite and cleanup evidence (F-017 T-063) (6d326ff)
+- **release:** Record private rehearsal checkpoint B (F-018 T-068) (742b133)
+- **oss:** Close hosted-surface audit (F-017 T-072) (771c6ab)
+- **oss:** Record job-owned cleanup checkpoint (F-017 T-076) (7d3ec42)
+- **release:** Record v0.93 retirement evidence (T-064) (82263fc)
+- **oss:** Record hosted-surface audit checkpoint (F-017 T-072) (85afe5d)
+- **release:** Close signed consumer migration (F-018 T-066) (8e7dfa2)
+- **release:** Plan private pipeline rehearsal (F-018 T-068) (90c4217)
+- **oss:** Create anonymous bootstrap ticket (F-017 T-077) (9ff47f1)
+- **release:** Record private rehearsal checkpoint A (F-018 T-068) (a6f36dc)
+- **oss:** Record telemetry boundary evidence (F-017 T-074) (a70a6ff)
+- **provenance:** Correct example prompt lineage (F-017 T-073) (a8d448f)
+- **release:** Record Sigstore admission blocker (T-066) (ad4df44)
+- **oss:** Plan execution boundary hardening (F-017 T-076) (ae48df3)
+- **launch:** Bind T-078 closure run [skip ci] (b49a46d)
+- **release:** Close GoReleaser producer migration (T-065) (b630646)
+- **release:** Retire legacy consumer guidance (T-066 D2a) (bb4b620)
+- **release:** Record archive verifier checkpoint (T-066 A2) (bfb99a0)
+- **oss:** Close repository path boundary (F-017 T-075) (c04a172)
+- **security:** Record restored vulnerability baseline (F-017 T-071) (c257947)
+- **provenance:** Bind embedded browser assets (F-017 T-073) (c7168c5)
+- **oss:** Hand off repository boundary hardening (F-017 T-075) (c765048)
+- **security:** Classify T-070 API-key fixtures (F-017 T-070) (d04f642)
+- **security:** Close advertised Git scan findings (F-017 T-070) (d2db7c5)
+- **oss:** Record anonymous access checkpoint (F-017 T-077) (d758452)
+- **oss:** Hand off network boundary hardening (F-017 T-074) (db129b2)
+- **oss:** Close T-076 and resume browser proof (F-017) (db182a3)
+- **release:** Record signed-checksum checkpoint (T-066 A1) (dc715ba)
+- **oss:** Record download acknowledgement checkpoint (F-017 T-077) (dce4fba)
+- **oss:** Record execution-profile checkpoint evidence (F-017 T-076) (e000dc0)
+- **release:** Record installer boundary checkpoint (T-066 C) (e793c91)
+- **security:** Record T-070 rescan rotation blocker (F-017 T-070) (e880140)
+- **github:** Close private contribution controls (T-079) (ed6b46a)
+- **release:** Hand off GoReleaser producer (T-065) (ee1a617)
+- Record conventional release checkpoint (T-078) (f55d129)
+- **release:** Record updater acquisition checkpoint (T-066 B1) (f70b96e)
+- **release:** Record durable updater checkpoint (T-066 B2) (fafa850)
+- **oss:** Record child-environment checkpoint evidence (F-017 T-076) (fe25cf3)
+
+### Maintenance
+- **tickets:** Plan signed archive consumer migration (T-066) (1257534)
+- **release:** Add private two-root rehearsal (F-018 T-068) (7904b43)
+- **licenses:** Pin dependency notice policy (F-017 T-073) (79d524b)
+- **tickets:** Plan Go 1.25.12 compatibility (T-067) (7eb661a)
+- **release:** Claim private rehearsal ticket (F-018 T-068) (96e783a)
+- **release:** Retire legacy asset consumers (T-066 D1) (9d2d8c9)
+- **release:** Activate guarded launch workflow (T-080) (b11e69e)
+- **github:** Add fork-safe contribution controls (T-079) (b807afa)
+- **release:** Retire bespoke asset publisher (T-065) (bb1b79b)
+- **tickets:** Claim signed archive consumer migration (T-066) (c6880a2)
+- **release:** Retire private v0.93.0 lineage (T-064) (cf62513)
+- **licenses:** Generate deterministic dependency notices (F-017 T-073) (dc0dbe0)
+- **release:** Add pinned GoReleaser snapshot producer (T-065) (dc5685b)
+- **go:** Require Go 1.25.12 for source builds (T-067) (dec357d)
+
+### Tests
+- **agent:** Seed git fixtures for secret admission (T-075 T-077) (56b8de3)
+- **release:** Verify GoReleaser snapshot contract (T-065) (6a68ecc)
+- **update:** Prove preverified rollback lifecycle (F-018 T-066) (7fe152c)
+- **tools:** Align policy fixtures with Git admission (F-017 T-075) (88f7737)
+
+### Delivery Evidence
+- Shipped feature scenarios: T-065: F-018-S001
+- Shipped feature scenarios: T-066: F-018-S002
+- Shipped feature scenarios: T-068: F-018-S003
+- Enabler work: T-058: Harden the embedded dashboard browser and authenticated control boundary
+- Enabler work: T-063: Reconstruct private baseline and retire embedded publication audit lab
+- Enabler work: T-064: Retire v0.93.0 and reset the private release line
+- Enabler work: T-067: Raise the MARS source Go floor to 1.25.12 without imposing Go at runtime
+- Enabler work: T-069: Make source compatibility CI portable across supported Linux lanes
+- Enabler work: T-070: Scan the exact advertised Git publication surface with pinned standard tools
+- Enabler work: T-071: Restore the green vulnerability baseline with gRPC 1.82.1
+- Enabler work: T-072: Audit every GitHub-hosted publication surface
+- Enabler work: T-073: Complete publication rights, provenance, notices, and owner disposition
+- Enabler work: T-074: Close GitHub App setup and telemetry listener boundaries
+- Enabler work: T-075: Make repository paths descriptor-safe and scan exact Git index blobs
+- Enabler work: T-076: Harden execution profiles, child processes, state, and traces
+- Enabler work: T-077: Make bootstrap and setup anonymous-first
+- Enabler work: T-078: Adopt the standard release path and sanitize legacy hosted objects
+- Enabler work: T-079: Add fork-safe contribution and private GitHub controls
+
 ## [0.68.49] - 2026-07-12
 <!-- mars-release: version=0.68.49 commit=ad8d9c158a42 -->
 
