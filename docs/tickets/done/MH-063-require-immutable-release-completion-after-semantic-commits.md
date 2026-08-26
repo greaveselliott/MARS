@@ -4,16 +4,16 @@ title: Require immutable release completion after semantic commits
 priority: high
 complexity: small
 work_type: operating-model
-bdd_scenarios: []
-end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+bdd_scenarios: ["F-009-S019"]
+end_to_end_evidence: "v0.69.4 immutable GitHub Release"
+evidence_links: ["https://github.com/greaveselliott/MARS/releases/tag/v0.69.4", "https://github.com/greaveselliott/MARS/actions/runs/32942457278"]
+verified_by: "foundation-maintainer"
+owner: "foundation-maintainer"
+last_attempt: "2026-08-26"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "TBD"
+trace_id: "release-v0.69.4"
+next_action: "Complete: v0.69.4 published with ten verified assets after the source release-completion rule landed."
 kind: intervention-debt
 dedupe_key: "foundation:semantic-commit-immutable-release"
 source: 2026-08-26 owner release-completion directive
@@ -32,6 +32,13 @@ The owner requires each non-release semantic commit to complete as an immutable 
 - Mirror the release-completion principle to generated targets through their repository-owned producer.
 
 ## Acceptance Criteria
-- [ ] F-009 and foundation release doctrine require release completion.
-- [ ] Source guidance specifies tag, publication, and verification.
-- [ ] The current repair is published as the next immutable release.
+- [x] F-009 and foundation release doctrine require release completion.
+- [x] Source guidance specifies tag, publication, and verification.
+- [x] The current repair is published as the next immutable release.
+
+## Completion Evidence
+
+`v0.69.4` is immutable, points at release-note commit
+`35dbb75707dfd8ae406ce79f9d16677937c496e5`, and has exactly ten uploaded
+release assets. GitHub Actions run `32942457278` passed production, keyless
+attestation, independent verification, and publication.
