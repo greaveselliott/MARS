@@ -2,6 +2,27 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.69.4] - 2026-08-26
+<!-- mars-release: version=0.69.4 commit=bddf4049753d -->
+
+### Impact
+- **orchestration:** Operators see improved reliability because recover CEO bootstrap planning handoff.
+- **release:** Operators and future agents get clearer guidance because require immutable release completion.
+
+### Why
+- **orchestration:** This matters because recover CEO bootstrap planning handoff closes a failure mode or degraded path.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **orchestration:** Changed recover CEO bootstrap planning handoff (f40b035).
+- **release:** Changed require immutable release completion (bddf404).
+
+### Fixes
+- **orchestration:** Recover CEO bootstrap planning handoff (f40b035)
+
+### Documentation
+- **release:** Require immutable release completion (bddf404)
+
 ## [0.69.3] - 2026-08-26
 <!-- mars-release: version=0.69.3 commit=9be2101f6b8d -->
 
