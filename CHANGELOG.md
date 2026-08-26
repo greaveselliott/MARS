@@ -2,6 +2,27 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.69.2] - 2026-08-26
+<!-- mars-release: version=0.69.2 commit=c0e74051d53c -->
+
+### Impact
+- **release:** Operators see improved reliability because align archives with signed updater.
+- Operators and future agents get clearer guidance because date launch blocker status.
+
+### Why
+- **release:** This matters because align archives with signed updater closes a failure mode or degraded path.
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **release:** Changed align archives with signed updater (8841d6a).
+- Changed date launch blocker status (c0e7405).
+
+### Fixes
+- **release:** Align archives with signed updater (8841d6a)
+
+### Documentation
+- Date launch blocker status (c0e7405)
+
 ## [0.69.1] - 2026-08-26
 <!-- mars-release: version=0.69.1 commit=b75a9ca6fc23 -->
 
