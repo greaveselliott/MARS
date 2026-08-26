@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.69.1] - 2026-08-26
+<!-- mars-release: version=0.69.1 commit=b75a9ca6fc23 -->
+
+### Impact
+- **release:** Operators see improved reliability because verify attested distributions in phases.
+
+### Why
+- **release:** This matters because verify attested distributions in phases closes a failure mode or degraded path.
+
+### What Changed
+- **release:** Changed verify attested distributions in phases (b75a9ca).
+
+### Fixes
+- **release:** Verify attested distributions in phases (b75a9ca)
+
 ## [0.69.0] - 2026-08-26
 <!-- mars-release: version=0.69.0 commit=b11e69e80f5c -->
 
