@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.69.5] - 2026-08-26
+<!-- mars-release: version=0.69.5 commit=4a9b845a7094 -->
+
+### Impact
+- **release:** Operators and future agents get clearer guidance because record v0.69.4 evidence.
+- **release:** Operators and future agents get clearer guidance because record immutable release completion.
+
+### Why
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **release:** Changed record v0.69.4 evidence (4a9b845).
+- **release:** Changed record immutable release completion (b1552bc).
+
+### Documentation
+- **release:** Record v0.69.4 evidence (4a9b845)
+- **release:** Record immutable release completion (b1552bc)
+
 ## [0.69.4] - 2026-08-26
 <!-- mars-release: version=0.69.4 commit=bddf4049753d -->
 
