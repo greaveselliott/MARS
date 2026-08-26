@@ -154,6 +154,17 @@ func TestReleaseWorkflowIsActiveLeastPrivilegeAndConventional(t *testing.T) {
 	}
 	require.Less(t, strings.Index(text, "gh release create"), strings.Index(text, "gh release upload"))
 	require.Less(t, strings.Index(text, "gh release upload"), strings.Index(text, "gh release edit"))
+	bundleAside := strings.Index(text, `mv -- "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json" "$bundle"`)
+	unsignedVerify := strings.LastIndex(text, "TestVerifyReleaseDistFromEnvironment")
+	bundleRestore := strings.Index(text, `mv -- "$bundle" "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json"`)
+	attestationVerify := strings.Index(text, "TestVerifyMARSReleaseAttestationFromEnvironment")
+	require.NotEqual(t, -1, bundleAside)
+	require.NotEqual(t, -1, unsignedVerify)
+	require.NotEqual(t, -1, bundleRestore)
+	require.NotEqual(t, -1, attestationVerify)
+	require.Less(t, bundleAside, unsignedVerify)
+	require.Less(t, unsignedVerify, bundleRestore)
+	require.Less(t, bundleRestore, attestationVerify)
 }
 
 func TestConventionalReleaseProducerContract(t *testing.T) {

@@ -160,10 +160,13 @@ jobs:
           set -euo pipefail
           version=${GITHUB_REF_NAME#v}
           commit_time=$(git show -s --format=%cI "$GITHUB_SHA")
+          bundle="$RUNNER_TEMP/checksums.txt.sigstore.json"
+          mv -- "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json" "$bundle"
           MARS_RELEASE_VERIFY=1 MARS_RELEASE_DIST="$GITHUB_WORKSPACE/dist" \
             MARS_RELEASE_VERSION="$version" MARS_RELEASE_COMMIT="$GITHUB_SHA" \
             MARS_RELEASE_COMMIT_TIME="$commit_time" MARS_RELEASE_GO_VERSION=go1.27.0 \
             go test ./internal/release -run '^TestVerifyReleaseDistFromEnvironment$' -count=1
+          mv -- "$bundle" "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json"
           MARS_RELEASE_ATTESTATION_VERIFY=1 MARS_RELEASE_DIST="$GITHUB_WORKSPACE/dist" \
             MARS_RELEASE_TAG="$GITHUB_REF_NAME" MARS_RELEASE_COMMIT="$GITHUB_SHA" \
             go test ./internal/selfupdate -run '^TestVerifyMARSReleaseAttestationFromEnvironment$' -count=1

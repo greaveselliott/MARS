@@ -6,14 +6,14 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S003", "F-017-S004", "F-017-S005", "F-018-S004"]
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md", "docs/validation/reports/2026-08-25-t079-private-contribution-controls.md", "docs/validation/reports/2026-08-26-t080-public-cutover-preflight.md"]
+evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md", "docs/validation/reports/2026-08-25-t079-private-contribution-controls.md", "docs/validation/reports/2026-08-26-t080-public-cutover-preflight.md", "docs/validation/reports/2026-08-26-t080-v0690-publication-checkpoint.md"]
 verified_by: "TBD"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-26: owner approved the exact frozen transaction; activating the guarded tag-only workflow while the repository remains private and no launch tag exists"
-blocker: "complete and verify the private workflow-activation and 0.69.0 version commits before the disposable public rehearsal and visibility cutover"
+last_attempt: "2026-08-26: repository public controls passed and immutable exact-ten v0.69.0 was published after local distribution and attestation verification; correcting the workflow's nine-file versus ten-file verification phase before v0.69.1"
+blocker: "land the verified workflow correction, publish immutable exact-ten v0.69.1, and complete anonymous update and rollback evidence"
 blocked_by: []
 trace_id: "launch-public-cutover:2026-08-26"
-next_action: "Validate, commit, and push the guarded workflow activation; then generate and validate the 0.69.0 version commit without creating its tag."
+next_action: "Commit and push the verification-phase correction, require hosted source gates, then generate and publish v0.69.1 through the corrected workflow."
 dedupe_key: "open-source:public-cutover-and-attested-launch-releases"
 metadata:
   apps: "out-of-scope"

@@ -5,7 +5,7 @@
 **Depends On:** T-070 and F-018-S001 through F-018-S003 complete
 **Blocks:** public visibility, supported v0.69.0/v0.69.1 releases, announcement, and G-OSS-001 completion
 **Related Tickets:** T-058 and T-071 through T-081
-**Current Ticket:** T-080 — read-only public-cutover preflight and exact two-release transaction freeze
+**Current Ticket:** T-080 — complete the second immutable launch release and anonymous lifecycle
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-010, F-018
@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071 through T-077 complete; T-073 owner holds resolved by recorded disposition; T-078; T-079; T-080 public cutover and attested launch releases; T-081 canary and announcement.
-**Current Failing Scenario:** F-017-S003/F-017-S004 — T-078's exact hosted cleanup and future-only immutable-Release transaction and T-079's private contribution controls pass. The repository remains private; public-only security controls, genuine hostile-fork smoke, and the two real attested launch Releases remain T-080 work.
+**Current Failing Scenario:** F-017-S003/F-017-S005 — the repository is public with applicable controls active and immutable exact-ten `v0.69.0` is published; corrected automated `v0.69.1` publication and the anonymous update/rollback lifecycle remain T-080 work.
 **Walking Skeleton Slice:** T-078 implements only the standard Go/archive/Syft/GitHub-attestation path, proves the exact-ten contract without publication, refreshes the hosted-state seal, and prepares or performs only separately approved exact sanitation. T-079 closes private contribution controls. T-080 changes visibility under separate approval before creating the two public attested launch releases; T-081 owns the canary and announcement.
 **Learning Or MVP Outcome:** Keep build, attestation, publication, hosted sanitation, visibility, and announcement as distinct authority boundaries while avoiding bespoke infrastructure that is not required for launch.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; attested `v0.69.1` is the supported release with attested `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** The owner approved T-080's exact frozen transaction; its private workflow-activation and `0.69.0` version commits, disposable public rehearsal, public-only controls, real launch attestations/Releases, logged-out lifecycle, and canary are unproven.
-- **Next Primary Action:** Validate, commit, and push the guarded tag-only workflow activation, then generate and validate the `0.69.0` version commit without creating its tag. Continue through the exact frozen transaction and stop on any identity, permission, workflow, or immutable-release mismatch.
+- **Current Primary Blocker:** Immutable exact-ten `v0.69.0` is public and verified, but `v0.69.1` and the logged-out update/rollback lifecycle are unproven.
+- **Next Primary Action:** Land the minimal verification-phase correction found by the stopped `v0.69.0` workflow, require hosted source gates, then publish and independently verify `v0.69.1` before the anonymous lifecycle and T-081 handoff.
 
 ## Starting Baseline
 
