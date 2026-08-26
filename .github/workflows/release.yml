@@ -77,7 +77,17 @@ jobs:
           MARS_RELEASE_COMMIT: ${{ github.sha }}
           MARS_RELEASE_COMMIT_TIME: ${{ steps.preflight.outputs.commit_time }}
           MARS_RELEASE_GO_VERSION: go1.27.0
-        run: go test ./internal/release -run '^TestVerifyReleaseDistFromEnvironment$' -count=1
+        run: |
+          set -euo pipefail
+          go test ./internal/release -run '^TestVerifyReleaseDistFromEnvironment$' -count=1
+          for target in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64; do
+            goos=${target%-*}
+            goarch=${target#*-}
+            MARS_TEST_RELEASE_ARCHIVE="$MARS_RELEASE_DIST/mars_${MARS_RELEASE_VERSION}_${goos}_${goarch}.tar.gz" \
+              MARS_TEST_RELEASE_TAG="$GITHUB_REF_NAME" MARS_TEST_RELEASE_COMMIT="$GITHUB_SHA" \
+              MARS_TEST_RELEASE_GOOS="$goos" MARS_TEST_RELEASE_GOARCH="$goarch" \
+              go test ./internal/selfupdate -run '^TestVerifyMARSReleaseArchiveFromEnvironment$' -count=1
+          done
 
       - name: Upload the immutable unsigned distribution
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -166,6 +176,14 @@ jobs:
             MARS_RELEASE_VERSION="$version" MARS_RELEASE_COMMIT="$GITHUB_SHA" \
             MARS_RELEASE_COMMIT_TIME="$commit_time" MARS_RELEASE_GO_VERSION=go1.27.0 \
             go test ./internal/release -run '^TestVerifyReleaseDistFromEnvironment$' -count=1
+          for target in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64; do
+            goos=${target%-*}
+            goarch=${target#*-}
+            MARS_TEST_RELEASE_ARCHIVE="$GITHUB_WORKSPACE/dist/mars_${version}_${goos}_${goarch}.tar.gz" \
+              MARS_TEST_RELEASE_TAG="$GITHUB_REF_NAME" MARS_TEST_RELEASE_COMMIT="$GITHUB_SHA" \
+              MARS_TEST_RELEASE_GOOS="$goos" MARS_TEST_RELEASE_GOARCH="$goarch" \
+              go test ./internal/selfupdate -run '^TestVerifyMARSReleaseArchiveFromEnvironment$' -count=1
+          done
           mv -- "$bundle" "$GITHUB_WORKSPACE/dist/checksums.txt.sigstore.json"
           MARS_RELEASE_ATTESTATION_VERIFY=1 MARS_RELEASE_DIST="$GITHUB_WORKSPACE/dist" \
             MARS_RELEASE_TAG="$GITHUB_REF_NAME" MARS_RELEASE_COMMIT="$GITHUB_SHA" \
@@ -202,7 +220,7 @@ jobs:
             echo "release publisher: $tag already exists; revalidate exact hosted state before retrying" >&2
             exit 1
           fi
-          gh release create "$tag" --draft --verify-tag --title "$tag" --notes-from-tag
+          gh release create "$tag" --draft --verify-tag --title "$tag" --notes "$tag"
           gh release upload "$tag" dist/*
           release_json=$(gh api "repos/$GH_REPO/releases/tags/$tag")
           test "$(jq -r '.draft' <<<"$release_json")" = true

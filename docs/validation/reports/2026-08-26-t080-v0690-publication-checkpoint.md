@@ -19,13 +19,15 @@ the next tag.
 
 **Primary Status:** `primary_blocked`
 
-**Current Primary Blocker:** land the verified workflow correction, publish
-immutable `v0.69.1` through the corrected end-to-end workflow, and complete the
-anonymous update/rollback lifecycle.
+**Current Primary Blocker:** the anonymous first-install lifecycle proved that
+GNU tar record padding in the immutable `v0.69.0` and `v0.69.1` archives is
+rejected by the signed updater's canonical archive contract. Publish no support
+claim; separately approved corrected `v0.69.2` and `v0.69.3` Releases are
+required to restore both a rollback bridge and a supported latest release.
 
-**Next Primary Action:** commit and push the verification-phase correction,
-require hosted source gates to pass, generate the `0.69.1` release-note commit,
-then create and monitor the exact `v0.69.1` tag.
+**Next Primary Action:** land and validate the minimal canonical-tar and
+publisher correction, then present the exact immutable `v0.69.2`/`v0.69.3`
+consequence for owner approval before creating another tag.
 
 **Supporting Evidence:** release run `32915168629`, locally downloaded attested
 artifact `mars-release-attested-8db7b82ea4013b7a9cf7f760129ee2815ca89103`,
@@ -86,11 +88,28 @@ not revive the deferred bespoke release-security platform.
 
 ## Remaining T-080 Work
 
-1. Push the workflow correction and require the hosted source gates to pass.
-2. Generate and push the `0.69.1` release-note commit.
-3. Publish and independently verify immutable exact-ten `v0.69.1` as latest.
-4. Verify anonymous download/install/update to `v0.69.1` and rollback to
-   `v0.69.0` on the supported macOS/Linux lanes.
+`v0.69.1` was subsequently produced, attested, and independently verified by
+run `32916602734`, then published manually through the same draft, digest, and
+immutable sequence after the checkout-free publisher could not use
+`--notes-from-tag`. It is immutable and exact-ten, but the first real anonymous
+bootstrap correctly rejected its archive before installation because GNU tar's
+default record size added zero padding beyond the consumer's canonical two
+terminator blocks. `v0.69.0` has the same structural mismatch. Both remain
+authentic historical launch artifacts, but neither may be advertised as a
+supported install or rollback target.
+
+Remaining work is now:
+
+1. Produce canonical archives with GNU tar `--blocking-factor=1` and run the
+   real signed archive consumer against all four targets before transfer.
+2. Replace the checkout-dependent publisher note option with a fixed local
+   note so the least-privilege publisher needs no source checkout.
+3. Obtain owner approval for corrected immutable `v0.69.2` as the rollback
+   bridge and `v0.69.3` as latest. One corrected release alone cannot prove an
+   authenticated older-version rollback because `v0.69.0` and `v0.69.1` are
+   structurally inadmissible.
+4. Publish and independently verify both, then repeat anonymous install, update
+   to `v0.69.3`, and rollback to `v0.69.2`.
 5. Record the final hosted-state receipt and hand off to T-081's public canary.
 
 The Node 20 compatibility warning for the pinned upstream upload-artifact

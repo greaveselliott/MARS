@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/features/F-017-open-source-publication.md", "docs/features/F-018-goreleaser-distribution.md", "docs/validation/reports/2026-08-24-t078-hosted-state-revalidation.md", "docs/validation/reports/2026-08-25-t079-private-contribution-controls.md", "docs/validation/reports/2026-08-26-t080-public-cutover-preflight.md", "docs/validation/reports/2026-08-26-t080-v0690-publication-checkpoint.md"]
 verified_by: "TBD"
 owner: "foundation-maintainer"
-last_attempt: "2026-08-26: repository public controls passed and immutable exact-ten v0.69.0 was published after local distribution and attestation verification; correcting the workflow's nine-file versus ten-file verification phase before v0.69.1"
-blocker: "land the verified workflow correction, publish immutable exact-ten v0.69.1, and complete anonymous update and rollback evidence"
+last_attempt: "2026-08-26: immutable exact-ten v0.69.0 and v0.69.1 are public and authenticated, but the first anonymous bootstrap rejected both archives' noncanonical GNU tar record padding before installation"
+blocker: "land the canonical tar and checkout-free publisher correction, then obtain owner approval for immutable v0.69.2 rollback and v0.69.3 latest Releases before any supported-release claim"
 blocked_by: []
 trace_id: "launch-public-cutover:2026-08-26"
-next_action: "Commit and push the verification-phase correction, require hosted source gates, then generate and publish v0.69.1 through the corrected workflow."
+next_action: "Validate and push the bounded correction, then present the exact v0.69.2/v0.69.3 publication consequence for separate owner approval."
 dedupe_key: "open-source:public-cutover-and-attested-launch-releases"
 metadata:
   apps: "out-of-scope"

@@ -110,7 +110,7 @@ for target in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64; do
   chmod 0755 "$stage/mars"
 
   archive="$dist_dir/mars_${version}_${goos}_${goarch}.tar.gz"
-  tar --create --format=ustar --owner=root --group=root --mtime="$commit_time" \
+  tar --create --blocking-factor=1 --format=ustar --owner=root --group=root --mtime="$commit_time" \
     --file=- --directory="$stage" LICENSE NOTICE THIRD_PARTY_NOTICES mars | gzip -n -9 > "$archive"
   "$syft_bin" "file:$archive" --config "$repo_root/.syft.yaml" --quiet \
     --output "spdx-json=$archive.sbom.json"

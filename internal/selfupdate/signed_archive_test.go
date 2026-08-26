@@ -436,11 +436,22 @@ func gzipBytes(t *testing.T, raw []byte) []byte {
 
 func signedChecksumsForArchive(name string, archive []byte, tag, fullCommit string) SignedChecksums {
 	digests := make(map[string][sha256.Size]byte, expectedSignedChecksumCount)
-	for _, expected := range expectedMARSArchiveChecksumNames("0.69.0") {
+	for _, expected := range expectedMARSArchiveChecksumNames(strings.TrimPrefix(tag, "v")) {
 		digests[expected] = sha256.Sum256([]byte(expected))
 	}
 	digests[name] = sha256.Sum256(archive)
 	return SignedChecksums{digests: digests, tag: tag, fullCommit: fullCommit}
+}
+
+func TestSignedChecksumsForArchiveUsesRequestedTagVersion(t *testing.T) {
+	tag := "v0.69.1"
+	name, _, _, ok := marsReleaseArchiveIdentity(tag, testReleaseCommit, "darwin", "arm64")
+	require.True(t, ok)
+	archive := []byte("archive")
+	checksums := signedChecksumsForArchive(name, archive, tag, testReleaseCommit)
+	require.Equal(t, expectedSignedChecksumCount, checksums.Len())
+	require.NotContains(t, checksums.digests, "mars_0.69.0_darwin_arm64.tar.gz")
+	require.Equal(t, sha256.Sum256(archive), checksums.digests[name])
 }
 
 func validMARSReleaseBuildInfo(goos, goarch, archSetting, archValue string) *debug.BuildInfo {

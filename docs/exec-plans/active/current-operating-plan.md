@@ -13,7 +13,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass and the Primary Pass Gate below is durably evidenced.
 **Falsification Evidence:** Any unresolved launch no-go reaches visibility, a supported release, or announcement.
 **Scenario Schedule:** T-071 through T-077 complete; T-073 owner holds resolved by recorded disposition; T-078; T-079; T-080 public cutover and attested launch releases; T-081 canary and announcement.
-**Current Failing Scenario:** F-017-S003/F-017-S005 — the repository is public with applicable controls active and immutable exact-ten `v0.69.0` is published; corrected automated `v0.69.1` publication and the anonymous update/rollback lifecycle remain T-080 work.
+**Current Failing Scenario:** F-017-S003/F-017-S005 — the repository is public with applicable controls active and immutable exact-ten `v0.69.0`/`v0.69.1` are authentic, but both archives carry GNU tar record padding rejected by the signed updater. No supported-release claim is allowed until an approved corrected patch release passes the anonymous lifecycle.
 **Walking Skeleton Slice:** T-078 implements only the standard Go/archive/Syft/GitHub-attestation path, proves the exact-ten contract without publication, refreshes the hosted-state seal, and prepares or performs only separately approved exact sanitation. T-079 closes private contribution controls. T-080 changes visibility under separate approval before creating the two public attested launch releases; T-081 owns the canary and announcement.
 **Learning Or MVP Outcome:** Keep build, attestation, publication, hosted sanitation, visibility, and announcement as distinct authority boundaries while avoiding bespoke infrastructure that is not required for launch.
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, Release Manager, and repository owner
@@ -23,8 +23,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** The repository is public; attested `v0.69.1` is the supported release with attested `v0.69.0` retained only as its rollback bridge; F-017-S001 through F-017-S005 pass; logged-out macOS/Linux clone, build, bootstrap, setup, update, and rollback pass; fork-contribution controls pass; GitHub security and community surfaces are active; a 48-hour public canary is clean; and the launch announcement is posted.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** Immutable exact-ten `v0.69.0` is public and verified, but `v0.69.1` and the logged-out update/rollback lifecycle are unproven.
-- **Next Primary Action:** Land the minimal verification-phase correction found by the stopped `v0.69.0` workflow, require hosted source gates, then publish and independently verify `v0.69.1` before the anonymous lifecycle and T-081 handoff.
+- **Current Primary Blocker:** Immutable exact-ten `v0.69.0` and `v0.69.1` are public and cryptographically verified, but their noncanonical archive record padding makes both unusable by the signed updater; corrected `v0.69.2` rollback and `v0.69.3` latest Releases are not yet authorized.
+- **Next Primary Action:** Land and validate the bounded canonical-tar and checkout-free publisher correction, then obtain separate approval before creating or publishing `v0.69.2` or `v0.69.3`.
 
 ## Starting Baseline
 

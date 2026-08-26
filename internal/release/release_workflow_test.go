@@ -140,8 +140,9 @@ func TestReleaseWorkflowIsActiveLeastPrivilegeAndConventional(t *testing.T) {
 		"subject-checksums: dist/checksums.txt",
 		"checksums.txt.sigstore.json",
 		"TestVerifyReleaseDistFromEnvironment",
+		"TestVerifyMARSReleaseArchiveFromEnvironment",
 		"TestVerifyMARSReleaseAttestationFromEnvironment",
-		"gh release create \"$tag\" --draft --verify-tag",
+		"gh release create \"$tag\" --draft --verify-tag --title \"$tag\" --notes \"$tag\"",
 		"gh release edit \"$tag\" --draft=false --latest",
 	} {
 		require.Contains(t, text, required)
@@ -178,7 +179,7 @@ func TestConventionalReleaseProducerContract(t *testing.T) {
 		"GOOS=\"$goos\"", "GOARCH=\"$goarch\"", "-trimpath", "-buildvcs=true",
 		"darwin-amd64 darwin-arm64 linux-amd64 linux-arm64",
 		"LICENSE", "NOTICE", "THIRD_PARTY_NOTICES", "mars",
-		"--format=ustar", "--owner=root", "--group=root", "gzip -n",
+		"--blocking-factor=1", "--format=ustar", "--owner=root", "--group=root", "gzip -n",
 		"date -u -d", "spdx-json", "sha256sum", "sort -k2,2", "checksums.txt",
 		"COSIGN_PASSWORD", "COSIGN_PRIVATE_KEY",
 	} {
